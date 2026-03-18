@@ -11,6 +11,7 @@ import {
 } from '@mui/material';
 import { Person, School, Email } from '@mui/icons-material';
 
+
 const OurTeam = () => {
   const teamMembers = [
     {
@@ -19,13 +20,14 @@ const OurTeam = () => {
       studentId: "104551609",
       email: "104551609@student.swin.edu.au",
       description: "User interface, data collection and data cleaning.",
+   
     },
     {
       name: "Josh Celestino",
       major: "Artificial Intelligence",
       studentId: "104550240",
       email: "104550240@student.swin.edu.au",
-      description: " ",
+      description: " "
     },
     {
       name: "Campbell Sholl",
