@@ -1,20 +1,20 @@
 import React, { useState } from 'react';
-import { 
-  AppBar, 
-  Toolbar, 
-  Typography, 
-  Button, 
-  Box, 
-  IconButton, 
-  Drawer, 
-  List, 
-  ListItem, 
-  ListItemText,
-  useTheme,
-  useMediaQuery
+import {
+  AppBar, Toolbar, Typography, Button, Box,
+  IconButton, Drawer, List, ListItem, ListItemButton,
+  ListItemText, Divider, useMediaQuery, useTheme,
 } from '@mui/material';
-import { Menu as MenuIcon, Close as CloseIcon } from '@mui/icons-material';
+import {
+  Menu as MenuIcon,
+  Close as CloseIcon,
+  Biotech as BiotechIcon,
+} from '@mui/icons-material';
 import { Link, useLocation } from 'react-router-dom';
+
+const NAV_ITEMS = [
+  { label: 'Analysis', path: '/' },
+  { label: 'Our Team', path: '/OurTeam' },
+];
 
 const Navigation = () => {
   const location = useLocation();
@@ -22,94 +22,100 @@ const Navigation = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const navItems = [
-    { label: 'Home', path: '/' },
-    { label: 'Our Team', path: '/OurTeam' }
-  ];
-
-  const toggleDrawer = (open) => {
-    setDrawerOpen(open);
-  };
-
-  const mobileMenu = (
-    <Drawer
-      anchor="right"
-      open={drawerOpen}
-      onClose={() => toggleDrawer(false)}
-      sx={{
-     
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        color: 'white',
-        pt: { xs: 4, sm: 5, md: 6 },
-        pb: { xs: 2, sm: 2.5, md: 3 },
-        mt: { xs: 4, sm: 6, md: 8 },
-        position: 'relative',
-        overflow: 'hidden'
-      }}
-    >
-      {}
-    </Drawer>
-  );
-
   return (
     <>
-      <AppBar 
-        position="static" 
-        sx={{ 
-          mb: 3,
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',  
-          boxShadow: '0 4px 20px rgba(0,0,0,0.15)',                      
+      <AppBar
+        position="sticky"
+        elevation={0}
+        sx={{
+          backgroundColor: '#0D1B2A',
+          borderBottom: '1px solid rgba(255,255,255,0.08)',
         }}
       >
-        <Toolbar>
-          <Typography 
-            variant="h6" 
-            component="div" 
-            sx={{ 
-              flexGrow: 1,
-              fontSize: { xs: '1rem', sm: '1.25rem' },
-              fontWeight: 'bold',
-              color: 'white',           
-            }}
-          >
-            Q-INTERVAL-Lite+
-          </Typography>
-          
-          {isMobile ? (
-            <IconButton
-              color="inherit"
-              aria-label="open drawer"
-              edge="end"
-              onClick={() => toggleDrawer(true)}
-            >
+        <Toolbar sx={{ minHeight: { xs: 60, md: 68 } }}>
+          {/* Brand */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexGrow: 1 }}>
+            <BiotechIcon sx={{ color: '#64B5F6', fontSize: 28 }} />
+            <Box>
+              <Typography
+                variant="h6"
+                sx={{ color: 'white', lineHeight: 1.1, letterSpacing: '0.02em' }}
+              >
+                Q-INTERVAL-Lite+
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{ color: 'rgba(255,255,255,0.45)', letterSpacing: '0.06em', fontSize: '0.65rem' }}
+              >
+                MAMMOGRAM ANALYSIS SYSTEM
+              </Typography>
+            </Box>
+          </Box>
+
+          {/* Desktop nav */}
+          {!isMobile && (
+            <Box sx={{ display: 'flex', gap: 0.5 }}>
+              {NAV_ITEMS.map((item) => {
+                const active = location.pathname === item.path;
+                return (
+                  <Button
+                    key={item.path}
+                    component={Link}
+                    to={item.path}
+                    sx={{
+                      color: active ? '#64B5F6' : 'rgba(255,255,255,0.75)',
+                      borderBottom: active ? '2px solid #64B5F6' : '2px solid transparent',
+                      borderRadius: 0,
+                      px: 2,
+                      pb: '4px',
+                      '&:hover': { color: 'white', backgroundColor: 'transparent' },
+                    }}
+                  >
+                    {item.label}
+                  </Button>
+                );
+              })}
+            </Box>
+          )}
+
+          {/* Mobile hamburger */}
+          {isMobile && (
+            <IconButton color="inherit" onClick={() => setDrawerOpen(true)}>
               <MenuIcon />
             </IconButton>
-          ) : (
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              {navItems.map((item) => (
-                <Button
-                  key={item.path}
-                  component={Link}
-                  to={item.path}
-                  color="inherit"
-                  variant={location.pathname === item.path ? 'outlined' : 'text'}
-                  sx={{
-                    borderColor: location.pathname === item.path ? 'white' : 'transparent',
-                    '&:hover': {
-                      backgroundColor: 'rgba(255, 255, 255, 0.12)'  
-                    },
-                    fontSize: { md: '0.875rem', lg: '1rem' },
-                    px: { md: 1, lg: 2 }
-                  }}
-                >
-                  {item.label}
-                </Button>
-              ))}
-            </Box>
           )}
         </Toolbar>
       </AppBar>
-      {isMobile && mobileMenu}
+
+      {/* Mobile drawer */}
+      <Drawer anchor="right" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
+        <Box sx={{ width: 240, backgroundColor: '#0D1B2A', height: '100%', color: 'white' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 1 }}>
+            <IconButton onClick={() => setDrawerOpen(false)} sx={{ color: 'white' }}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
+          <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)' }} />
+          <List>
+            {NAV_ITEMS.map((item) => (
+              <ListItem key={item.path} disablePadding>
+                <ListItemButton
+                  component={Link}
+                  to={item.path}
+                  onClick={() => setDrawerOpen(false)}
+                  selected={location.pathname === item.path}
+                  sx={{
+                    color: 'rgba(255,255,255,0.85)',
+                    '&.Mui-selected': { color: '#64B5F6', backgroundColor: 'rgba(100,181,246,0.1)' },
+                  }}
+                >
+                  <ListItemText primary={item.label} />
+                </ListItemButton>
+              </ListItem>
+            ))}
+          </List>
+        </Box>
+      </Drawer>
     </>
   );
 };

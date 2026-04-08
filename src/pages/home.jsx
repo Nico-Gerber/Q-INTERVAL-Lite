@@ -1,70 +1,383 @@
-import React, { useCallback, useState } from "react";
-import {useDropzone} from "react-dropzone";
-import { Box, Container, Typography } from "@mui/material";
+import React, { useCallback, useState } from 'react';
+import { useDropzone } from 'react-dropzone';
+import {
+  Box, Button, Chip, Container, Divider, Paper,
+  Step, StepLabel, Stepper, Typography, Alert,
+  ToggleButton, ToggleButtonGroup, CircularProgress,
+} from '@mui/material';
+import {
+  Memory as ClassicalIcon,
+  Science as QuantumIcon,
+  AutoAwesome as BothIcon,
+  CloudUpload as UploadIcon,
+  CheckCircleOutline as CheckIcon,
+  WarningAmber as WarnIcon,
+  ImageSearch as ImageSearchIcon,
+} from '@mui/icons-material';
 
-function Home() {
-const [files, setFiles] = useState([]);
+const API_BASE = 'http://localhost:8000';
 
-const onDrop = useCallback((acceptedFiles) => {
+const MODES = {
+  classical: {
+    label: 'Classical CNN',
+    icon: <ClassicalIcon />,
+    color: '#1565C0',
+    description:
+      'Convolutional Neural Network trained on mammogram datasets. Fast inference with high accuracy on standard imaging.',
+  },
+  quantum: {
+    label: 'Quantum AI',
+    icon: <QuantumIcon />,
+    color: '#6A0DAD',
+    description:
+      'Quantum-enhanced model leveraging superposition and entanglement for pattern detection beyond classical limits.',
+  },
+  both: {
+    label: 'Classical + Quantum',
+    icon: <BothIcon />,
+    color: '#C2185B',
+    description:
+      'Run both models in parallel and compare results. Ideal for research validation and benchmarking.',
+  },
+};
 
-setFiles((prev) => [...prev, ...acceptedFiles]);
+export default function Home() {
+  const [mode, setMode] = useState('classical');
+  const [file, setFile]   = useState(null);
+  const [preview, setPreview] = useState(null);
+  const [status, setStatus]   = useState(null);   // { ok, msg }
+  const [loading, setLoading] = useState(false);
+  const [result, setResult]   = useState(null);   // placeholder for future AI output
 
-console.log("Accepted files:", acceptedFiles);
-}, []);
+  // Derived active step
+  const activeStep = file ? (result ? 2 : 1) : 0;
 
-const {getRootProps, getInputProps, isDragActive} = useDropzone({
-onDrop,
+  const onDrop = useCallback((accepted, rejected) => {
+    if (rejected.length) {
+      setStatus({ ok: false, msg: 'Only JPEG and PNG images are accepted.' });
+      return;
+    }
+    const f = accepted[0];
+    setFile(f);
+    setPreview(URL.createObjectURL(f));
+    setStatus(null);
+    setResult(null);
+  }, []);
 
-});
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: { 'image/jpeg': [], 'image/png': [], 'application/dicom': ['.dcm'] },
+    maxFiles: 1,
+    maxSize: 10 * 1024 * 1024,
+  });
+
+  const handleAnalyse = async () => {
+    if (!file) return;
+    setLoading(true);
+    setStatus(null);
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res  = await fetch(`${API_BASE}/images/upload`, { method: 'POST', body: formData });
+      const data = await res.json();
+
+      if (res.ok) {
+        setStatus({ ok: true, msg: `Image uploaded successfully (${(file.size / 1024).toFixed(1)} KB)` });
+        // Placeholder – real inference will populate this once AI models are integrated
+        setResult({
+          mode,
+          filename: data.filename,
+          note: 'AI analysis coming soon. The image has been queued for processing.',
+        });
+      } else {
+        setStatus({ ok: false, msg: data.detail || 'Upload failed.' });
+      }
+    } catch {
+      setStatus({ ok: false, msg: 'Cannot reach the server. Make sure the backend is running.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReset = () => {
+    setFile(null);
+    setPreview(null);
+    setStatus(null);
+    setResult(null);
+  };
+
+  const selectedMode = MODES[mode];
 
   return (
-    <Container>
-      <Typography variant="h3">
-        Home Page
-      </Typography>
+    <Box sx={{ backgroundColor: 'background.default', minHeight: '100%', pb: 8 }}>
 
-      <Typography>
-        Welcome to the site.
-      </Typography>
+      {/* ── Hero ── */}
+      <Box
+        sx={{
+          background: 'linear-gradient(135deg, #0D1B2A 0%, #1565C0 100%)',
+          color: 'white',
+          py: { xs: 5, md: 8 },
+          px: 2,
+          textAlign: 'center',
+        }}
+      >
+        <Chip
+          label="RESEARCH PROTOTYPE · NOT FOR CLINICAL USE"
+          size="small"
+          sx={{
+            mb: 2,
+            backgroundColor: 'rgba(255,255,255,0.12)',
+            color: 'rgba(255,255,255,0.85)',
+            letterSpacing: '0.08em',
+            fontSize: '0.65rem',
+            fontWeight: 700,
+            border: '1px solid rgba(255,255,255,0.2)',
+          }}
+        />
+        <Typography variant="h3" sx={{ fontWeight: 800, mb: 1.5, letterSpacing: '-0.02em' }}>
+          Mammogram Analysis
+        </Typography>
+        <Typography
+          variant="h6"
+          sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 400, maxWidth: 580, mx: 'auto' }}
+        >
+          Upload a mammogram image and select an AI analysis method — Classical CNN, Quantum AI, or both.
+        </Typography>
+      </Box>
 
+      <Container maxWidth="md" sx={{ mt: { xs: -3, md: -4 } }}>
 
+        {/* ── Progress stepper ── */}
+        <Paper elevation={2} sx={{ p: { xs: 2, md: 3 }, mb: 3, borderRadius: 2 }}>
+          <Stepper activeStep={activeStep} alternativeLabel>
+            {['Select Mode', 'Upload Image', 'View Results'].map((label) => (
+              <Step key={label}>
+                <StepLabel>{label}</StepLabel>
+              </Step>
+            ))}
+          </Stepper>
+        </Paper>
 
-<Box
-{...getRootProps()}
-style={{
+        {/* ── Step 1: Mode selector ── */}
+        <Paper elevation={2} sx={{ p: { xs: 2, md: 3 }, mb: 3, borderRadius: 2 }}>
+          <Typography variant="h6" gutterBottom>
+            1 · Select Analysis Mode
+          </Typography>
+          <Divider sx={{ mb: 2 }} />
 
-border: "2px dashed #ccc",
- borderRadius: "8px",
-   padding: "60px 20px",
-  textAlign: "center",
-   background: isDragActive ? "#f0f8ff" : "#fafafa",
-   cursor: "pointer",
+          <ToggleButtonGroup
+            value={mode}
+            exclusive
+            onChange={(_, v) => { if (v) setMode(v); }}
+            fullWidth
+            sx={{ mb: 2, gap: 1, flexWrap: { xs: 'wrap', sm: 'nowrap' } }}
+          >
+            {Object.entries(MODES).map(([key, m]) => (
+              <ToggleButton
+                key={key}
+                value={key}
+                sx={{
+                  flex: 1,
+                  py: 1.5,
+                  border: '2px solid !important',
+                  borderColor: `${mode === key ? m.color : 'rgba(0,0,0,0.12)'} !important`,
+                  borderRadius: '8px !important',
+                  color: mode === key ? m.color : 'text.secondary',
+                  backgroundColor: mode === key ? `${m.color}12` : 'transparent',
+                  fontWeight: 600,
+                  gap: 1,
+                  '&:hover': { backgroundColor: `${m.color}18` },
+                  '&.Mui-selected': {
+                    color: m.color,
+                    backgroundColor: `${m.color}12`,
+                    '&:hover': { backgroundColor: `${m.color}20` },
+                  },
+                }}
+              >
+                {m.icon}
+                <span style={{ fontSize: '0.85rem' }}>{m.label}</span>
+              </ToggleButton>
+            ))}
+          </ToggleButtonGroup>
 
-}}>
+          {/* Mode description card */}
+          <Box
+            sx={{
+              backgroundColor: `${selectedMode.color}0D`,
+              border: `1px solid ${selectedMode.color}30`,
+              borderLeft: `4px solid ${selectedMode.color}`,
+              borderRadius: 2,
+              px: 2,
+              py: 1.5,
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 1.5,
+            }}
+          >
+            <Box sx={{ color: selectedMode.color, mt: '2px' }}>{selectedMode.icon}</Box>
+            <Box>
+              <Typography variant="subtitle2" sx={{ color: selectedMode.color, fontWeight: 700 }}>
+                {selectedMode.label}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {selectedMode.description}
+              </Typography>
+            </Box>
+          </Box>
+        </Paper>
 
+        {/* ── Step 2: Upload ── */}
+        <Paper elevation={2} sx={{ p: { xs: 2, md: 3 }, mb: 3, borderRadius: 2 }}>
+          <Typography variant="h6" gutterBottom>
+            2 · Upload Mammogram Image
+          </Typography>
+          <Divider sx={{ mb: 2 }} />
 
-<input {...getInputProps()} />
+          {!file ? (
+            <Box
+              {...getRootProps()}
+              sx={{
+                border: `2px dashed ${isDragActive ? '#1565C0' : 'rgba(0,0,0,0.2)'}`,
+                borderRadius: 2,
+                p: { xs: 4, md: 6 },
+                textAlign: 'center',
+                cursor: 'pointer',
+                backgroundColor: isDragActive ? 'rgba(21,101,192,0.04)' : 'rgba(0,0,0,0.01)',
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  borderColor: '#1565C0',
+                  backgroundColor: 'rgba(21,101,192,0.04)',
+                },
+              }}
+            >
+              <input {...getInputProps()} />
+              <UploadIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
+              <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+                {isDragActive ? 'Drop the image here' : 'Drag & drop a mammogram image'}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                or click to browse
+              </Typography>
+              <Typography variant="caption" color="text.disabled">
+                Accepted: JPEG, PNG, DICOM (.dcm) · Max size: 10 MB
+              </Typography>
+            </Box>
+          ) : (
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+              {/* Thumbnail */}
+              <Box
+                component="img"
+                src={preview}
+                alt="Selected mammogram"
+                sx={{
+                  width: 140,
+                  height: 140,
+                  objectFit: 'cover',
+                  borderRadius: 2,
+                  border: '1px solid rgba(0,0,0,0.1)',
+                  flexShrink: 0,
+                }}
+              />
+              <Box sx={{ flex: 1, minWidth: 180 }}>
+                <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 0.5 }}>
+                  {file.name}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                  {(file.size / 1024).toFixed(1)} KB · {file.type}
+                </Typography>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="error"
+                  onClick={handleReset}
+                >
+                  Remove
+                </Button>
+              </Box>
+            </Box>
+          )}
 
+          {/* Status message */}
+          {status && (
+            <Alert
+              severity={status.ok ? 'success' : 'error'}
+              icon={status.ok ? <CheckIcon /> : <WarnIcon />}
+              sx={{ mt: 2 }}
+            >
+              {status.msg}
+            </Alert>
+          )}
+        </Paper>
 
+        {/* ── Step 3: Analyse button ── */}
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+          <Button
+            variant="contained"
+            size="large"
+            disabled={!file || loading}
+            onClick={handleAnalyse}
+            startIcon={loading ? <CircularProgress size={18} color="inherit" /> : <ImageSearchIcon />}
+            sx={{
+              px: 5,
+              py: 1.5,
+              fontSize: '1rem',
+              backgroundColor: selectedMode.color,
+              '&:hover': { backgroundColor: selectedMode.color, filter: 'brightness(0.9)' },
+              '&:disabled': { backgroundColor: 'rgba(0,0,0,0.1)' },
+            }}
+          >
+            {loading ? 'Uploading…' : `Analyse with ${selectedMode.label}`}
+          </Button>
+        </Box>
 
-{isDragActive ? (
-  <Typography>Drop the files here</Typography>
-) : (
+        {/* ── Results placeholder ── */}
+        {result && (
+          <Paper
+            elevation={2}
+            sx={{
+              p: { xs: 2, md: 3 },
+              borderRadius: 2,
+              borderTop: `4px solid ${selectedMode.color}`,
+            }}
+          >
+            <Typography variant="h6" gutterBottom>
+              3 · Analysis Results
+            </Typography>
+            <Divider sx={{ mb: 2 }} />
 
-  <Typography>Drag and Drop Files here, or click to select</Typography>
-)}
+            <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
+              <Chip label={`Mode: ${MODES[result.mode].label}`} variant="outlined" size="small" />
+              <Chip label={`File: ${result.filename}`} variant="outlined" size="small" />
+            </Box>
 
+            <Alert severity="info" icon={<ImageSearchIcon />}>
+              <Typography variant="subtitle2" fontWeight={700}>AI Model Integration Pending</Typography>
+              <Typography variant="body2">{result.note}</Typography>
+            </Alert>
 
-</Box>
+            {/* Placeholder result card — will be replaced with real output */}
+            <Box
+              sx={{
+                mt: 2,
+                p: 3,
+                borderRadius: 2,
+                backgroundColor: 'rgba(0,0,0,0.02)',
+                border: '1px dashed rgba(0,0,0,0.15)',
+                textAlign: 'center',
+              }}
+            >
+              <ImageSearchIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
+              <Typography variant="body2" color="text.secondary">
+                Prediction confidence, heatmap overlay, and lesion markers will appear here once the
+                {result.mode === 'both' ? ' Classical and Quantum models are' : ` ${MODES[result.mode].label} model is`} integrated.
+              </Typography>
+            </Box>
+          </Paper>
+        )}
 
-
-
-
-    </Container>
-
-
-
+      </Container>
+    </Box>
   );
 }
-
-export default Home;
