@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useRef, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import {
   Box, Button, Chip, Container, Divider, Paper,
@@ -15,6 +15,9 @@ import {
   ImageSearch as ImageSearchIcon,
   CenterFocusStrong,
 } from '@mui/icons-material';
+
+
+
 
 const API_BASE = 'http://localhost:8000';
 
@@ -42,6 +45,10 @@ const MODES = {
   },
 };
 
+
+
+
+
 export default function Home() {
   const [mode, setMode] = useState('classical');
   const [file, setFile] = useState(null);
@@ -49,15 +56,41 @@ export default function Home() {
   const [status, setStatus] = useState(null);   // { ok, msg }
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);   // placeholder for future AI output
-
+  const targetRef = useRef(null);
+  const [isVisible, setIsVisible] = useState(false);
   // Derived active step
   const activeStep = file ? (result ? 2 : 1) : 0;
 
   const onDrop = useCallback((accepted, rejected) => {
+
+    const toBigStrin = "File is larger than 10485760 bytes"
+
+
+
+
+
     if (rejected.length) {
-      setStatus({ ok: false, msg: 'Only JPEG, PNG and DICOM images are accepted.' });
+      if (rejected[0].errors[0].message === toBigStrin) {
+
+        setStatus({ ok: false, msg: 'File is larger than 10MB' });
+
+
+        return;
+
+      }
+
+
+      setStatus({ ok: false, msg: rejected[0].errors[0].message });
+
       return;
+
     }
+
+
+
+
+
+
     const f = accepted[0];
     setFile(f);
     setPreview(URL.createObjectURL(f));
@@ -70,7 +103,30 @@ export default function Home() {
     accept: { 'image/jpeg': [], 'image/png': [], 'application/dicom': ['.dcm'] },
     maxFiles: 1,
     maxSize: 10 * 1024 * 1024,
+
   });
+
+
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+
+        setIsVisible(entry.isIntersecting);
+      },
+      { threshold: 0.1 }
+    );
+
+    if (targetRef.current) {
+      observer.observe(targetRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [result]);
+
+
+
+
 
   const handleAnalyse = async () => {
     if (!file) return;
@@ -371,12 +427,46 @@ export default function Home() {
                   }}
                 />
 
-              </Box>
-              <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
-                <Chip label={`Mode: ${MODES[result.mode].label}`} variant="outlined" size="small" />
-                <Chip label={file.name} variant='outlined' size='small' />
+
+
 
               </Box>
+
+              <Box sx={{ mb: 2 }}>
+                {/* Result Label */}
+                <Typography fontWeight={500} variant='h3' gutterBottom>Malignant</Typography>
+                {/* Percentage */}
+
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Typography fontWeight={500} variant='subtitle2' fontSize={25} color='grey' gutterBottom>Confidence</Typography>
+                  <Typography fontWeight={500} variant='subtitle2' fontSize={25} color='grey' gutterBottom>87%</Typography>
+                </Box>
+                <div ref={targetRef} >
+                  <div style={{ background: '#eee', borderRadius: 4, height: 8 }}>
+                    <div style={{
+
+                      width: isVisible ? '87%' : '0%',
+                      background: '#3440e8ff',
+                      height: '100%',
+                      borderRadius: 4,
+                      transition: 'width 1s ease'
+                    }} />
+                  </div>
+                </div>
+              </Box>
+
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Box sx={{ flex: 1, background: '...', borderRadius: 2, p: 2 }}>
+                  <Typography variant="caption">Model used</Typography>
+                  <Typography variant="subtitle1" fontWeight={500}>{MODES[result.mode].label}</Typography>
+                </Box>
+                <Box sx={{ flex: 1, background: '...', borderRadius: 2, p: 2 }}>
+                  <Typography variant="caption">Image</Typography>
+                  <Typography variant="subtitle1" fontWeight={500}>{file.name}</Typography>
+                </Box>
+              </Box>
+
+
 
             </Paper>
 
@@ -400,6 +490,7 @@ export default function Home() {
                 {'Reset'}
               </Button>
             </Box>
+
 
           </>
         )}
