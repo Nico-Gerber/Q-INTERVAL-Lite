@@ -13,6 +13,7 @@ import {
   CheckCircleOutline as CheckIcon,
   WarningAmber as WarnIcon,
   ImageSearch as ImageSearchIcon,
+  CenterFocusStrong,
 } from '@mui/icons-material';
 
 const API_BASE = 'http://localhost:8000';
@@ -43,18 +44,18 @@ const MODES = {
 
 export default function Home() {
   const [mode, setMode] = useState('classical');
-  const [file, setFile]   = useState(null);
+  const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
-  const [status, setStatus]   = useState(null);   // { ok, msg }
+  const [status, setStatus] = useState(null);   // { ok, msg }
   const [loading, setLoading] = useState(false);
-  const [result, setResult]   = useState(null);   // placeholder for future AI output
+  const [result, setResult] = useState(null);   // placeholder for future AI output
 
   // Derived active step
   const activeStep = file ? (result ? 2 : 1) : 0;
 
   const onDrop = useCallback((accepted, rejected) => {
     if (rejected.length) {
-      setStatus({ ok: false, msg: 'Only JPEG and PNG images are accepted.' });
+      setStatus({ ok: false, msg: 'Only JPEG, PNG and DICOM images are accepted.' });
       return;
     }
     const f = accepted[0];
@@ -80,7 +81,7 @@ export default function Home() {
     formData.append('file', file);
 
     try {
-      const res  = await fetch(`${API_BASE}/images/upload`, { method: 'POST', body: formData });
+      const res = await fetch(`${API_BASE}/images/upload`, { method: 'POST', body: formData });
       const data = await res.json();
 
       if (res.ok) {
@@ -89,7 +90,7 @@ export default function Home() {
         setResult({
           mode,
           filename: data.filename,
-          note: 'AI analysis coming soon. The image has been queued for processing.',
+
         });
       } else {
         setStatus({ ok: false, msg: data.detail || 'Upload failed.' });
@@ -332,50 +333,78 @@ export default function Home() {
           </Button>
         </Box>
 
-        {/* ── Results placeholder ── */}
+        {/* ── Results */}
         {result && (
-          <Paper
-            elevation={2}
-            sx={{
-              p: { xs: 2, md: 3 },
-              borderRadius: 2,
-              borderTop: `4px solid ${selectedMode.color}`,
-            }}
-          >
-            <Typography variant="h6" gutterBottom>
-              3 · Analysis Results
-            </Typography>
-            <Divider sx={{ mb: 2 }} />
-
-            <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
-              <Chip label={`Mode: ${MODES[result.mode].label}`} variant="outlined" size="small" />
-              <Chip label={`File: ${result.filename}`} variant="outlined" size="small" />
-            </Box>
-
-            <Alert severity="info" icon={<ImageSearchIcon />}>
-              <Typography variant="subtitle2" fontWeight={700}>AI Model Integration Pending</Typography>
-              <Typography variant="body2">{result.note}</Typography>
-            </Alert>
-
-            {/* Placeholder result card — will be replaced with real output */}
-            <Box
+          <>
+            <Paper
+              elevation={2}
               sx={{
-                mt: 2,
-                p: 3,
+                p: { xs: 2, md: 3 },
                 borderRadius: 2,
-                backgroundColor: 'rgba(0,0,0,0.02)',
-                border: '1px dashed rgba(0,0,0,0.15)',
-                textAlign: 'center',
+                borderTop: `4px solid ${selectedMode.color}`,
               }}
             >
-              <ImageSearchIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
-              <Typography variant="body2" color="text.secondary">
-                Prediction confidence, heatmap overlay, and lesion markers will appear here once the
-                {result.mode === 'both' ? ' Classical and Quantum models are' : ` ${MODES[result.mode].label} model is`} integrated.
+              <Typography variant="h6" gutterBottom>
+                3 · Analysis Results
               </Typography>
+              <Divider sx={{ mb: 2 }} />
+
+
+              <Box sx={{
+                alignItems: 'center',
+                justifyContent: 'center',
+                display: 'flex',
+                paddingBottom: '1rem',
+              }}>
+
+                <Box
+                  component="img"
+                  src={preview}
+                  alt="Selected mammogram"
+                  sx={{
+                    width: 500,
+                    height: 500,
+                    objectFit: 'cover',
+
+
+                    flexShrink: 0,
+                  }}
+                />
+
+              </Box>
+              <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
+                <Chip label={`Mode: ${MODES[result.mode].label}`} variant="outlined" size="small" />
+                <Chip label={file.name} variant='outlined' size='small' />
+
+              </Box>
+
+            </Paper>
+
+            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 7, padding: '1rem', }}>
+              <Button
+                variant="contained"
+                size="large"
+                disabled={!file || loading}
+                onClick={handleReset}
+
+                sx={{
+                  px: 5,
+                  py: 1.5,
+
+                  fontSize: '1rem',
+                  backgroundColor: selectedMode.color,
+                  '&:hover': { backgroundColor: selectedMode.color, filter: 'brightness(0.9)' },
+                  '&:disabled': { backgroundColor: 'rgba(0,0,0,0.1)' },
+                }}
+              >
+                {'Reset'}
+              </Button>
             </Box>
-          </Paper>
+
+          </>
         )}
+
+
 
       </Container>
     </Box>

@@ -45,10 +45,10 @@ async def upload_image(file: UploadFile = File(...)):
 
     ext = Path(file.filename).suffix or ".jpg"
     filename = f"{uuid.uuid4().hex}{ext}"
-    dest = UPLOAD_DIR / filename
+    #dest = UPLOAD_DIR / filename
 
-    async with aiofiles.open(dest, "wb") as f:
-        await f.write(contents)
+    #async with aiofiles.open(dest, "wb") as f:
+    #   await f.write(contents)
 
     return JSONResponse(
         status_code=201,
