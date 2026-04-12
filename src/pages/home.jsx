@@ -66,9 +66,6 @@ export default function Home() {
     const toBigStrin = "File is larger than 10485760 bytes"
 
 
-
-
-
     if (rejected.length) {
       if (rejected[0].errors[0].message === toBigStrin) {
 
@@ -85,8 +82,6 @@ export default function Home() {
       return;
 
     }
-
-
 
 
 
@@ -141,7 +136,13 @@ export default function Home() {
       const data = await res.json();
 
       if (res.ok) {
-        setStatus({ ok: true, msg: `Image uploaded successfully (${(file.size / 1024).toFixed(1)} KB)` });
+
+
+        setStatus({
+          ok: true, msg: `Image uploaded successfully (
+    
+               ${file.size > 1 * 1024 * 1024 ? (file.size / 1000024).toFixed(2) + ' MB ' + '· ' + file.type : (file.size / 1024).toFixed(1) + ' KB ' + '· ' + file.type})`
+        });
         // Placeholder – real inference will populate this once AI models are integrated
         setResult({
           mode,
@@ -342,7 +343,7 @@ export default function Home() {
                   {file.name}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                  {(file.size / 1024).toFixed(1)} KB · {file.type}
+                  {file.size > 1 * 1024 * 1024 ? (file.size / 1000024).toFixed(2) + ' MB ' + '· ' + file.type : (file.size / 1024).toFixed(1) + ' KB ' + '· ' + file.type}
                 </Typography>
                 <Button
                   size="small"
@@ -458,7 +459,7 @@ export default function Home() {
               <Box sx={{ display: 'flex', gap: 2 }}>
                 <Box sx={{ flex: 1, background: '...', borderRadius: 2, p: 2 }}>
                   <Typography variant="caption">Model used</Typography>
-                  <Typography variant="subtitle1" fontWeight={500}>{MODES[result.mode].label}</Typography>
+                  <Typography variant="subtitle1" fontWeight={500}>{MODES[mode].label}</Typography>
                 </Box>
                 <Box sx={{ flex: 1, background: '...', borderRadius: 2, p: 2 }}>
                   <Typography variant="caption">Image</Typography>
