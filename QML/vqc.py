@@ -50,7 +50,7 @@ print("Test shape:", X_test.shape)
 dev = qml.device("default.qubit", wires=N_QUBITS)
 
 def variational_layer(weights):
-    # weights shape for one layer: (N_QUBITS, 2)
+    # weights shape for one layer (N_QUBITS, 2)
     for i in range(N_QUBITS):
         qml.RY(weights[i, 0], wires=i)
         qml.RZ(weights[i, 1], wires=i)
@@ -59,3 +59,15 @@ def variational_layer(weights):
     for i in range(N_QUBITS):
         qml.CNOT(wires=[i, (i + 1) % N_QUBITS])
 
+@qml.qnode(dev, interface="autograd")
+def circuit(x, weights):
+    # Angle encoding using your PCA features
+    for i in range(N_QUBITS):
+        qml.RY(x[i], wires=i)
+
+    # Variational layers
+    for layer in range(N_LAYERS):
+        variational_layer(weights[layer])
+
+    # Measure one qubit for binary classification
+    return qml.expval(qml.PauliZ(0))
