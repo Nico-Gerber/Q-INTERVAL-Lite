@@ -1,4 +1,5 @@
 import React, { useCallback, useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
 import {
   Box, Button, Chip, Container, Divider, Paper,
@@ -52,6 +53,7 @@ const MODES = {
 
 
 export default function Home() {
+  const navigate = useNavigate();
   const [mode, setMode] = useState('classical');
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
