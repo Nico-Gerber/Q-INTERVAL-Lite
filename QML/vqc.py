@@ -8,12 +8,12 @@ import joblib
 
 CSV_PATH = "dataset/qml_500_pca4.csv"   
 LABEL_COLUMN = "label"
-FEATURE_COLUMNS = [f"pc{i}" for i in range(1, 9)]
+FEATURE_COLUMNS = [f"pc{i}" for i in range(1, 5)]
 
 RANDOM_SEED = 42
 TEST_SIZE = 0.2
-N_QUBITS = 8
-N_LAYERS = 2
+N_QUBITS = 4
+N_LAYERS = 1
 EPOCHS = 30
 BATCH_SIZE = 8
 LEARNING_RATE = 0.1
