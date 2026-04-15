@@ -16,7 +16,7 @@ N_QUBITS = 4
 N_LAYERS = 1
 EPOCHS = 30
 BATCH_SIZE = 8
-LEARNING_RATE = 0.1
+LEARNING_RATE = 0.05
 
 np.random.seed(RANDOM_SEED)
 
@@ -148,6 +148,9 @@ for epoch in range(EPOCHS):
         f"Train Loss: {train_loss:.4f} | Test Loss: {test_loss:.4f} | "
         f"Train Acc: {train_acc:.4f} | Test Acc: {test_acc:.4f}\n"
     )
+    sample_probs = [predict_score(x, weights) for x in X_train[:10]]
+    print("Sample probs:", np.round(sample_probs, 4))
+    print("Weight sample:", round(float(weights[0, 0, 0]), 6))
 
 
 
