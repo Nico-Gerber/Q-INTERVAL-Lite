@@ -97,3 +97,14 @@ def evaluate(X, y, weights):
     preds = (probs >= 0.5).astype(int)
     acc = accuracy_score(y, preds)
     return acc, probs, preds
+
+# INITIALIZE TRAINABLE WEIGHTS
+# Shape: (N_LAYERS, N_QUBITS, 2)
+
+weights = np.random.normal(
+    loc=0.0,
+    scale=0.1,
+    size=(N_LAYERS, N_QUBITS, 2)
+)
+
+opt = qml.GradientDescentOptimizer(stepsize=LEARNING_RATE)
