@@ -48,3 +48,14 @@ print("Train shape:", X_train.shape)
 print("Test shape:", X_test.shape)
 
 dev = qml.device("default.qubit", wires=N_QUBITS)
+
+def variational_layer(weights):
+    # weights shape for one layer: (N_QUBITS, 2)
+    for i in range(N_QUBITS):
+        qml.RY(weights[i, 0], wires=i)
+        qml.RZ(weights[i, 1], wires=i)
+
+    # Ring entanglement
+    for i in range(N_QUBITS):
+        qml.CNOT(wires=[i, (i + 1) % N_QUBITS])
+
