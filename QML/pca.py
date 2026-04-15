@@ -5,19 +5,19 @@ from PIL import Image
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
-
 #global
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-CSV_PATH = "labels/CSAW-M_train.csv"
-IMAGE_FOLDER = "images/preprocessed/train"  
-OUTPUT_CSV = "qml_100_pca8.csv"
+CSV_PATH = os.path.join(BASE_DIR, "labels", "CSAW-M_train.csv")
+IMAGE_FOLDER = os.path.join(BASE_DIR, "images", "preprocessed", "train")
+OUTPUT_CSV = os.path.join(BASE_DIR, "qml_500_pca4.csv")
 
 IMAGE_COLUMN = "Filename"
 LABEL_COLUMN = "If_cancer"            # 0 no cancer 1 yes caner
 
-SAMPLES_PER_CLASS = 50                # 50 healthy + 50 cancer
+SAMPLES_PER_CLASS = 250         
 RESIZE_TO = (16, 16)
-N_COMPONENTS = 8
+N_COMPONENTS = 4
 RANDOM_SEED = 42
 
 df = pd.read_csv(CSV_PATH, sep=";")

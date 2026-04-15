@@ -6,7 +6,7 @@ from sklearn.metrics import accuracy_score, classification_report
 import joblib   
 
 
-CSV_PATH = "qml_100_pca8.csv"   
+CSV_PATH = "dataset/qml_100_pca8.csv"   
 LABEL_COLUMN = "label"
 FEATURE_COLUMNS = [f"pc{i}" for i in range(1, 9)]
 
