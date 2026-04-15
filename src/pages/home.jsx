@@ -445,8 +445,8 @@ export default function Home() {
                   src={preview}
                   alt="Selected mammogram"
                   sx={{
-                    width: 500,
-                    height: 500,
+                    width: 300,
+                    height: 300,
                     objectFit: 'cover',
 
 
@@ -533,7 +533,7 @@ export default function Home() {
           maxWidth="sm"
         >
           <DialogTitle id="analysis-details-dialog-title">
-            How do these models differ? 
+            How do these models differ?
           </DialogTitle>
           <DialogContent>
             <Box component="ul" sx={{ pl: 2, mb: 2 }}>
@@ -541,7 +541,7 @@ export default function Home() {
                 <strong>Classical CNN</strong>:
               </Typography>
               <Typography component="li" variant="body2" sx={{ mb: 2 }}>
-                <strong>Quantum AI</strong>: 
+                <strong>Quantum AI</strong>:
               </Typography>
               <Typography component="li" variant="body2" sx={{ mb: 2 }}>
                 <strong>Classical + Quantum</strong>:
@@ -557,7 +557,7 @@ export default function Home() {
             <Button onClick={handleCloseDetails}>
               Close
             </Button>
-            <Button 
+            <Button
               onClick={() => {
                 handleCloseDetails();
                 navigate('/models');
