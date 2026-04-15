@@ -71,3 +71,29 @@ def circuit(x, weights):
 
     # Measure one qubit for binary classification
     return qml.expval(qml.PauliZ(0))
+
+
+#helpers for model
+def predict_score(x, weights):
+    raw = circuit(x, weights)          # roughly in [-1, 1]
+    prob = (raw + 1.0) / 2.0           # map to [0, 1]
+    return np.clip(prob, 1e-7, 1 - 1e-7)
+
+def predict_label(x, weights):
+    return 1 if predict_score(x, weights) >= 0.5 else 0
+
+def binary_cross_entropy(y_true, y_pred):
+    return -(y_true * np.log(y_pred) + (1 - y_true) * np.log(1 - y_pred))
+
+def cost(weights, X_batch, y_batch):
+    losses = []
+    for x, y in zip(X_batch, y_batch):
+        pred = predict_score(x, weights)
+        losses.append(binary_cross_entropy(y, pred))
+    return np.mean(losses)
+
+def evaluate(X, y, weights):
+    probs = np.array([predict_score(x, weights) for x in X])
+    preds = (probs >= 0.5).astype(int)
+    acc = accuracy_score(y, preds)
+    return acc, probs, preds
