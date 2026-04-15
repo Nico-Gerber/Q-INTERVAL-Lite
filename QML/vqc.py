@@ -109,4 +109,31 @@ weights = np.random.normal(
 
 opt = qml.GradientDescentOptimizer(stepsize=LEARNING_RATE)
 
+#main training loop
 
+num_train = len(X_train)
+
+for epoch in range(EPOCHS):
+    # Shuffle each epoch
+    indices = np.random.permutation(num_train)
+    X_train_shuffled = X_train[indices]
+    y_train_shuffled = y_train[indices]
+
+    # Mini-batch training
+    for start in range(0, num_train, BATCH_SIZE):
+        end = start + BATCH_SIZE
+        X_batch = X_train_shuffled[start:end]
+        y_batch = y_train_shuffled[start:end]
+
+        weights = opt.step(lambda w: cost(w, X_batch, y_batch), weights)
+
+    train_acc, _, _ = evaluate(X_train, y_train, weights)
+    test_acc, _, _ = evaluate(X_test, y_test, weights)
+    train_loss = cost(weights, X_train, y_train)
+    test_loss = cost(weights, X_test, y_test)
+
+    print(
+        f"Epoch {epoch + 1:02d}/{EPOCHS} | "
+        f"Train Loss: {train_loss:.4f} | Test Loss: {test_loss:.4f} | "
+        f"Train Acc: {train_acc:.4f} | Test Acc: {test_acc:.4f}"
+    )
