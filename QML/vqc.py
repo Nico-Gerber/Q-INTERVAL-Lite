@@ -46,3 +46,5 @@ else:
 
 print("Train shape:", X_train.shape)
 print("Test shape:", X_test.shape)
+
+dev = qml.device("default.qubit", wires=N_QUBITS)
