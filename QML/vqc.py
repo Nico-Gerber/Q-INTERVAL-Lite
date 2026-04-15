@@ -112,20 +112,31 @@ opt = qml.GradientDescentOptimizer(stepsize=LEARNING_RATE)
 #main training loop
 
 num_train = len(X_train)
+num_batches = int(np.ceil(num_train / BATCH_SIZE))
+
+print("\nStarting VQC training...")
+print(f"Training samples: {num_train}")
+print(f"Batches per epoch: {num_batches}")
+print(f"Epochs: {EPOCHS}\n")
 
 for epoch in range(EPOCHS):
+    print(f"--- Epoch {epoch + 1}/{EPOCHS} ---")
+
     # Shuffle each epoch
     indices = np.random.permutation(num_train)
     X_train_shuffled = X_train[indices]
     y_train_shuffled = y_train[indices]
 
     # Mini-batch training
-    for start in range(0, num_train, BATCH_SIZE):
+    for batch_num, start in enumerate(range(0, num_train, BATCH_SIZE), start=1):
         end = start + BATCH_SIZE
         X_batch = X_train_shuffled[start:end]
         y_batch = y_train_shuffled[start:end]
 
         weights = opt.step(lambda w: cost(w, X_batch, y_batch), weights)
+
+        batch_loss = cost(weights, X_batch, y_batch)
+        print(f"  Batch {batch_num}/{num_batches} - Batch Loss: {batch_loss:.4f}")
 
     train_acc, _, _ = evaluate(X_train, y_train, weights)
     test_acc, _, _ = evaluate(X_test, y_test, weights)
@@ -133,9 +144,9 @@ for epoch in range(EPOCHS):
     test_loss = cost(weights, X_test, y_test)
 
     print(
-        f"Epoch {epoch + 1:02d}/{EPOCHS} | "
+        f"Epoch {epoch + 1:02d}/{EPOCHS} complete | "
         f"Train Loss: {train_loss:.4f} | Test Loss: {test_loss:.4f} | "
-        f"Train Acc: {train_acc:.4f} | Test Acc: {test_acc:.4f}"
+        f"Train Acc: {train_acc:.4f} | Test Acc: {test_acc:.4f}\n"
     )
 
 
