@@ -14,6 +14,7 @@ import {
   CheckCircleOutline as CheckIcon,
   WarningAmber as WarnIcon,
   ImageSearch as ImageSearchIcon,
+  InfoOutlined as InfoIcon,
   CenterFocusStrong,
 } from '@mui/icons-material';
 
@@ -234,6 +235,7 @@ export default function Home() {
               size="small"
               variant="text"
               onClick={handleOpenDetails}
+              startIcon={<InfoIcon fontSize="small" />}
               sx={{
                 color: 'primary.main',
                 textDecoration: 'underline',
@@ -242,7 +244,7 @@ export default function Home() {
                 p: 0,
               }}
             >
-              Why do these models differ?
+              How do these models differ?
             </Button>
           </Box>
           <Divider sx={{ mb: 2 }} />
@@ -529,12 +531,20 @@ export default function Home() {
           maxWidth="sm"
         >
           <DialogTitle id="analysis-details-dialog-title">
-            How do these models differ?
+            How do these models differ? 
           </DialogTitle>
           <DialogContent>
-            <DialogContentText id="analysis-details-dialog-description" sx={{ whiteSpace: 'pre-line' }}>
-              CNN Vs QML
-            </DialogContentText>
+            <Box component="ul" sx={{ pl: 2, mb: 0 }}>
+              <Typography component="li" variant="body2" sx={{ mb: 1.5 }}>
+                <strong>Classical CNN</strong>
+              </Typography>
+              <Typography component="li" variant="body2" sx={{ mb: 1.5 }}>
+                <strong>Quantum AI</strong>
+              </Typography>
+              <Typography component="li" variant="body2" sx={{ mb: 0 }}>
+                <strong>Classical + Quantum</strong>
+              </Typography>
+            </Box>
           </DialogContent>
           <DialogActions>
             <Button onClick={handleCloseDetails} autoFocus>
