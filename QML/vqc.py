@@ -137,3 +137,20 @@ for epoch in range(EPOCHS):
         f"Train Loss: {train_loss:.4f} | Test Loss: {test_loss:.4f} | "
         f"Train Acc: {train_acc:.4f} | Test Acc: {test_acc:.4f}"
     )
+
+
+
+# Save model
+joblib.dump(
+    {
+        "weights": weights,
+        "feature_columns": FEATURE_COLUMNS,
+        "n_qubits": N_QUBITS,
+        "n_layers": N_LAYERS,
+        "label_column": LABEL_COLUMN,
+        "threshold": 0.5
+    },
+    "vqc_v0.0.1.joblib"
+)
+
+print("\nSaved trained model to vqc_v0.0.1.joblib")
