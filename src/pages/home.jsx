@@ -536,21 +536,36 @@ export default function Home() {
             How do these models differ? 
           </DialogTitle>
           <DialogContent>
-            <Box component="ul" sx={{ pl: 2, mb: 0 }}>
-              <Typography component="li" variant="body2" sx={{ mb: 1.5 }}>
-                <strong>Classical CNN</strong>
+            <Box component="ul" sx={{ pl: 2, mb: 2 }}>
+              <Typography component="li" variant="body2" sx={{ mb: 2 }}>
+                <strong>Classical CNN</strong>:
               </Typography>
-              <Typography component="li" variant="body2" sx={{ mb: 1.5 }}>
-                <strong>Quantum AI</strong>
+              <Typography component="li" variant="body2" sx={{ mb: 2 }}>
+                <strong>Quantum AI</strong>: 
               </Typography>
-              <Typography component="li" variant="body2" sx={{ mb: 0 }}>
-                <strong>Classical + Quantum</strong>
+              <Typography component="li" variant="body2" sx={{ mb: 2 }}>
+                <strong>Classical + Quantum</strong>:
+              </Typography>
+            </Box>
+            <Box sx={{ mt: 3, p: 2, backgroundColor: 'rgba(21, 101, 192, 0.08)', borderRadius: 1, borderLeft: `4px solid #1565C0` }}>
+              <Typography variant="body2" color="text.secondary">
+                <strong>Want to learn more?</strong> Visit the Models page for an in-depth explanation of how each model works, training data, accuracy metrics, and more.
               </Typography>
             </Box>
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleCloseDetails} autoFocus>
+            <Button onClick={handleCloseDetails}>
               Close
+            </Button>
+            <Button 
+              onClick={() => {
+                handleCloseDetails();
+                navigate('/models');
+              }}
+              variant="contained"
+              color="primary"
+            >
+              View Models
             </Button>
           </DialogActions>
         </Dialog>
