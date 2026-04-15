@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import pennylane as qml
+from pennylane import numpy as pnp
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report
 import joblib   
@@ -75,9 +76,9 @@ def circuit(x, weights):
 
 #helpers for model
 def predict_score(x, weights):
-    raw = circuit(x, weights)          # roughly in [-1, 1]
-    prob = (raw + 1.0) / 2.0           # map to [0, 1]
-    return np.clip(prob, 1e-7, 1 - 1e-7)
+    raw = circuit(x, weights)
+    prob = (raw + 1.0) / 2.0
+    return pnp.clip(prob, 1e-7, 1 - 1e-7)
 
 def predict_label(x, weights):
     return 1 if predict_score(x, weights) >= 0.5 else 0
@@ -101,10 +102,13 @@ def evaluate(X, y, weights):
 # INITIALIZE TRAINABLE WEIGHTS
 # Shape: (N_LAYERS, N_QUBITS, 2)
 
-weights = np.random.normal(
-    loc=0.0,
-    scale=0.1,
-    size=(N_LAYERS, N_QUBITS, 2)
+weights = pnp.array(
+    np.random.normal(
+        loc=0.0,
+        scale=0.1,
+        size=(N_LAYERS, N_QUBITS, 2)
+    ),
+    requires_grad=True
 )
 
 opt = qml.AdamOptimizer(stepsize=LEARNING_RATE)
