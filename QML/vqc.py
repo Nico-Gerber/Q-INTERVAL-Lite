@@ -16,7 +16,7 @@ N_QUBITS = 8
 N_LAYERS = 2
 EPOCHS = 30
 BATCH_SIZE = 8
-LEARNING_RATE = 0.05
+LEARNING_RATE = 0.1
 
 np.random.seed(RANDOM_SEED)
 
@@ -161,7 +161,7 @@ joblib.dump(
         "label_column": LABEL_COLUMN,
         "threshold": 0.5
     },
-    "vqc_v0.0.1.joblib"
+    "vqc_v0.0.2.joblib"
 )
 
-print("\nSaved trained model to vqc_v0.0.1.joblib")
+print("\nSaved trained model to vqc_v0.0.2.joblib")
