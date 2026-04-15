@@ -91,10 +91,10 @@ def cost(weights, X_batch, y_batch):
     for x, y in zip(X_batch, y_batch):
         pred = predict_score(x, weights)
         losses.append(binary_cross_entropy(y, pred))
-    return np.mean(losses)
+    return pnp.mean(pnp.stack(losses))
 
 def evaluate(X, y, weights):
-    probs = np.array([predict_score(x, weights) for x in X])
+    probs = np.array([float(predict_score(x, weights)) for x in X])
     preds = (probs >= 0.5).astype(int)
     acc = accuracy_score(y, preds)
     return acc, probs, preds
