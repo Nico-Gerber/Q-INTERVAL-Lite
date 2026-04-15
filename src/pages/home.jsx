@@ -1,9 +1,11 @@
 import React, { useCallback, useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
 import {
   Box, Button, Chip, Container, Divider, Paper,
   Step, StepLabel, Stepper, Typography, Alert,
   ToggleButton, ToggleButtonGroup, CircularProgress,
+  Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions,
 } from '@mui/material';
 import {
   Memory as ClassicalIcon,
@@ -13,6 +15,7 @@ import {
   CheckCircleOutline as CheckIcon,
   WarningAmber as WarnIcon,
   ImageSearch as ImageSearchIcon,
+  InfoOutlined as InfoIcon,
   CenterFocusStrong,
 } from '@mui/icons-material';
 
@@ -50,6 +53,7 @@ const MODES = {
 
 
 export default function Home() {
+  const navigate = useNavigate();
   const [mode, setMode] = useState('classical');
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
@@ -122,6 +126,11 @@ export default function Home() {
 
 
 
+
+  const [detailsOpen, setDetailsOpen] = useState(false);
+
+  const handleOpenDetails = () => setDetailsOpen(true);
+  const handleCloseDetails = () => setDetailsOpen(false);
 
   const handleAnalyse = async () => {
     if (!file) return;
@@ -220,9 +229,26 @@ export default function Home() {
 
         {/* ── Step 1: Mode selector ── */}
         <Paper elevation={2} sx={{ p: { xs: 2, md: 3 }, mb: 3, borderRadius: 2 }}>
-          <Typography variant="h6" gutterBottom>
-            1 · Select Analysis Mode
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: 1 }}>
+            <Typography variant="h6" gutterBottom sx={{ mb: 0 }}>
+              1 · Select Analysis Mode
+            </Typography>
+            <Button
+              size="small"
+              variant="text"
+              onClick={handleOpenDetails}
+              startIcon={<InfoIcon fontSize="small" />}
+              sx={{
+                color: 'primary.main',
+                textDecoration: 'underline',
+                fontWeight: 700,
+                minWidth: 0,
+                p: 0,
+              }}
+            >
+              How do these models differ?
+            </Button>
+          </Box>
           <Divider sx={{ mb: 2 }} />
 
           <ToggleButtonGroup
@@ -498,6 +524,51 @@ export default function Home() {
 
 
 
+        <Dialog
+          open={detailsOpen}
+          onClose={handleCloseDetails}
+          aria-labelledby="analysis-details-dialog-title"
+          aria-describedby="analysis-details-dialog-description"
+          fullWidth
+          maxWidth="sm"
+        >
+          <DialogTitle id="analysis-details-dialog-title">
+            How do these models differ? 
+          </DialogTitle>
+          <DialogContent>
+            <Box component="ul" sx={{ pl: 2, mb: 2 }}>
+              <Typography component="li" variant="body2" sx={{ mb: 2 }}>
+                <strong>Classical CNN</strong>:
+              </Typography>
+              <Typography component="li" variant="body2" sx={{ mb: 2 }}>
+                <strong>Quantum AI</strong>: 
+              </Typography>
+              <Typography component="li" variant="body2" sx={{ mb: 2 }}>
+                <strong>Classical + Quantum</strong>:
+              </Typography>
+            </Box>
+            <Box sx={{ mt: 3, p: 2, backgroundColor: 'rgba(21, 101, 192, 0.08)', borderRadius: 1, borderLeft: `4px solid #1565C0` }}>
+              <Typography variant="body2" color="text.secondary">
+                <strong>Want to learn more?</strong> Visit the Models page for an in-depth explanation of how each model works, training data, accuracy metrics, and more.
+              </Typography>
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseDetails}>
+              Close
+            </Button>
+            <Button 
+              onClick={() => {
+                handleCloseDetails();
+                navigate('/models');
+              }}
+              variant="contained"
+              color="primary"
+            >
+              View Models
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Container>
     </Box>
   );

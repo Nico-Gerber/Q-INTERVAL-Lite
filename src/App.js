@@ -6,6 +6,7 @@ import './App.css';
 import Navigation from './components/Navigation';
 import Footer from './components/Footer';
 import Home from './pages/home';
+import Models from './pages/models';
 import OurTeam from './pages/ourteam';
 
 const theme = createTheme({
@@ -47,6 +48,7 @@ function App() {
         <Navigation />
         <Routes>
           <Route path="/"        element={<Home />} />
+          <Route path="/Models"  element={<Models />} />
           <Route path="/OurTeam" element={<OurTeam />} />
         </Routes>
         <Footer />
