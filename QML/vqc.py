@@ -107,7 +107,7 @@ weights = np.random.normal(
     size=(N_LAYERS, N_QUBITS, 2)
 )
 
-opt = qml.GradientDescentOptimizer(stepsize=LEARNING_RATE)
+opt = qml.AdamOptimizer(stepsize=LEARNING_RATE)
 
 #main training loop
 
