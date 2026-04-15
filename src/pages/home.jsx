@@ -4,6 +4,7 @@ import {
   Box, Button, Chip, Container, Divider, Paper,
   Step, StepLabel, Stepper, Typography, Alert,
   ToggleButton, ToggleButtonGroup, CircularProgress,
+  Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions,
 } from '@mui/material';
 import {
   Memory as ClassicalIcon,
@@ -123,6 +124,11 @@ export default function Home() {
 
 
 
+  const [detailsOpen, setDetailsOpen] = useState(false);
+
+  const handleOpenDetails = () => setDetailsOpen(true);
+  const handleCloseDetails = () => setDetailsOpen(false);
+
   const handleAnalyse = async () => {
     if (!file) return;
     setLoading(true);
@@ -220,9 +226,25 @@ export default function Home() {
 
         {/* ── Step 1: Mode selector ── */}
         <Paper elevation={2} sx={{ p: { xs: 2, md: 3 }, mb: 3, borderRadius: 2 }}>
-          <Typography variant="h6" gutterBottom>
-            1 · Select Analysis Mode
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: 1 }}>
+            <Typography variant="h6" gutterBottom sx={{ mb: 0 }}>
+              1 · Select Analysis Mode
+            </Typography>
+            <Button
+              size="small"
+              variant="text"
+              onClick={handleOpenDetails}
+              sx={{
+                color: 'primary.main',
+                textDecoration: 'underline',
+                fontWeight: 700,
+                minWidth: 0,
+                p: 0,
+              }}
+            >
+              Why do these models differ?
+            </Button>
+          </Box>
           <Divider sx={{ mb: 2 }} />
 
           <ToggleButtonGroup
@@ -498,6 +520,28 @@ export default function Home() {
 
 
 
+        <Dialog
+          open={detailsOpen}
+          onClose={handleCloseDetails}
+          aria-labelledby="analysis-details-dialog-title"
+          aria-describedby="analysis-details-dialog-description"
+          fullWidth
+          maxWidth="sm"
+        >
+          <DialogTitle id="analysis-details-dialog-title">
+            How do these models differ?
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText id="analysis-details-dialog-description" sx={{ whiteSpace: 'pre-line' }}>
+              CNN Vs QML
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseDetails} autoFocus>
+              Close
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Container>
     </Box>
   );
