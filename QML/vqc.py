@@ -84,7 +84,7 @@ def predict_label(x, weights):
     return 1 if predict_score(x, weights) >= 0.5 else 0
 
 def binary_cross_entropy(y_true, y_pred):
-    return -(y_true * np.log(y_pred) + (1 - y_true) * np.log(1 - y_pred))
+    return -(y_true * pnp.log(y_pred) + (1 - y_true) * pnp.log(1 - y_pred))
 
 def cost(weights, X_batch, y_batch):
     losses = []
