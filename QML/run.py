@@ -6,6 +6,8 @@ import pandas as pd
 import pennylane as qml
 from PIL import Image
 
+#python run.py --image dataset/images/preprocessed/train/train_10.png
+
 # =========================
 # SETTINGS
 # =========================
