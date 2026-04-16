@@ -64,7 +64,10 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);   // placeholder for future AI output
   const targetRef = useRef(null);
+  const targetRef1 = useRef(null);
+
   const [isVisible, setIsVisible] = useState(false);
+  const [isVisible1, setIsVisible1] = useState(false);
   // Derived active step
   const activeStep = file ? (result ? 2 : 1) : 0;
 
@@ -119,11 +122,31 @@ export default function Home() {
       { threshold: 0.1 }
     );
 
+    const observer1 = new IntersectionObserver(
+      ([entry]) => {
+
+        setIsVisible1(entry.isIntersecting);
+      },
+      { threshold: 0.1 }
+    );
+
+
+
     if (targetRef.current) {
       observer.observe(targetRef.current);
     }
+    if (targetRef1.current) {
+      observer1.observe(targetRef1.current);
+    }
 
-    return () => observer.disconnect();
+
+
+
+    return () => {
+      observer.disconnect()
+      observer1.disconnect()
+
+    };
   }, [result]);
 
 
@@ -144,39 +167,77 @@ export default function Home() {
     formData.append('file', file);
 
     try {
-      const res = await fetch(`${API_BASE}/images/upload`, { method: 'POST', body: formData });
-      const data = await res.json();
+      if (mode === 'both') {
+        const [uploadRes, qmlRes, cnnRes] = await Promise.all([
+
+          fetch(`${API_BASE}/images/upload`, { method: 'POST', body: formData }),
+          fetch(`${API_BASE}/QMLPredict`, { method: 'POST', body: formData }),
+          fetch(`${API_BASE}/CNNPredict`, { method: 'POST', body: formData }),
 
 
-      const AIres = await fetch(`${API_BASE}${selectedMode.postmethod}`, { method: 'POST', body: formData });
+        ]);
 
-      const AIdata = await AIres.json()
+        const uploadData = await uploadRes.json();
+        const qmlData = await qmlRes.json();
+        const cnnData = await cnnRes.json();
 
 
-      if (res.ok) {
-
-
-        setStatus({
-          ok: true, msg: `Image uploaded successfully (
-    
-               ${file.size > 1 * 1024 * 1024 ? (file.size / 1000024).toFixed(2) + ' MB ' + '· ' + file.type : (file.size / 1024).toFixed(1) + ' KB ' + '· ' + file.type})`
-        });
-        // Placeholder – real inference will populate this once AI models are integrated
         setResult({
           mode,
-          filename: data.filename,
-          resultFile: AIdata
-
+          filename: uploadData.filename,
+          resultFile: {
+            qml: qmlData,
+            cnn: cnnData,
+          }
         });
+
+
       } else {
-        setStatus({ ok: false, msg: data.detail || 'Upload failed.' });
+
+        const [res, AIres] = await Promise.all([
+
+          fetch(`${API_BASE}/images/upload`, { method: 'POST', body: formData }),
+          fetch(`${API_BASE}${selectedMode.postmethod}`, { method: 'POST', body: formData }),
+
+        ]);
+
+
+        const data = await res.json();
+
+
+        const AIdata = await AIres.json()
+
+
+        if (res.ok) {
+
+
+          setStatus({
+            ok: true, msg: `Image uploaded successfully (
+    
+               ${file.size > 1 * 1024 * 1024 ? (file.size / 1000024).toFixed(2) + ' MB ' + '· ' + file.type : (file.size / 1024).toFixed(1) + ' KB ' + '· ' + file.type})`
+          });
+
+          setResult({
+            mode,
+            filename: data.filename,
+            resultFile: AIdata
+
+          });
+        } else {
+          setStatus({ ok: false, msg: data.detail || 'Upload failed.' });
+        }
       }
+
     } catch {
       setStatus({ ok: false, msg: 'Cannot reach the server. Make sure the backend is running.' });
     } finally {
       setLoading(false);
     }
+
+
   };
+
+
 
   const handleReset = () => {
     setFile(null);
@@ -461,56 +522,114 @@ export default function Home() {
                     width: 300,
                     height: 300,
                     objectFit: 'cover',
-
-
                     flexShrink: 0,
                   }}
                 />
-
-
-
-
               </Box>
 
-              <Box sx={{ mb: 2 }}>
-                {/* Result Label */}
-                <Typography fontWeight={500} variant='h3' gutterBottom>{result.resultFile.result}</Typography>
-                {/* Percentage */}
+              {mode !== 'both' ? (
+                <>
+
+                  <Box sx={{ mb: 2 }}>
+                    {/* Result Label */}
+                    <Typography fontWeight={500} variant='h3' gutterBottom>{result.resultFile.result}</Typography>
+                    {/* Percentage */}
+
+
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography fontWeight={500} variant='subtitle2' fontSize={25} color='grey' gutterBottom> Confidence</Typography>
+                      <Typography fontWeight={500} variant='subtitle2' fontSize={25} color='grey' gutterBottom> {(result.resultFile.score * 100).toFixed(2)} %</Typography>
+                    </Box>
+                    <div ref={targetRef} >
+                      <div style={{ background: '#eee', borderRadius: 4, height: 8 }}>
+                        <div style={{
+                          width: isVisible ? `${result.resultFile.score * 100}%` : '0%',
+                          background: `${selectedMode.color}`,
+                          height: '100%',
+                          borderRadius: 4,
+                          transition: 'width 1s ease'
+                        }} />
+                      </div>
+                    </div>
+                  </Box>
+
+                  <Box sx={{ display: 'flex', gap: 2 }}>
+                    <Box sx={{ flex: 1, borderRadius: 2, p: 2 }}>
+                      <Typography variant="caption">Model used</Typography>
+                      <Typography variant="subtitle1" fontWeight={500}>{MODES[mode].label}</Typography>
+                    </Box>
+                    <Box sx={{ flex: 1, borderRadius: 2, p: 2 }}>
+                      <Typography variant="caption">Image</Typography>
+                      <Typography variant="subtitle1" fontWeight={500}>{file.name}</Typography>
+                    </Box>
+                  </Box>
+                </>
+              ) : (
+                <>
+                  <Box sx={{ display: 'flex', gap: 2 }}>
+
+
+                    {/* Quantum Results */}
+
+                    <Box sx={{ flex: 1, borderTop: '3px solid #6A0DAD', p: 2, border: '1px solid #eee', borderRadius: 2 }}>
+                      <Typography variant="caption">Quantum AI</Typography>
+                      <Typography variant="h5" fontWeight={500}>{result.resultFile.qml.result}</Typography>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <Typography fontWeight={500} variant='subtitle2' fontSize={25} color='grey' gutterBottom> Confidence</Typography>
+                        <Typography variant="body2" color="grey">{(result.resultFile.qml.score * 100).toFixed(2)}%</Typography>
+                      </Box>
+
+                      <div ref={targetRef} >
+                        <div style={{ background: '#eee', borderRadius: 4, height: 8 }}>
+                          <div style={{
+                            width: isVisible1 ? `${(result.resultFile.qml.score * 100).toFixed(2)}%` : '0%',
+                            background: '#6A0DAD',
+                            height: '100%',
+                            borderRadius: 4,
+                            transition: 'width 1s ease'
+                          }} />
+                        </div>
+                      </div>
+
+
+                    </Box>
+
+                    {/* Classical Results */}
+                    <Box sx={{ flex: 1, borderTop: '3px solid #1565C0', p: 2, border: '1px solid #eee', borderRadius: 2 }}>
+                      <Typography variant="caption">Classical CNN</Typography>
+                      <Typography variant="h5" fontWeight={500}>{result.resultFile.cnn.result}</Typography>
+
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <Typography fontWeight={500} variant='subtitle2' fontSize={25} color='grey' gutterBottom> Confidence</Typography>
+                        <Typography variant="body2" color="grey">{(result.resultFile.cnn.score * 100).toFixed(2)}%</Typography>
+                      </Box>
+
+                      <div ref={targetRef1} >
+                        <div style={{ background: '#eee', borderRadius: 4, height: 8 }}>
+                          <div style={{
+                            width: isVisible ? `${(result.resultFile.cnn.score * 100).toFixed(2)}%` : '0%',
+                            background: '#1565C0',
+                            height: '100%',
+                            borderRadius: 4,
+                            transition: 'width 1s ease'
+                          }} />
+                        </div>
+                      </div>
 
 
 
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography fontWeight={500} variant='subtitle2' fontSize={25} color='grey' gutterBottom> Confidence</Typography>
-                  <Typography fontWeight={500} variant='subtitle2' fontSize={25} color='grey' gutterBottom> {result.resultFile.score * 100}%</Typography>
-                </Box>
-                <div ref={targetRef} >
-                  <div style={{ background: '#eee', borderRadius: 4, height: 8 }}>
-                    <div style={{
-
-                      width: isVisible ? `${result.resultFile.score * 100}%` : '0%',
-                      background: '#3440e8ff',
-                      height: '100%',
-                      borderRadius: 4,
-                      transition: 'width 1s ease'
-                    }} />
-                  </div>
-                </div>
-              </Box>
-
-              <Box sx={{ display: 'flex', gap: 2 }}>
-                <Box sx={{ flex: 1, background: '...', borderRadius: 2, p: 2 }}>
-                  <Typography variant="caption">Model used</Typography>
-                  <Typography variant="subtitle1" fontWeight={500}>{MODES[mode].label}</Typography>
-                </Box>
-                <Box sx={{ flex: 1, background: '...', borderRadius: 2, p: 2 }}>
-                  <Typography variant="caption">Image</Typography>
-                  <Typography variant="subtitle1" fontWeight={500}>{file.name}</Typography>
-                </Box>
-              </Box>
+                    </Box>
+                  </Box>
 
 
+                </>
+
+              )}
 
             </Paper>
+
+
+
 
             <Box sx={{ display: 'flex', justifyContent: 'center', mb: 7, padding: '1rem', }}>
               <Button
@@ -585,6 +704,6 @@ export default function Home() {
           </DialogActions>
         </Dialog>
       </Container>
-    </Box>
+    </Box >
   );
 }
