@@ -28,6 +28,7 @@ const MODES = {
   classical: {
     label: 'Classical CNN',
     icon: <ClassicalIcon />,
+    postmethod: '/CNNPredict',
     color: '#1565C0',
     description:
       'Convolutional Neural Network trained on mammogram datasets. Fast inference with high accuracy on standard imaging.',
@@ -35,6 +36,7 @@ const MODES = {
   quantum: {
     label: 'Quantum AI',
     icon: <QuantumIcon />,
+    postmethod: '/QMLPredict',
     color: '#6A0DAD',
     description:
       'Quantum-enhanced model leveraging superposition and entanglement for pattern detection beyond classical limits.',
@@ -42,6 +44,7 @@ const MODES = {
   both: {
     label: 'Classical + Quantum',
     icon: <BothIcon />,
+    postmethod: '',
     color: '#C2185B',
     description:
       'Run both models in parallel and compare results. Ideal for research validation and benchmarking.',
@@ -144,6 +147,12 @@ export default function Home() {
       const res = await fetch(`${API_BASE}/images/upload`, { method: 'POST', body: formData });
       const data = await res.json();
 
+
+      const AIres = await fetch(`${API_BASE}${selectedMode.postmethod}`, { method: 'POST', body: formData });
+
+      const AIdata = await AIres.json()
+
+
       if (res.ok) {
 
 
@@ -156,6 +165,7 @@ export default function Home() {
         setResult({
           mode,
           filename: data.filename,
+          resultFile: AIdata
 
         });
       } else {
@@ -176,6 +186,9 @@ export default function Home() {
   };
 
   const selectedMode = MODES[mode];
+
+
+
 
   return (
     <Box sx={{ backgroundColor: 'background.default', minHeight: '100%', pb: 8 }}>
@@ -461,18 +474,20 @@ export default function Home() {
 
               <Box sx={{ mb: 2 }}>
                 {/* Result Label */}
-                <Typography fontWeight={500} variant='h3' gutterBottom>Malignant</Typography>
+                <Typography fontWeight={500} variant='h3' gutterBottom>{result.resultFile.result}</Typography>
                 {/* Percentage */}
 
+
+
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography fontWeight={500} variant='subtitle2' fontSize={25} color='grey' gutterBottom>Confidence</Typography>
-                  <Typography fontWeight={500} variant='subtitle2' fontSize={25} color='grey' gutterBottom>87%</Typography>
+                  <Typography fontWeight={500} variant='subtitle2' fontSize={25} color='grey' gutterBottom> Confidence</Typography>
+                  <Typography fontWeight={500} variant='subtitle2' fontSize={25} color='grey' gutterBottom> {result.resultFile.score * 100}%</Typography>
                 </Box>
                 <div ref={targetRef} >
                   <div style={{ background: '#eee', borderRadius: 4, height: 8 }}>
                     <div style={{
 
-                      width: isVisible ? '87%' : '0%',
+                      width: isVisible ? `${result.resultFile.score * 100}%` : '0%',
                       background: '#3440e8ff',
                       height: '100%',
                       borderRadius: 4,
