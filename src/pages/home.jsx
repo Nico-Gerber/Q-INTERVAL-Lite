@@ -174,7 +174,6 @@ export default function Home() {
           fetch(`${API_BASE}/QMLPredict`, { method: 'POST', body: formData }),
           fetch(`${API_BASE}/CNNPredict`, { method: 'POST', body: formData }),
 
-
         ]);
 
         const uploadData = await uploadRes.json();
@@ -575,7 +574,7 @@ export default function Home() {
                       <Typography variant="caption">Quantum AI</Typography>
                       <Typography variant="h5" fontWeight={500}>{result.resultFile.qml.result}</Typography>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography fontWeight={500} variant='subtitle2' fontSize={25} color='grey' gutterBottom> Confidence</Typography>
+                        <Typography fontWeight={500} variant='subtitle2' fontSize={20} color='grey' gutterBottom> Confidence</Typography>
                         <Typography variant="body2" color="grey">{(result.resultFile.qml.score * 100).toFixed(2)}%</Typography>
                       </Box>
 
@@ -600,7 +599,7 @@ export default function Home() {
                       <Typography variant="h5" fontWeight={500}>{result.resultFile.cnn.result}</Typography>
 
                       <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography fontWeight={500} variant='subtitle2' fontSize={25} color='grey' gutterBottom> Confidence</Typography>
+                        <Typography fontWeight={500} variant='subtitle2' fontSize={20} color='grey' gutterBottom> Confidence</Typography>
                         <Typography variant="body2" color="grey">{(result.resultFile.cnn.score * 100).toFixed(2)}%</Typography>
                       </Box>
 
