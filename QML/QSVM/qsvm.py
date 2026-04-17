@@ -136,3 +136,5 @@ joblib.dump(
 
 print("\nSaved QSVM model to qsvm_model_v0.0.1.joblib")
 
+joblib.dump(X_train, "X_train.joblib")
+print("Saved X_train to X_train.joblib")
