@@ -19,8 +19,8 @@ const OurTeam = () => {
       major: "Software Development",
       studentId: "104551609",
       email: "104551609@student.swin.edu.au",
-      description: "User interface, data collection and data cleaning.",
-   
+      description: "User interface and Full Stack Architecture",
+
     },
     {
       name: "Josh Celestino",
@@ -93,8 +93,8 @@ const OurTeam = () => {
           display: 'flex',
           flexWrap: 'wrap',
           justifyContent: 'center',
-          gap: 4, 
-    
+          gap: 4,
+
         }}
       >
         {teamMembers.map((member, index) => (
@@ -102,7 +102,7 @@ const OurTeam = () => {
             key={index}
             elevation={3}
             sx={{
-              width: 469, 
+              width: 469,
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
@@ -169,7 +169,7 @@ const OurTeam = () => {
               </Typography>
 
               <Typography variant="body1" color="text.primary" sx={{ lineHeight: 1.7 }}>
-                {member.description }
+                {member.description}
               </Typography>
             </CardContent>
           </Card>
