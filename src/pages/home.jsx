@@ -247,6 +247,10 @@ export default function Home() {
 
   const selectedMode = MODES[mode];
 
+  const modelsAgree = result && mode === 'both'
+    ? result.resultFile.cnn.result === result.resultFile.qml.result
+    : false;
+
 
 
 
@@ -553,24 +557,32 @@ export default function Home() {
                   </Box>
 
                   <Box sx={{ display: 'flex', gap: 2 }}>
-                    <Box sx={{ flex: 1, borderRadius: 2, p: 2 }}>
+                    <Paper elevation={2} sx={{ flex: 1, borderRadius: 2, p: 2 }}>
                       <Typography variant="caption">Model used</Typography>
                       <Typography variant="subtitle1" fontWeight={500}>{MODES[mode].label}</Typography>
-                    </Box>
-                    <Box sx={{ flex: 1, borderRadius: 2, p: 2 }}>
+                    </Paper>
+                    <Paper elevation={2} sx={{ flex: 1, borderRadius: 2, p: 2 }}>
                       <Typography variant="caption">Image</Typography>
                       <Typography variant="subtitle1" fontWeight={500}>{file.name}</Typography>
-                    </Box>
+                    </Paper>
                   </Box>
                 </>
               ) : (
                 <>
+
+                  <Box sx={{ display: 'flex', padding: '1rem', justifyContent: 'right' }}>
+                    <Chip label={modelsAgree ? "Models Agree" : "Models Disagree"}
+                      color={modelsAgree ? "success" : "error"}
+
+
+                    />
+                  </Box>
                   <Box sx={{ display: 'flex', gap: 2 }}>
 
 
                     {/* Quantum Results */}
 
-                    <Box sx={{ flex: 1, borderTop: '3px solid #6A0DAD', p: 2, border: '1px solid #eee', borderRadius: 2 }}>
+                    <Box sx={{ flex: 1, p: 2, border: '1px solid #eee', borderTop: '3px solid #6A0DAD', borderRadius: 2 }}>
                       <Typography variant="caption">Quantum AI</Typography>
                       <Typography variant="h5" fontWeight={500}>{result.resultFile.qml.result}</Typography>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -594,7 +606,8 @@ export default function Home() {
                     </Box>
 
                     {/* Classical Results */}
-                    <Box sx={{ flex: 1, borderTop: '3px solid #1565C0', p: 2, border: '1px solid #eee', borderRadius: 2 }}>
+
+                    <Box sx={{ flex: 1, p: 2, border: '1px solid #eee', borderTop: '3px solid #1565C0', borderRadius: 2 }}>
                       <Typography variant="caption">Classical CNN</Typography>
                       <Typography variant="h5" fontWeight={500}>{result.resultFile.cnn.result}</Typography>
 
@@ -620,14 +633,11 @@ export default function Home() {
                     </Box>
                   </Box>
 
-
                 </>
 
               )}
 
             </Paper>
-
-
 
 
             <Box sx={{ display: 'flex', justifyContent: 'center', mb: 7, padding: '1rem', }}>

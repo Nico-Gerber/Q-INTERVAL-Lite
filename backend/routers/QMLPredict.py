@@ -142,4 +142,9 @@ async def predict(file: UploadFile = File(...)):
         "prediction": pred_id,
         "score": probs[pred_id],
         "result": pred_name.capitalize(),
+        "class_probabilities": {
+            label_names[i].capitalize(): round(float(probs[i]), 4)
+            for i in range(n_classes)
+        }
+
     })
