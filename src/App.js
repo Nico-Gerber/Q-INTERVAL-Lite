@@ -8,16 +8,17 @@ import Footer from './components/Footer';
 import Home from './pages/home';
 import Models from './pages/models';
 import OurTeam from './pages/ourteam';
+import Analysis from './pages/analysis';
 
 const theme = createTheme({
   palette: {
     mode: 'light',
-    primary:   { main: '#1565C0' },   // Medical blue – classical AI
+    primary: { main: '#1565C0' },   // Medical blue – classical AI
     secondary: { main: '#6A0DAD' },   // Deep violet – quantum AI
     background: { default: '#EEF2F7', paper: '#FFFFFF' },
     text: { primary: '#0D1B2A', secondary: '#546E7A' },
     success: { main: '#2E7D32' },
-    error:   { main: '#C62828' },
+    error: { main: '#C62828' },
   },
   typography: {
     fontFamily: '"Inter", "Roboto", "Helvetica Neue", sans-serif',
@@ -47,9 +48,11 @@ function App() {
       <div className="app-root">
         <Navigation />
         <Routes>
-          <Route path="/"        element={<Home />} />
-          <Route path="/Models"  element={<Models />} />
+          <Route path="/" element={<Home />} />
+          <Route path="/Models" element={<Models />} />
           <Route path="/OurTeam" element={<OurTeam />} />
+          <Route path="/Analysis" element={<Analysis />} />
+
         </Routes>
         <Footer />
       </div>

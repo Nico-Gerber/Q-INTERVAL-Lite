@@ -557,11 +557,11 @@ export default function Home() {
                   </Box>
 
                   <Box sx={{ display: 'flex', gap: 2 }}>
-                    <Paper elevation={2} sx={{ flex: 1, borderRadius: 2, p: 2 }}>
+                    <Paper elevation={2} sx={{ flex: 1, borderRadius: 2, p: 2, borderTop: `3px solid ${selectedMode.color}` }}>
                       <Typography variant="caption">Model used</Typography>
                       <Typography variant="subtitle1" fontWeight={500}>{MODES[mode].label}</Typography>
                     </Paper>
-                    <Paper elevation={2} sx={{ flex: 1, borderRadius: 2, p: 2 }}>
+                    <Paper elevation={2} sx={{ flex: 1, borderRadius: 2, p: 2, borderTop: `3px solid ${selectedMode.color}` }}>
                       <Typography variant="caption">Image</Typography>
                       <Typography variant="subtitle1" fontWeight={500}>{file.name}</Typography>
                     </Paper>

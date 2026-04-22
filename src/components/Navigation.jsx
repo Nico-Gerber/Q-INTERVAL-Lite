@@ -12,7 +12,9 @@ import {
 import { Link, useLocation } from 'react-router-dom';
 
 const NAV_ITEMS = [
-  { label: 'Analysis', path: '/' },
+  { label: 'Home', path: '/' },
+  { label: 'Analysis', path: '/Analysis' },
+
   { label: 'Models', path: '/Models' },
   { label: 'Our Team', path: '/OurTeam' },
 ];
