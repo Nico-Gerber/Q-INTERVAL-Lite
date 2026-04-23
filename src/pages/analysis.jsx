@@ -25,6 +25,7 @@ import AnalysisStepper from '../components/stepper';
 import ModeSelect from '../components/modeselect';
 import ImageUpload from '../components/ImageUpload';
 import ImageUploadOrder from '../components/ImageUploadOrder';
+import ModelSelect from '../components/modelSelect';
 
 
 const API_BASE = 'http://localhost:8000';
@@ -87,6 +88,7 @@ export default function An() {
   const targetRef = useRef(null);
   const targetRef1 = useRef(null);
   const [analysisMode, setAnalysisMode] = useState(null);
+  const [modelMode, setModelMode] = useState(null);
 
   const [isVisible, setIsVisible] = useState(false);
   const [isVisible1, setIsVisible1] = useState(false);
@@ -325,6 +327,12 @@ export default function An() {
             </Container>
 
           )
+        )}
+
+        {activeStep === 2 && (
+
+          <ModelSelect selectedModel={modelMode} onModelSelect={setModelMode}></ModelSelect>
+
         )}
 
 
