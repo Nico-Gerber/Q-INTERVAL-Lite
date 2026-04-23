@@ -236,7 +236,7 @@ export default function An() {
 
 
   return (
-    <Box sx={{ backgroundColor: 'background.default', minHeight: '100%', pb: 8 }}>
+    <Box sx={{ backgroundColor: 'background.default', minHeight: '100%' }}>
 
       {/* ── Hero ── */}
       <Box

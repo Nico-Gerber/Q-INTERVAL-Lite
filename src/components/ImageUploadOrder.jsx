@@ -2,6 +2,9 @@ import React, { useCallback, useState } from 'react';
 import { Box, Typography, Button, Alert } from '@mui/material';
 import { CloudUpload as UploadIcon, CheckCircleOutline as CheckIcon, WarningAmber as WarnIcon } from '@mui/icons-material';
 import { useDropzone } from 'react-dropzone';
+import { motion } from "motion/react"
+import { Reorder } from 'framer-motion';
+
 
 export default function ImageUploadOrder({ file, setFiles, preview, setPreview }) {
   const [status, setStatus] = useState(null);
@@ -124,31 +127,40 @@ export default function ImageUploadOrder({ file, setFiles, preview, setPreview }
           </Box>
 
           {/* File rows */}
-          {file.map((item, index) => (
-            <Box key={item.id} sx={{ display: 'grid', gridTemplateColumns: '80px 1fr 100px 120px 80px', px: 3, py: 2, alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-              <Typography sx={{ color: 'white' }}>{index + 1}</Typography>
-              <Typography variant="body2" sx={{ color: 'white' }}>{item.file.name}</Typography>
-              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.5)' }}>
-                {item.file.size > 1024 * 1024
-                  ? (item.file.size / 1000024).toFixed(2) + ' MB'
-                  : (item.file.size / 1024).toFixed(1) + ' KB'}
-              </Typography>
-              <Box component="img" src={item.preview} alt="preview" sx={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 1 }} />
-              <Button size="small" variant="outlined" color="error" onClick={() => setFiles(prev => prev.filter(f => f.id !== item.id))}>
-                Remove
-              </Button>
-            </Box>
-          ))}
+          <Reorder.Group axis='y' values={file} onReorder={setFiles} style={{ listStyle: 'none' }}>
+            {file.map((item, index) => (
+              <Reorder.Item key={item.id} value={item}>
+                <Box key={item.id} sx={{ display: 'grid', gridTemplateColumns: '0px 1fr 100px 120px 80px', px: 3, py: 2, alignItems: 'center', borderBottom: '1px solid rgba(0, 0, 0, 0.05)' }}>
+                  <Typography sx={{ color: 'white' }}>{index + 1}</Typography>
+                  <Typography variant="body2" sx={{ color: 'white' }}>{item.file.name}</Typography>
+                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.5)' }}>
+                    {item.file.size > 1024 * 1024
+                      ? (item.file.size / 1000024).toFixed(2) + ' MB'
+                      : (item.file.size / 1024).toFixed(1) + ' KB'}
+                  </Typography>
+                  <Box component="img" src={item.preview} alt="preview" sx={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 1 }} />
+                  <Button size="small" variant="outlined" color="error" onClick={() => setFiles(prev => prev.filter(f => f.id !== item.id))}>
+                    Remove
+                  </Button>
+
+                </Box>
+              </Reorder.Item>
+
+            ))}
+          </Reorder.Group>
 
         </Box>
-      )}
+      )
+      }
 
-      {status && (
-        <Alert severity={status.ok ? 'success' : 'error'} icon={status.ok ? <CheckIcon /> : <WarnIcon />} sx={{ mt: 2 }}>
-          {status.msg}
-        </Alert>
-      )}
+      {
+        status && (
+          <Alert severity={status.ok ? 'success' : 'error'} icon={status.ok ? <CheckIcon /> : <WarnIcon />} sx={{ mt: 2 }}>
+            {status.msg}
+          </Alert>
+        )
+      }
 
-    </Box>
+    </Box >
   );
 }
