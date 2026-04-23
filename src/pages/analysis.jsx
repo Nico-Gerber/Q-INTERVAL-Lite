@@ -26,36 +26,11 @@ import ModeSelect from '../components/modeselect';
 import ImageUpload from '../components/ImageUpload';
 import ImageUploadOrder from '../components/ImageUploadOrder';
 import ModelSelect from '../components/modelSelect';
-
+import ClassificaionResults from '../components/classificationResults';
 
 const API_BASE = 'http://localhost:8000';
 
-const MODES = {
-  classical: {
-    label: 'Classical CNN',
-    icon: <ClassicalIcon />,
-    postmethod: '/CNNPredict',
-    color: '#1565C0',
-    description:
-      'Convolutional Neural Network trained on mammogram datasets. Fast inference with high accuracy on standard imaging.',
-  },
-  quantum: {
-    label: 'Quantum AI',
-    icon: <QuantumIcon />,
-    postmethod: '/QMLPredict',
-    color: '#6A0DAD',
-    description:
-      'Quantum-enhanced model leveraging superposition and entanglement for pattern detection beyond classical limits.',
-  },
-  both: {
-    label: 'Classical + Quantum',
-    icon: <BothIcon />,
-    postmethod: '',
-    color: '#C2185B',
-    description:
-      'Run both models in parallel and compare results. Ideal for research validation and benchmarking.',
-  },
-};
+
 
 const STEP_CONTENT = [
   {
@@ -153,65 +128,31 @@ export default function An() {
     formData.append('file', file);
 
     try {
-      if (mode === 'both') {
-        const [uploadRes, qmlRes, cnnRes] = await Promise.all([
 
-          fetch(`${API_BASE}/images/upload`, { method: 'POST', body: formData }),
-          fetch(`${API_BASE}/QMLPredict`, { method: 'POST', body: formData }),
-          fetch(`${API_BASE}/CNNPredict`, { method: 'POST', body: formData }),
+      const [uploadRes, qmlRes, cnnRes] = await Promise.all([
 
-        ]);
+        fetch(`${API_BASE}/images/upload`, { method: 'POST', body: formData }),
+        fetch(`${API_BASE}/QMLPredict`, { method: 'POST', body: formData }),
+        fetch(`${API_BASE}/CNNPredict`, { method: 'POST', body: formData }),
 
-        const uploadData = await uploadRes.json();
-        const qmlData = await qmlRes.json();
-        const cnnData = await cnnRes.json();
+      ]);
 
-
-        setResult({
-          mode,
-          filename: uploadData.filename,
-          resultFile: {
-            qml: qmlData,
-            cnn: cnnData,
-          }
-        });
+      const uploadData = await uploadRes.json();
+      const qmlData = await qmlRes.json();
+      const cnnData = await cnnRes.json();
 
 
-      } else {
-
-        const [res, AIres] = await Promise.all([
-
-          fetch(`${API_BASE}/images/upload`, { method: 'POST', body: formData }),
-          fetch(`${API_BASE}${selectedMode.postmethod}`, { method: 'POST', body: formData }),
-
-        ]);
-
-
-        const data = await res.json();
-
-
-        const AIdata = await AIres.json()
-
-
-        if (res.ok) {
-
-
-          setStatus({
-            ok: true, msg: `Image uploaded successfully (
-    
-               ${file.size > 1 * 1024 * 1024 ? (file.size / 1000024).toFixed(2) + ' MB ' + '· ' + file.type : (file.size / 1024).toFixed(1) + ' KB ' + '· ' + file.type})`
-          });
-
-          setResult({
-            mode,
-            filename: data.filename,
-            resultFile: AIdata
-
-          });
-        } else {
-          setStatus({ ok: false, msg: data.detail || 'Upload failed.' });
+      setResult({
+        mode,
+        filename: uploadData.filename,
+        resultFile: {
+          qml: qmlData,
+          cnn: cnnData,
         }
-      }
+      });
+
+
+
 
     } catch {
       setStatus({ ok: false, msg: 'Cannot reach the server. Make sure the backend is running.' });
@@ -231,7 +172,7 @@ export default function An() {
     setResult(null);
   };
 
-  const selectedMode = MODES[mode];
+
 
 
 
@@ -331,7 +272,21 @@ export default function An() {
 
         {activeStep === 2 && (
 
-          <ModelSelect selectedModel={modelMode} onModelSelect={setModelMode}></ModelSelect>
+          analysisMode === 'classification' ? (
+
+            <>
+              <ModelSelect selectedModel={modelMode} onModelSelect={setModelMode}></ModelSelect>
+
+              <Container maxWidth='xl'>
+                <ClassificaionResults analyisedImage={preview}></ClassificaionResults>
+              </Container>
+            </>
+          ) : (
+
+
+            <Container></Container>
+
+          )
 
         )}
 

@@ -9,6 +9,7 @@ const MODELS = [
     {
         id: 'classical',
         title: 'Classical AI',
+        color: '#1565C0',
         description: 'Analyze a single mammogram image to detect and classify potential abnormalities including masses, calcifications, and other findings.',
         icon: <ClassificationIcon sx={{ fontSize: 32 }} />,
 
@@ -16,6 +17,7 @@ const MODELS = [
     {
         id: 'quantum',
         title: 'Quantum AI',
+        color: '#6A0DAD',
         description: 'Upload sequential mammogram images over time to predict future breast cancer risk using temporal pattern analysis.',
         icon: <RiskIcon sx={{ fontSize: 32 }} />,
 
@@ -23,6 +25,7 @@ const MODELS = [
     {
         id: 'both',
         title: 'Comparison',
+        color: '#C2185B',
         description: 'Upload sequential mammogram images over time to predict future breast cancer risk using temporal pattern analysis.',
         icon: <RiskIcon sx={{ fontSize: 32 }} />,
 
@@ -74,7 +77,7 @@ export default function ModelSelect({ selectedModel, onModelSelect }) {
                                     width: 56,
                                     height: 56,
                                     borderRadius: 2,
-                                    backgroundColor: isSelected ? '#64B5F6' : 'rgba(255,255,255,0.1)',
+                                    backgroundColor: isSelected ? `${model.color}` : 'rgba(255,255,255,0.1)',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
