@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
-import { Box, Container, Typography, Paper } from '@mui/material';
+import React, { useCallback, useState } from 'react';
+import { Box, Container, Typography, Paper, Alert } from '@mui/material';
 import {
     ImageSearch as ClassificationIcon,
     TrendingUp as RiskIcon,
 } from '@mui/icons-material';
+
+import { Button } from '@mui/material';
 
 const MODES = [
     {
@@ -32,8 +34,12 @@ const MODES = [
     },
 ];
 
-export default function ModeSelect({ selectedMode, onModeSelect }) {
+export default function ModeSelect({ selectedMode, onModeSelect, setActiveStep }) {
+
+    const [status, setStatus] = useState(false);
+
     return (
+
         <Container maxWidth="lg">
             <Box sx={{
                 display: 'grid',
@@ -46,7 +52,7 @@ export default function ModeSelect({ selectedMode, onModeSelect }) {
                     return (
                         <Paper
                             key={mode.id}
-                            onClick={() => onModeSelect(mode.id)}
+                            onClick={() => { onModeSelect(mode.id); setStatus(false); }}
                             elevation={isSelected ? 4 : 1}
                             sx={{
 
@@ -132,6 +138,22 @@ export default function ModeSelect({ selectedMode, onModeSelect }) {
                     );
                 })}
             </Box>
-        </Container>
+
+            {status && (
+                <Alert severity="warning" sx={{ mt: 0 }}>
+                    Please select an analysis mode
+                </Alert>
+            )}
+            <Container maxWidth="lg" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
+                <Button disabled></Button>
+
+                {selectedMode ? (<Button variant="contained" onClick={() => setActiveStep(prev => prev + 1)}>Next</Button>) : (<Button variant="contained" onClick={() => setStatus(true)} sx={{ opacity: 0.3 }} >Next</Button>)}
+            </Container>
+
+
+
+
+
+        </Container >
     );
 }

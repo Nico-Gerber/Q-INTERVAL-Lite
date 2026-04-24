@@ -239,7 +239,7 @@ export default function An() {
 
 
         {activeStep === 0 && (
-          <ModeSelect selectedMode={analysisMode} onModeSelect={setAnalysisMode} />
+          <ModeSelect selectedMode={analysisMode} onModeSelect={setAnalysisMode} setActiveStep={setActiveStep} />
         )}
 
         {activeStep === 1 && (
@@ -264,6 +264,7 @@ export default function An() {
                 setFiles={setFiles}
                 preview={preview}
                 setPreview={setPreview}
+                setActiveStep={setActiveStep}
               />
             </Container>
 
@@ -291,13 +292,8 @@ export default function An() {
         )}
 
 
-        {/* ── Forward and Back Buttons ── */}
 
-        <Container maxWidth="lg" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
-          {activeStep === 0 ? (<Button disabled></Button>) : (<Button variant="contained" onClick={() => { setActiveStep(prev => prev - 1); setFile(null); setPreview(null); }}>Back</Button>)}
 
-          <Button variant="contained" onClick={() => setActiveStep(prev => prev + 1)}>Next</Button>
-        </Container>
 
       </Box>
 

@@ -1,22 +1,18 @@
 import React, { useCallback, useState } from 'react';
-import { Box, Typography, Button, Alert } from '@mui/material';
+import { Box, Typography, Button, Alert, Container } from '@mui/material';
 import { CloudUpload as UploadIcon, CheckCircleOutline as CheckIcon, WarningAmber as WarnIcon } from '@mui/icons-material';
 import { useDropzone } from 'react-dropzone';
 import { motion } from "motion/react"
 import { Reorder } from 'framer-motion';
 
 
-export default function ImageUploadOrder({ file, setFiles, preview, setPreview }) {
+export default function ImageUploadOrder({ file, setFiles, preview, setPreview, setActiveStep, activeStep }) {
   const [status, setStatus] = useState(null);
 
   const onDrop = useCallback((accepted, rejected) => {
 
 
-    const newFile = accepted.map(f => ({
-      file: f,
-      preview: URL.createObjectURL(f),
-      id: crypto.randomUUID(),
-    }));
+
 
     const toBigStrin = "File is larger than 10485760 bytes";
 
@@ -30,11 +26,24 @@ export default function ImageUploadOrder({ file, setFiles, preview, setPreview }
     }
     console.log('Accepted files:', accepted);
 
+    console.log('File:', file);
+
+    console.log('File Length:', file.length + accepted.length)
+
     const f = accepted[0];
-    setFiles(prev => [...prev, ...newFile]);
+    if (file.length + accepted.length <= 4) {
+      setFiles(prev => [...prev, ...accepted.map(f => ({
+        file: f,
+        preview: URL.createObjectURL(f),
+        id: crypto.randomUUID(),
+      }))]);
+    } else {
+      setStatus({ ok: false, msg: '4 File Limit' })
+      return;
+    }
     setPreview(URL.createObjectURL(f));
     setStatus(null);
-  }, [setFiles, setPreview]);
+  }, [file, setFiles, setPreview]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -160,6 +169,13 @@ export default function ImageUploadOrder({ file, setFiles, preview, setPreview }
           </Alert>
         )
       }
+
+
+      <Container maxWidth="lg" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
+        <Button variant="contained" onClick={() => { setActiveStep(prev => prev - 1); setPreview(null); }}>Back</Button>
+
+        <Button variant="contained" onClick={() => setActiveStep(prev => prev + 1)}>Next</Button>
+      </Container>
 
     </Box >
   );
