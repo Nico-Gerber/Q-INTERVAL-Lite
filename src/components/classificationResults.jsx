@@ -51,11 +51,21 @@ export default function ClassificationResults({ analyisedImage, reset, currentMo
             ? 'rgba(229, 255, 0, 0.6)'
             : 'rgba(34, 252, 27, 0.6)'
 
+    const verdictColor = qmlResult.result === cnnResult.result ?
+        ('rgba(34, 252, 27, 0.6)') : ('rgba(255, 77, 77, 0.6)')
+
+
     const classifications = [
         { label: 'Malignant', value: (activeResult.class_probabilities.Malignant * 100).toFixed(2), color: MalignantColor },
         { label: 'Benign', value: (activeResult.class_probabilities.Benign * 100).toFixed(2), color: BenignColor },
         { label: 'Normal', value: (activeResult.class_probabilities.Normal * 100).toFixed(2), color: NormalColor },
     ];
+
+    const comparisonClassifications = [
+        { label: 'Malignant', cnnValue: (cnnResult.class_probabilities.Malignant * 100).toFixed(2), qmlValue: (qmlResult.class_probabilities.Malignant * 100).toFixed(2), color: MalignantColor },
+        { label: 'Benign', cnnValue: (cnnResult.class_probabilities.Benign * 100).toFixed(2), qmlValue: (qmlResult.class_probabilities.Benign * 100).toFixed(2), color: BenignColor },
+        { label: 'Normal', cnnValue: (cnnResult.class_probabilities.Normal * 100).toFixed(2), qmlValue: (qmlResult.class_probabilities.Normal * 100).toFixed(2), color: NormalColor },
+    ]
 
     return (
         <>
@@ -93,7 +103,7 @@ export default function ClassificationResults({ analyisedImage, reset, currentMo
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2, mb: 3 }}>
 
 
-                            {/* Confidence */}
+                            {/* Classical AI */}
                             <Box sx={{
                                 p: 3,
                                 borderRadius: 3,
@@ -106,7 +116,7 @@ export default function ClassificationResults({ analyisedImage, reset, currentMo
                                 textAlign: 'center',
                             }}>
                                 <Typography sx={{ color: 'rgba(255,255,255,0.3)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600, mb: 0.8 }}>
-                                    Confidence
+                                    Classical AI
                                 </Typography>
                                 <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
                                     <Typography sx={{ color: 'white', fontSize: 28, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1 }}>
@@ -120,8 +130,8 @@ export default function ClassificationResults({ analyisedImage, reset, currentMo
                             <Box sx={{
                                 p: 3,
                                 borderRadius: 3,
-                                background: `linear-gradient(135deg,  ${qmlResult.result === cnnResult.result ? ('rgba(34, 252, 27, 0.6)') : ('rgba(255, 77, 77, 0.6)')} , rgba(255,77,77,0.06) 100%)`,
-                                border: `1px solid ${resultColor}`,
+                                background: `linear-gradient(135deg,  ${verdictColor} , rgba(255,77,77,0.06) 100%)`,
+                                border: `1px solid ${verdictColor}`,
                                 position: 'relative',
                                 overflow: 'hidden',
                                 '&::before': {
@@ -129,19 +139,19 @@ export default function ClassificationResults({ analyisedImage, reset, currentMo
                                     position: 'absolute',
                                     top: 0, left: 0, right: 0,
                                     height: 2,
-                                    background: `linear-gradient(90deg, ${resultColor}, transparent)`,
+                                    background: `linear-gradient(90deg, ${verdictColor}, transparent)`,
                                     borderRadius: '3px 3px 0 0',
                                 }
                             }}>
-                                <Typography sx={{ color: resultColor, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600, mb: 0.8 }}>
+                                <Typography sx={{ color: verdictColor, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600, mb: 0.8 }}>
                                     Verdict
                                 </Typography>
-                                <Typography sx={{ color: resultColor, fontSize: 28, fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1 }}>
+                                <Typography sx={{ color: verdictColor, fontSize: 28, fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1 }}>
                                     {qmlResult.result === cnnResult.result ? ('Models Agree') : ('Models Disagree')}
                                 </Typography>
                             </Box>
 
-                            {/* Model */}
+                            {/* Quantum AI */}
                             <Box sx={{
                                 p: 3,
                                 borderRadius: 3,
@@ -154,11 +164,14 @@ export default function ClassificationResults({ analyisedImage, reset, currentMo
                                 textAlign: 'center',
                             }}>
                                 <Typography sx={{ color: 'rgba(255,255,255,0.3)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600, mb: 0.8 }}>
-                                    Model
+                                    Quantum AI
                                 </Typography>
-                                <Typography sx={{ color: 'white', fontSize: 28, fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1 }}>
-                                    {currentModel}
-                                </Typography>
+                                <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
+                                    <Typography sx={{ color: 'white', fontSize: 28, fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1 }}>
+                                        {(qmlResult.score * 100).toFixed(2)}
+                                    </Typography>
+                                    <Typography sx={{ color: 'rgba(255,255,255,0.4)', fontSize: 16, fontWeight: 400 }}>%</Typography>
+                                </Box>
                             </Box>
                         </Box>
 
@@ -208,49 +221,87 @@ export default function ClassificationResults({ analyisedImage, reset, currentMo
                                     <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: 30, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600, mb: 3 }}>
                                         All Classifications
                                     </Typography>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
+                                        <Box sx={{
+                                            width: 8, height: 8, borderRadius: '50%',
 
-                                    {classifications.map(({ label, value, color }, i) => (
-                                        <Box key={label} sx={{ mb: i < classifications.length - 1 ? 3.5 : 0 }}>
-                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                    <Box sx={{
-                                                        width: 6, height: 6, borderRadius: '50%',
-                                                        backgroundColor: color,
-                                                        flexShrink: 0,
-                                                        boxShadow: color !== 'rgba(255,255,255,0.25)' ? `0 0 6px ${color}` : 'none',
-                                                    }} />
-                                                    <Typography sx={{ color: 'rgba(255,255,255,0.8)', fontSize: 20, fontWeight: 500 }}>
-                                                        {label}
-                                                    </Typography>
-                                                </Box>
-                                                <Typography sx={{ color, fontSize: 14, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
-                                                    {value}%
+                                            backgroundColor: '#4dff74ff',
+                                            boxShadow: '0 0 8px #4dff74ff',
+                                            animation: 'pulse 2s ease-in-out infinite',
+                                            '@keyframes pulse': {
+                                                '0%, 100%': { opacity: 1, transform: 'scale(1)' },
+                                                '50%': { opacity: 0.5, transform: 'scale(1.4)' },
+                                            }
+                                        }} />
+                                        <Typography sx={{ color: 'rgba(255,255,255,0.35)', fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 500 }}>
+                                            Classical Model
+                                        </Typography>
+                                        <Box sx={{
+                                            width: 8, height: 8, borderRadius: '50%',
+                                            backgroundColor: 'rgba(202, 77, 255, 1)',
+                                            boxShadow: '0 0 8px rgba(202, 77, 255, 1)',
+                                            animation: 'pulse 2s ease-in-out infinite',
+                                            '@keyframes pulse': {
+                                                '0%, 100%': { opacity: 1, transform: 'scale(1)' },
+                                                '50%': { opacity: 0.5, transform: 'scale(1.4)' },
+                                            }
+                                        }} />
+                                        <Typography sx={{ color: 'rgba(255,255,255,0.35)', fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 500 }}>
+                                            Quantum Model
+                                        </Typography>
+                                    </Box>
+                                    {comparisonClassifications.map(({ label, qmlValue, cnnValue, color }, i) => (
+                                        <Box key={label} sx={{ mb: i < comparisonClassifications.length - 1 ? 3.5 : 0 }}>
+
+                                            {/* Label row */}
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                                <Box sx={{
+                                                    width: 6, height: 6, borderRadius: '50%',
+                                                    backgroundColor: color, flexShrink: 0,
+                                                    boxShadow: `0 0 6px ${color}`,
+                                                }} />
+                                                <Typography sx={{ color: 'rgba(255,255,255,0.8)', fontSize: 16, fontWeight: 500 }}>
+                                                    {label}
                                                 </Typography>
                                             </Box>
-                                            <AnimatedBar value={value} color={color} delay={i * 150} />
+
+                                            {/* CNN row */}
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <Typography sx={{ color: '#4dff74ff', fontSize: 12 }}>Classical</Typography>
+                                                <Typography sx={{ color: '#4dff74ff', fontSize: 12, fontWeight: 700 }}>{cnnValue}%</Typography>
+                                            </Box>
+                                            <AnimatedBar value={cnnValue} color={'#4dff74ff'} delay={i * 150} />
+
+                                            {/* QML row */}
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 0.75 }}>
+                                                <Typography sx={{ color: 'rgba(202, 77, 255, 1)', fontSize: 12 }}>Quantum</Typography>
+                                                <Typography sx={{ color: 'rgba(202, 77, 255, 1)', fontSize: 12, fontWeight: 700 }}>{qmlValue}%</Typography>
+                                            </Box>
+                                            <AnimatedBar value={qmlValue} color={'rgba(202, 77, 255, 1)'} delay={i * 150 + 75} />
+
                                         </Box>
                                     ))}
-                                </Box>
 
-                                {/* Disclaimer footer */}
-                                <Box sx={{
-                                    mt: 4,
-                                    pt: 3,
-                                    borderTop: '1px solid rgba(255,255,255,0.06)',
-                                }}>
-                                    <Typography sx={{ color: 'rgba(255,255,255,0.2)', fontSize: 11, lineHeight: 1.6 }}>
-                                        This result is intended to assist qualified medical professionals. Not a substitute for clinical diagnosis.
-                                    </Typography>
+                                    {/* Disclaimer footer */}
+                                    < Box sx={{
+                                        mt: 4,
+                                        pt: 3,
+                                        borderTop: '1px solid rgba(255,255,255,0.06)',
+                                    }}>
+                                        <Typography sx={{ color: 'rgba(255,255,255,0.2)', fontSize: 11, lineHeight: 1.6 }}>
+                                            This result is intended to assist qualified medical professionals. Not a substitute for clinical diagnosis.
+                                        </Typography>
+                                    </Box>
                                 </Box>
                             </Box>
+
                         </Box>
 
+                        <Container sx={{ padding: 5 }}>
+                            <Button variant="contained" onClick={() => reset()}>Reset</Button>
+                        </Container>
+
                     </Box>
-
-                    <Container sx={{ padding: 5 }}>
-                        <Button variant="contained" onClick={() => reset()}>Reset</Button>
-                    </Container>
-
                 </Box>
             ) : (
 
