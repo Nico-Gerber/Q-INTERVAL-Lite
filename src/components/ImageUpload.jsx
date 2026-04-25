@@ -3,7 +3,7 @@ import { Box, Typography, Button, Alert, Container } from '@mui/material';
 import { CloudUpload as UploadIcon, CheckCircleOutline as CheckIcon, WarningAmber as WarnIcon } from '@mui/icons-material';
 import { useDropzone } from 'react-dropzone';
 
-export default function ImageUpload({ file, setFile, preview, setPreview, setActiveStep }) {
+export default function ImageUpload({ file, setFile, preview, setPreview, setActiveStep, handleAnalyse }) {
   const [status, setStatus] = useState(null);
 
   const onDrop = useCallback((accepted, rejected) => {
@@ -153,7 +153,7 @@ export default function ImageUpload({ file, setFile, preview, setPreview, setAct
       <Container maxWidth="lg" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
         <Button variant="contained" onClick={() => { setActiveStep(prev => prev - 1); setPreview(null); }}>Back</Button>
 
-        <Button variant="contained" onClick={() => setActiveStep(prev => prev + 1)}>Next</Button>
+        {file ? (<Button variant="contained" onClick={() => { setActiveStep(prev => prev + 1); handleAnalyse(); }}>Next</Button>) : (<Button variant="contained" onClick={() => setStatus({ ok: false, msg: 'Upload an image to continue!' })} sx={{ opacity: 0.3 }} >Next</Button>)}
       </Container>
 
     </Box>

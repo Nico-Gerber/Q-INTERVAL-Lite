@@ -85,5 +85,9 @@ async def predict(file: UploadFile = File(...)):
             "prediction": predicted_idx,
             "result": CLASS_NAMES[predicted_idx],
             "score": round(confidence, 4),
+               "class_probabilities": {
+            CLASS_NAMES[i]: round(probabilities[0][i].item(), 4)
+            for i in range(len(CLASS_NAMES))
+        }
         }
     )

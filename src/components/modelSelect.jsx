@@ -7,7 +7,7 @@ import {
 
 const MODELS = [
     {
-        id: 'classical',
+        id: 'Classical',
         title: 'Classical AI',
         color: '#1565C0',
         description: 'Analyze a single mammogram image to detect and classify potential abnormalities including masses, calcifications, and other findings.',
@@ -15,7 +15,7 @@ const MODELS = [
 
     },
     {
-        id: 'quantum',
+        id: 'Quantum',
         title: 'Quantum AI',
         color: '#6A0DAD',
         description: 'Upload sequential mammogram images over time to predict future breast cancer risk using temporal pattern analysis.',
@@ -23,7 +23,7 @@ const MODELS = [
 
     },
     {
-        id: 'both',
+        id: 'Both',
         title: 'Comparison',
         color: '#C2185B',
         description: 'Upload sequential mammogram images over time to predict future breast cancer risk using temporal pattern analysis.',
@@ -39,7 +39,6 @@ export default function ModelSelect({ selectedModel, onModelSelect }) {
                 paddingTop: '20px',
                 display: 'flex',
                 justifyContent: 'space-between',
-
 
 
             }}>

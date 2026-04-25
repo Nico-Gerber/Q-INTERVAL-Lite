@@ -53,7 +53,6 @@ const STEP_CONTENT = [
 
 export default function An() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState('classical');
   const [file, setFile] = useState(null);
   const [files, setFiles] = useState([]);
   const [preview, setPreview] = useState(null);
@@ -63,7 +62,7 @@ export default function An() {
   const targetRef = useRef(null);
   const targetRef1 = useRef(null);
   const [analysisMode, setAnalysisMode] = useState(null);
-  const [modelMode, setModelMode] = useState(null);
+  const [modelMode, setModelMode] = useState('Classical');
 
   const [isVisible, setIsVisible] = useState(false);
   const [isVisible1, setIsVisible1] = useState(false);
@@ -73,6 +72,7 @@ export default function An() {
 
 
   console.log(analysisMode)
+  console.log(modelMode)
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -143,7 +143,7 @@ export default function An() {
 
 
       setResult({
-        mode,
+
         filename: uploadData.filename,
         resultFile: {
           qml: qmlData,
@@ -170,6 +170,7 @@ export default function An() {
     setPreview(null);
     setStatus(null);
     setResult(null);
+    setActiveStep(0)
   };
 
 
@@ -253,6 +254,7 @@ export default function An() {
                 preview={preview}
                 setPreview={setPreview}
                 setActiveStep={setActiveStep}
+                handleAnalyse={handleAnalyse}
               />
             </Container>
 
@@ -280,7 +282,12 @@ export default function An() {
               <ModelSelect selectedModel={modelMode} onModelSelect={setModelMode}></ModelSelect>
 
               <Container maxWidth='xl'>
-                <ClassificaionResults analyisedImage={preview}></ClassificaionResults>
+                <ClassificaionResults
+                  analyisedImage={preview}
+                  reset={handleReset}
+                  currentModel={modelMode}
+                  results={result}
+                ></ClassificaionResults>
               </Container>
             </>
           ) : (
