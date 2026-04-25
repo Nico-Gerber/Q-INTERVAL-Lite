@@ -252,6 +252,7 @@ export default function An() {
                 setFile={setFile}
                 preview={preview}
                 setPreview={setPreview}
+                setActiveStep={setActiveStep}
               />
             </Container>
 

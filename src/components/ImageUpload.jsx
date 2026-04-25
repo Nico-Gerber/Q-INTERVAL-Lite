@@ -1,9 +1,9 @@
 import React, { useCallback, useState } from 'react';
-import { Box, Typography, Button, Alert } from '@mui/material';
+import { Box, Typography, Button, Alert, Container } from '@mui/material';
 import { CloudUpload as UploadIcon, CheckCircleOutline as CheckIcon, WarningAmber as WarnIcon } from '@mui/icons-material';
 import { useDropzone } from 'react-dropzone';
 
-export default function ImageUpload({ file, setFile, preview, setPreview }) {
+export default function ImageUpload({ file, setFile, preview, setPreview, setActiveStep }) {
   const [status, setStatus] = useState(null);
 
   const onDrop = useCallback((accepted, rejected) => {
@@ -148,6 +148,14 @@ export default function ImageUpload({ file, setFile, preview, setPreview }) {
           {status.msg}
         </Alert>
       )}
+
+
+      <Container maxWidth="lg" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
+        <Button variant="contained" onClick={() => { setActiveStep(prev => prev - 1); setPreview(null); }}>Back</Button>
+
+        <Button variant="contained" onClick={() => setActiveStep(prev => prev + 1)}>Next</Button>
+      </Container>
+
     </Box>
   );
 }
