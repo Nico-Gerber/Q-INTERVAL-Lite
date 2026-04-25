@@ -1,34 +1,21 @@
-/* index.css */
+* {
+  box-sizing: border-box;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
 body {
   margin: 0;
-  font-family: 'DM Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI',
-    'Roboto', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #0A0F1A;
-  color: #F0F6FF;
+  background-color: #13121A;
+  color: #EFF0F3;
 }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: #0A0F1A;
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(0, 212, 160, 0.3);
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 212, 160, 0.5);
-}
-
-/* Smooth transitions globally */
-* {
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-}
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(45,212,191,0.2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(45,212,191,0.35); }
