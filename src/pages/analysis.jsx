@@ -20,23 +20,19 @@ const STEP_CONTENT = [
 ];
 
 export default function Analysis() {
-  const navigate = useNavigate();
-  const [file, setFile]           = useState(null);
-  const [files, setFiles]         = useState([]);
-  const [preview, setPreview]     = useState(null);
-  const [status, setStatus]       = useState(null);
-  const [loading, setLoading]     = useState(false);
-  const [result, setResult]       = useState(null);
-  const targetRef                 = useRef(null);
-  const targetRef1                = useRef(null);
+  const [file, setFile]                 = useState(null);
+  const [files, setFiles]               = useState([]);
+  const [preview, setPreview]           = useState(null);
+  const [status, setStatus]             = useState(null);
+  const [loading, setLoading]           = useState(false);
+  const [result, setResult]             = useState(null);
+  const targetRef                       = useRef(null);
+  const targetRef1                      = useRef(null);
   const [analysisMode, setAnalysisMode] = useState(null);
   const [modelMode, setModelMode]       = useState('Classical');
-  const [isVisible,  setIsVisible]      = useState(false);
+  const [isVisible, setIsVisible]       = useState(false);
   const [isVisible1, setIsVisible1]     = useState(false);
   const [activeStep, setActiveStep]     = useState(0);
-
-  console.log(analysisMode);
-  console.log(modelMode);
 
   useEffect(() => {
     const observer  = new IntersectionObserver(([e]) => setIsVisible(e.isIntersecting),  { threshold: 0.1 });
@@ -63,7 +59,6 @@ export default function Analysis() {
       const cnnData    = await cnnRes.json();
       setResult({ filename: uploadData.filename, resultFile: { qml: qmlData, cnn: cnnData } });
     } catch {
-      // error.main from theme is used here — not hardcoded
       setStatus({ ok: false, msg: 'Cannot reach the server. Make sure the backend is running.' });
     } finally {
       setLoading(false);
@@ -80,21 +75,15 @@ export default function Analysis() {
 
   return (
     <Box sx={{ backgroundColor: 'background.default', minHeight: '100%' }}>
-
-      {/* ── Page shell ── */}
       <Box
         sx={{
           position: 'relative',
           overflow: 'hidden',
-          // Theme-driven gradient — adapts automatically when theme changes
-          background: (theme) =>
-            `linear-gradient(160deg, ${theme.palette.background.default} 0%, ${theme.palette.background.paper} 50%, ${theme.palette.background.default} 100%)`,
+          background: (theme) => theme.palette.background.hero,
           color: 'text.primary',
-          py: { xs: 5, md: 4 },
-          minHeight: '100vh',
+          py: { xs: 6, md: 10 },
           px: 2,
           textAlign: 'center',
-          // Soft radial glow using theme primary
           '&::before': {
             content: '""',
             position: 'absolute',
@@ -108,19 +97,15 @@ export default function Analysis() {
           },
         }}
       >
-        {/* Grid overlay — theme primary at very low opacity */}
-        <Box
-          sx={{
-            position: 'absolute', inset: 0, pointerEvents: 'none',
-            backgroundImage: (theme) => `
-              linear-gradient(${theme.palette.primary.main}07 1px, transparent 1px),
-              linear-gradient(90deg, ${theme.palette.primary.main}07 1px, transparent 1px)
-            `,
-            backgroundSize: '60px 60px',
-          }}
-        />
+        <Box sx={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          backgroundImage: (theme) => `
+            linear-gradient(${theme.palette.primary.main}07 1px, transparent 1px),
+            linear-gradient(90deg, ${theme.palette.primary.main}07 1px, transparent 1px)
+          `,
+          backgroundSize: '60px 60px',
+        }} />
 
-        {/* Research disclaimer — uses theme error colour, intentional */}
         <Chip
           label="RESEARCH PROTOTYPE · NOT FOR CLINICAL USE"
           size="small"
@@ -137,7 +122,7 @@ export default function Analysis() {
           }}
         />
 
-        <Typography variant="h3" sx={{ fontWeight: 800, mb: 1, letterSpacing: '-0.02em', color: 'text.primary' }}>
+        <Typography variant="h3" sx={{ fontWeight: 700, mb: 1, letterSpacing: '-0.01em', color: 'text.primary' }}>
           Mammogram Analysis
         </Typography>
         <Typography variant="h6" sx={{ color: 'text.secondary', fontWeight: 400, maxWidth: 700, mx: 'auto', fontSize: 15 }}>
@@ -145,19 +130,16 @@ export default function Analysis() {
           and view results from your choice of Classical CNN, Quantum AI, or both.
         </Typography>
 
-        {/* Server error alert — uses theme error, not hardcoded */}
         {status && !status.ok && (
           <Container maxWidth="sm" sx={{ mt: 2 }}>
             <Alert severity="error">{status.msg}</Alert>
           </Container>
         )}
 
-        {/* ── Stepper ── */}
         <AnalysisStepper activeStep={activeStep} />
 
-        {/* Step title block — consistent spacing with other pages */}
-        <Container maxWidth="lg" sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mt: 2 }}>
-          <Typography variant="h4" sx={{ fontWeight: 800, mb: 1, color: 'text.primary' }}>
+        <Container maxWidth="lg" sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mt: 1 }}>
+          <Typography variant="h4" sx={{ fontWeight: 700, mb: 1, color: 'text.primary' }}>
             {STEP_CONTENT[activeStep].title}
           </Typography>
           <Typography variant="h6" sx={{ color: 'text.secondary', fontWeight: 400, maxWidth: 580, mx: 'auto' }}>
@@ -165,58 +147,28 @@ export default function Analysis() {
           </Typography>
         </Container>
 
-        {/* ── Step 0: Mode select ── */}
         {activeStep === 0 && (
-          <ModeSelect
-            selectedMode={analysisMode}
-            onModeSelect={setAnalysisMode}
-            setActiveStep={setActiveStep}
-          />
+          <ModeSelect selectedMode={analysisMode} onModeSelect={setAnalysisMode} setActiveStep={setActiveStep} />
         )}
 
-        {/* ── Step 1: Upload ── */}
         {activeStep === 1 && (
           analysisMode === 'classification' ? (
             <Container maxWidth="lg" sx={{ mt: 3 }}>
-              <ImageUpload
-                file={file}
-                setFile={setFile}
-                preview={preview}
-                setPreview={setPreview}
-                setActiveStep={setActiveStep}
-                handleAnalyse={handleAnalyse}
-              />
+              <ImageUpload file={file} setFile={setFile} preview={preview} setPreview={setPreview} setActiveStep={setActiveStep} handleAnalyse={handleAnalyse} />
             </Container>
           ) : (
             <Container maxWidth="lg" sx={{ mt: 3 }}>
-              <ImageUploadOrder
-                file={files}
-                setFiles={setFiles}
-                preview={preview}
-                setPreview={setPreview}
-                setActiveStep={setActiveStep}
-              />
+              <ImageUploadOrder file={files} setFiles={setFiles} preview={preview} setPreview={setPreview} setActiveStep={setActiveStep} />
             </Container>
           )
         )}
 
-        {/* ── Step 2: Results ── */}
         {activeStep === 2 && (
           analysisMode === 'classification' ? (
             <>
-              <ModelSelect
-                selectedModel={modelMode}
-                onModelSelect={setModelMode}
-              />
+              <ModelSelect selectedModel={modelMode} onModelSelect={setModelMode} />
               <Container maxWidth="xl">
-                {/* ClassificaionResults manages its own functional colours
-                    (positive/negative/confidence bars) — those stay in that component */}
-                <ClassificaionResults
-                  analyisedImage={preview}
-                  reset={handleReset}
-                  currentModel={modelMode}
-                  results={result}
-                />
+                <ClassificaionResults analyisedImage={preview} reset={handleReset} currentModel={modelMode} results={result} />
               </Container>
             </>
           ) : (
