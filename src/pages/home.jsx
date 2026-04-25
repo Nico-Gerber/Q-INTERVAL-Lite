@@ -1,718 +1,240 @@
-import React, { useCallback, useState, useRef, useEffect } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useDropzone } from 'react-dropzone';
 import {
-  Box, Button, Chip, Container, Divider, Paper,
-  Step, StepLabel, Stepper, Typography, Alert,
-  ToggleButton, ToggleButtonGroup, CircularProgress,
-  Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions,
+  Box, Button, Chip, Container, Paper, Typography,
 } from '@mui/material';
 import {
+  FavoriteBorder as HeartIcon,
+  Link as LinkIcon,
+  School as SchoolIcon,
   Memory as ClassicalIcon,
-  Science as QuantumIcon,
-  AutoAwesome as BothIcon,
-  CloudUpload as UploadIcon,
-  CheckCircleOutline as CheckIcon,
-  WarningAmber as WarnIcon,
-  ImageSearch as ImageSearchIcon,
   InfoOutlined as InfoIcon,
-  CenterFocusStrong,
 } from '@mui/icons-material';
 
-
-
-
-const API_BASE = 'http://localhost:8000';
-
-const MODES = {
-  classical: {
-    label: 'Classical CNN',
-    icon: <ClassicalIcon />,
-    postmethod: '/CNNPredict',
-    color: '#1565C0',
-    description:
-      'Convolutional Neural Network trained on mammogram datasets. Fast inference with high accuracy on standard imaging.',
+// ── Replace these with your real organisation links ──
+const SUPPORT_ORGS = [
+  {
+    name: '[Organisation Name]',
+    description: '[Placeholder — add a short description of this organisation and what support they offer.]',
+    url: '#',
   },
-  quantum: {
-    label: 'Quantum AI',
-    icon: <QuantumIcon />,
-    postmethod: '/QMLPredict',
-    color: '#6A0DAD',
-    description:
-      'Quantum-enhanced model leveraging superposition and entanglement for pattern detection beyond classical limits.',
+  {
+    name: '[Organisation Name]',
+    description: '[Placeholder — add a short description of this organisation and what support they offer.]',
+    url: '#',
   },
-  both: {
-    label: 'Classical + Quantum',
-    icon: <BothIcon />,
-    postmethod: '',
-    color: '#C2185B',
-    description:
-      'Run both models in parallel and compare results. Ideal for research validation and benchmarking.',
+  {
+    name: '[Organisation Name]',
+    description: '[Placeholder — add a short description of this organisation and what support they offer.]',
+    url: '#',
   },
-};
-
-
-
-
+  {
+    name: '[Organisation Name]',
+    description: '[Placeholder — add a short description of this organisation and what support they offer.]',
+    url: '#',
+  },
+];
 
 export default function Home() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState('classical');
-  const [file, setFile] = useState(null);
-  const [preview, setPreview] = useState(null);
-  const [status, setStatus] = useState(null);   // { ok, msg }
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);   // placeholder for future AI output
-  const targetRef = useRef(null);
-  const targetRef1 = useRef(null);
-
-  const [isVisible, setIsVisible] = useState(false);
-  const [isVisible1, setIsVisible1] = useState(false);
-  // Derived active step
-  const activeStep = file ? (result ? 2 : 1) : 0;
-
-  const onDrop = useCallback((accepted, rejected) => {
-
-    const toBigStrin = "File is larger than 10485760 bytes"
-
-
-    if (rejected.length) {
-      if (rejected[0].errors[0].message === toBigStrin) {
-
-        setStatus({ ok: false, msg: 'File is larger than 10MB' });
-
-
-        return;
-
-      }
-
-
-      setStatus({ ok: false, msg: rejected[0].errors[0].message });
-
-      return;
-
-    }
-
-
-
-
-    const f = accepted[0];
-    setFile(f);
-    setPreview(URL.createObjectURL(f));
-    setStatus(null);
-    setResult(null);
-  }, []);
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: { 'image/jpeg': [], 'image/png': [], 'application/dicom': ['.dcm'] },
-    maxFiles: 1,
-    maxSize: 10 * 1024 * 1024,
-
-  });
-
-
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-
-        setIsVisible(entry.isIntersecting);
-      },
-      { threshold: 0.1 }
-    );
-
-    const observer1 = new IntersectionObserver(
-      ([entry]) => {
-
-        setIsVisible1(entry.isIntersecting);
-      },
-      { threshold: 0.1 }
-    );
-
-
-
-    if (targetRef.current) {
-      observer.observe(targetRef.current);
-    }
-    if (targetRef1.current) {
-      observer1.observe(targetRef1.current);
-    }
-
-
-
-
-    return () => {
-      observer.disconnect()
-      observer1.disconnect()
-
-    };
-  }, [result]);
-
-
-
-
-
-  const [detailsOpen, setDetailsOpen] = useState(false);
-
-  const handleOpenDetails = () => setDetailsOpen(true);
-  const handleCloseDetails = () => setDetailsOpen(false);
-
-  const handleAnalyse = async () => {
-    if (!file) return;
-    setLoading(true);
-    setStatus(null);
-
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      if (mode === 'both') {
-        const [uploadRes, qmlRes, cnnRes] = await Promise.all([
-
-          fetch(`${API_BASE}/images/upload`, { method: 'POST', body: formData }),
-          fetch(`${API_BASE}/QMLPredict`, { method: 'POST', body: formData }),
-          fetch(`${API_BASE}/CNNPredict`, { method: 'POST', body: formData }),
-
-        ]);
-
-        const uploadData = await uploadRes.json();
-        const qmlData = await qmlRes.json();
-        const cnnData = await cnnRes.json();
-
-
-        setResult({
-          mode,
-          filename: uploadData.filename,
-          resultFile: {
-            qml: qmlData,
-            cnn: cnnData,
-          }
-        });
-
-
-      } else {
-
-        const [res, AIres] = await Promise.all([
-
-          fetch(`${API_BASE}/images/upload`, { method: 'POST', body: formData }),
-          fetch(`${API_BASE}${selectedMode.postmethod}`, { method: 'POST', body: formData }),
-
-        ]);
-
-
-        const data = await res.json();
-
-
-        const AIdata = await AIres.json()
-
-
-        if (res.ok) {
-
-
-          setStatus({
-            ok: true, msg: `Image uploaded successfully (
-    
-               ${file.size > 1 * 1024 * 1024 ? (file.size / 1000024).toFixed(2) + ' MB ' + '· ' + file.type : (file.size / 1024).toFixed(1) + ' KB ' + '· ' + file.type})`
-          });
-
-          setResult({
-            mode,
-            filename: data.filename,
-            resultFile: AIdata
-
-          });
-        } else {
-          setStatus({ ok: false, msg: data.detail || 'Upload failed.' });
-        }
-      }
-
-    } catch {
-      setStatus({ ok: false, msg: 'Cannot reach the server. Make sure the backend is running.' });
-    } finally {
-      setLoading(false);
-    }
-
-
-  };
-
-
-
-  const handleReset = () => {
-    setFile(null);
-    setPreview(null);
-    setStatus(null);
-    setResult(null);
-  };
-
-  const selectedMode = MODES[mode];
-
-  const modelsAgree = result && mode === 'both'
-    ? result.resultFile.cnn.result === result.resultFile.qml.result
-    : false;
-
-
-
 
   return (
-    <Box sx={{ backgroundColor: 'background.default', minHeight: '100%', pb: 8 }}>
+    <Box sx={{ backgroundColor: 'background.default', minHeight: '100%', pb: 10 }}>
 
       {/* ── Hero ── */}
       <Box
         sx={{
-          background: 'linear-gradient(135deg, #0D1B2A 0%, #1565C0 100%)',
+          position: 'relative',
+          overflow: 'hidden',
+          background: 'linear-gradient(160deg, #0A0F1A 0%, #0D1F3C 60%, #0A1628 100%)',
           color: 'white',
-          py: { xs: 5, md: 8 },
+          py: { xs: 8, md: 14 },
           px: 2,
           textAlign: 'center',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: '-40%', left: '50%',
+            transform: 'translateX(-50%)',
+            width: '600px', height: '600px',
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(0,212,160,0.12) 0%, transparent 70%)',
+            pointerEvents: 'none',
+          },
         }}
       >
+        {/* Grid overlay */}
+        <Box sx={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          backgroundImage: `linear-gradient(rgba(0,212,160,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,212,160,0.04) 1px, transparent 1px)`,
+          backgroundSize: '60px 60px',
+        }} />
+
         <Chip
-          label="RESEARCH PROTOTYPE · NOT FOR CLINICAL USE"
+          label="● [Status badge — e.g. V1.4 Diagnostic Engine Live]"
           size="small"
-          sx={{
-            mb: 2,
-            backgroundColor: 'rgba(255,255,255,0.12)',
-            color: 'rgba(255,255,255,0.85)',
-            letterSpacing: '0.08em',
-            fontSize: '0.65rem',
-            fontWeight: 700,
-            border: '1px solid rgba(255,255,255,0.2)',
-          }}
+          sx={{ mb: 3, backgroundColor: 'rgba(0,212,160,0.1)', color: '#00D4A0', letterSpacing: '0.06em', fontSize: '0.7rem', fontWeight: 700, border: '1px solid rgba(0,212,160,0.3)', borderRadius: '999px' }}
         />
-        <Typography variant="h3" sx={{ fontWeight: 800, mb: 1.5, letterSpacing: '-0.02em' }}>
-          Mammogram Analysis
+
+        {/* Main headline — replace with your project tagline */}
+        <Typography variant="h2" sx={{ fontWeight: 900, mb: 1, fontSize: { xs: '2.4rem', md: '3.75rem' }, color: 'white' }}>
+          [Primary Headline.]
         </Typography>
-        <Typography
-          variant="h6"
-          sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 400, maxWidth: 580, mx: 'auto' }}
-        >
-          Upload a mammogram image and select an AI analysis method — Classical CNN, Quantum AI, or both.
+        <Typography variant="h2" sx={{ fontWeight: 900, mb: 3, fontSize: { xs: '2.4rem', md: '3.75rem' }, background: 'linear-gradient(90deg, #00D4A0, #00F5C4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          [Accent Word.]
         </Typography>
-      </Box>
 
-      <Container maxWidth="md" sx={{ mt: { xs: -3, md: -4 } }}>
+        {/* Subheading — replace with your project description */}
+        <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.5)', fontWeight: 400, maxWidth: 580, mx: 'auto', lineHeight: 1.75, mb: 5 }}>
+          [Placeholder — add a 2–3 sentence description of what this project does and why it matters. This is the first thing visitors read, so make it count.]
+        </Typography>
 
-        {/* ── Progress stepper ── */}
-        <Paper elevation={2} sx={{ p: { xs: 2, md: 3 }, mb: 3, borderRadius: 2 }}>
-          <Stepper activeStep={activeStep} alternativeLabel>
-            {['Select Mode', 'Upload Image', 'View Results'].map((label) => (
-              <Step key={label}>
-                <StepLabel>{label}</StepLabel>
-              </Step>
-            ))}
-          </Stepper>
-        </Paper>
-
-        {/* ── Step 1: Mode selector ── */}
-        <Paper elevation={2} sx={{ p: { xs: 2, md: 3 }, mb: 3, borderRadius: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: 1 }}>
-            <Typography variant="h6" gutterBottom sx={{ mb: 0 }}>
-              1 · Select Analysis Mode
-            </Typography>
-            <Button
-              size="small"
-              variant="text"
-              onClick={handleOpenDetails}
-              startIcon={<InfoIcon fontSize="small" />}
-              sx={{
-                color: 'primary.main',
-                textDecoration: 'underline',
-                fontWeight: 700,
-                minWidth: 0,
-                p: 0,
-              }}
-            >
-              How do these models differ?
-            </Button>
-          </Box>
-          <Divider sx={{ mb: 2 }} />
-
-          <ToggleButtonGroup
-            value={mode}
-            exclusive
-            onChange={(_, v) => { if (v) setMode(v); }}
-            fullWidth
-            sx={{ mb: 2, gap: 1, flexWrap: { xs: 'wrap', sm: 'nowrap' } }}
-          >
-            {Object.entries(MODES).map(([key, m]) => (
-              <ToggleButton
-                key={key}
-                value={key}
-                sx={{
-                  flex: 1,
-                  py: 1.5,
-                  border: '2px solid !important',
-                  borderColor: `${mode === key ? m.color : 'rgba(0,0,0,0.12)'} !important`,
-                  borderRadius: '8px !important',
-                  color: mode === key ? m.color : 'text.secondary',
-                  backgroundColor: mode === key ? `${m.color}12` : 'transparent',
-                  fontWeight: 600,
-                  gap: 1,
-                  '&:hover': { backgroundColor: `${m.color}18` },
-                  '&.Mui-selected': {
-                    color: m.color,
-                    backgroundColor: `${m.color}12`,
-                    '&:hover': { backgroundColor: `${m.color}20` },
-                  },
-                }}
-              >
-                {m.icon}
-                <span style={{ fontSize: '0.85rem' }}>{m.label}</span>
-              </ToggleButton>
-            ))}
-          </ToggleButtonGroup>
-
-          {/* Mode description card */}
-          <Box
-            sx={{
-              backgroundColor: `${selectedMode.color}0D`,
-              border: `1px solid ${selectedMode.color}30`,
-              borderLeft: `4px solid ${selectedMode.color}`,
-              borderRadius: 2,
-              px: 2,
-              py: 1.5,
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: 1.5,
-            }}
-          >
-            <Box sx={{ color: selectedMode.color, mt: '2px' }}>{selectedMode.icon}</Box>
-            <Box>
-              <Typography variant="subtitle2" sx={{ color: selectedMode.color, fontWeight: 700 }}>
-                {selectedMode.label}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {selectedMode.description}
-              </Typography>
-            </Box>
-          </Box>
-        </Paper>
-
-        {/* ── Step 2: Upload ── */}
-        <Paper elevation={2} sx={{ p: { xs: 2, md: 3 }, mb: 3, borderRadius: 2 }}>
-          <Typography variant="h6" gutterBottom>
-            2 · Upload Mammogram Image
-          </Typography>
-          <Divider sx={{ mb: 2 }} />
-
-          {!file ? (
-            <Box
-              {...getRootProps()}
-              sx={{
-                border: `2px dashed ${isDragActive ? '#1565C0' : 'rgba(0,0,0,0.2)'}`,
-                borderRadius: 2,
-                p: { xs: 4, md: 6 },
-                textAlign: 'center',
-                cursor: 'pointer',
-                backgroundColor: isDragActive ? 'rgba(21,101,192,0.04)' : 'rgba(0,0,0,0.01)',
-                transition: 'all 0.2s ease',
-                '&:hover': {
-                  borderColor: '#1565C0',
-                  backgroundColor: 'rgba(21,101,192,0.04)',
-                },
-              }}
-            >
-              <input {...getInputProps()} />
-              <UploadIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
-              <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-                {isDragActive ? 'Drop the image here' : 'Drag & drop a mammogram image'}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                or click to browse
-              </Typography>
-              <Typography variant="caption" color="text.disabled">
-                Accepted: JPEG, PNG, DICOM (.dcm) · Max size: 10 MB
-              </Typography>
-            </Box>
-          ) : (
-            <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-              {/* Thumbnail */}
-              <Box
-                component="img"
-                src={preview}
-                alt="Selected mammogram"
-                sx={{
-                  width: 140,
-                  height: 140,
-                  objectFit: 'cover',
-                  borderRadius: 2,
-                  border: '1px solid rgba(0,0,0,0.1)',
-                  flexShrink: 0,
-                }}
-              />
-              <Box sx={{ flex: 1, minWidth: 180 }}>
-                <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 0.5 }}>
-                  {file.name}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                  {file.size > 1 * 1024 * 1024 ? (file.size / 1000024).toFixed(2) + ' MB ' + '· ' + file.type : (file.size / 1024).toFixed(1) + ' KB ' + '· ' + file.type}
-                </Typography>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  color="error"
-                  onClick={handleReset}
-                >
-                  Remove
-                </Button>
-              </Box>
-            </Box>
-          )}
-
-          {/* Status message */}
-          {status && (
-            <Alert
-              severity={status.ok ? 'success' : 'error'}
-              icon={status.ok ? <CheckIcon /> : <WarnIcon />}
-              sx={{ mt: 2 }}
-            >
-              {status.msg}
-            </Alert>
-          )}
-        </Paper>
-
-        {/* ── Step 3: Analyse button ── */}
-        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+        <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
           <Button
             variant="contained"
             size="large"
-            disabled={!file || loading}
-            onClick={handleAnalyse}
-            startIcon={loading ? <CircularProgress size={18} color="inherit" /> : <ImageSearchIcon />}
-            sx={{
-              px: 5,
-              py: 1.5,
-              fontSize: '1rem',
-              backgroundColor: selectedMode.color,
-              '&:hover': { backgroundColor: selectedMode.color, filter: 'brightness(0.9)' },
-              '&:disabled': { backgroundColor: 'rgba(0,0,0,0.1)' },
-            }}
+            onClick={() => navigate('/Analysis')}
+            sx={{ px: 4, py: 1.5, fontSize: '1rem' }}
           >
-            {loading ? 'Uploading…' : `Analyse with ${selectedMode.label}`}
+            Launch Analysis Dashboard →
+          </Button>
+          <Button
+            variant="outlined"
+            size="large"
+            onClick={() => navigate('/Models')}
+            sx={{ px: 4, py: 1.5, fontSize: '1rem' }}
+          >
+            How It Works
           </Button>
         </Box>
+      </Box>
 
-        {/* ── Results */}
-        {result && (
-          <>
-            <Paper
-              elevation={2}
-              sx={{
-                p: { xs: 2, md: 3 },
-                borderRadius: 2,
-                borderTop: `4px solid ${selectedMode.color}`,
-              }}
-            >
-              <Typography variant="h6" gutterBottom>
-                3 · Analysis Results
-              </Typography>
-              <Divider sx={{ mb: 2 }} />
+      {/* ── Patient Support & Resources ── */}
+      <Container maxWidth="md" sx={{ mt: { xs: 6, md: 10 } }}>
+        <Box
+          sx={{
+            position: 'relative',
+            borderRadius: 3,
+            overflow: 'hidden',
+            background: 'linear-gradient(160deg, #0D1B2E 0%, #0A1628 60%, #0D2240 100%)',
+            border: '1px solid rgba(0,212,160,0.12)',
+            p: { xs: 3, md: 5 },
+            textAlign: 'center',
+          }}
+        >
+          <Box sx={{ position: 'absolute', top: '-30%', left: '50%', transform: 'translateX(-50%)', width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,212,160,0.07) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
+          <HeartIcon sx={{ fontSize: 36, color: '#00D4A0', mb: 1.5, opacity: 0.85 }} />
 
-              <Box sx={{
-                alignItems: 'center',
-                justifyContent: 'center',
-                display: 'flex',
-                paddingBottom: '1rem',
-              }}>
+          <Typography variant="h5" sx={{ fontWeight: 800, color: 'white', mb: 1 }}>
+            Patient Support &amp; Resources
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.45)', maxWidth: 500, mx: 'auto', mb: 4, lineHeight: 1.7 }}>
+            [Placeholder — add a sentence or two explaining why you're pointing users to these organisations and what kind of support they can expect to find.]
+          </Typography>
 
-                <Box
-                  component="img"
-                  src={preview}
-                  alt="Selected mammogram"
-                  sx={{
-                    width: 300,
-                    height: 300,
-                    objectFit: 'cover',
-                    flexShrink: 0,
-                  }}
-                />
-              </Box>
-
-              {mode !== 'both' ? (
-                <>
-
-                  <Box sx={{ mb: 2 }}>
-                    {/* Result Label */}
-                    <Typography fontWeight={500} variant='h3' gutterBottom>{result.resultFile.result}</Typography>
-                    {/* Percentage */}
-
-
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography fontWeight={500} variant='subtitle2' fontSize={25} color='grey' gutterBottom> Confidence</Typography>
-                      <Typography fontWeight={500} variant='subtitle2' fontSize={25} color='grey' gutterBottom> {(result.resultFile.score * 100).toFixed(2)} %</Typography>
-                    </Box>
-                    <div ref={targetRef} >
-                      <div style={{ background: '#eee', borderRadius: 4, height: 8 }}>
-                        <div style={{
-                          width: isVisible ? `${result.resultFile.score * 100}%` : '0%',
-                          background: `${selectedMode.color}`,
-                          height: '100%',
-                          borderRadius: 4,
-                          transition: 'width 1s ease'
-                        }} />
-                      </div>
-                    </div>
-                  </Box>
-
-                  <Box sx={{ display: 'flex', gap: 2 }}>
-                    <Paper elevation={2} sx={{ flex: 1, borderRadius: 2, p: 2, borderTop: `3px solid ${selectedMode.color}` }}>
-                      <Typography variant="caption">Model used</Typography>
-                      <Typography variant="subtitle1" fontWeight={500}>{MODES[mode].label}</Typography>
-                    </Paper>
-                    <Paper elevation={2} sx={{ flex: 1, borderRadius: 2, p: 2, borderTop: `3px solid ${selectedMode.color}` }}>
-                      <Typography variant="caption">Image</Typography>
-                      <Typography variant="subtitle1" fontWeight={500}>{file.name}</Typography>
-                    </Paper>
-                  </Box>
-                </>
-              ) : (
-                <>
-
-                  <Box sx={{ display: 'flex', padding: '1rem', justifyContent: 'right' }}>
-                    <Chip label={modelsAgree ? "Models Agree" : "Models Disagree"}
-                      color={modelsAgree ? "success" : "error"}
-
-
-                    />
-                  </Box>
-                  <Box sx={{ display: 'flex', gap: 2 }}>
-
-
-                    {/* Quantum Results */}
-
-                    <Box sx={{ flex: 1, p: 2, border: '1px solid #eee', borderTop: '3px solid #6A0DAD', borderRadius: 2 }}>
-                      <Typography variant="caption">Quantum AI</Typography>
-                      <Typography variant="h5" fontWeight={500}>{result.resultFile.qml.result}</Typography>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography fontWeight={500} variant='subtitle2' fontSize={20} color='grey' gutterBottom> Confidence</Typography>
-                        <Typography variant="body2" color="grey">{(result.resultFile.qml.score * 100).toFixed(2)}%</Typography>
-                      </Box>
-
-                      <div ref={targetRef} >
-                        <div style={{ background: '#eee', borderRadius: 4, height: 8 }}>
-                          <div style={{
-                            width: isVisible1 ? `${(result.resultFile.qml.score * 100).toFixed(2)}%` : '0%',
-                            background: '#6A0DAD',
-                            height: '100%',
-                            borderRadius: 4,
-                            transition: 'width 1s ease'
-                          }} />
-                        </div>
-                      </div>
-
-
-                    </Box>
-
-                    {/* Classical Results */}
-
-                    <Box sx={{ flex: 1, p: 2, border: '1px solid #eee', borderTop: '3px solid #1565C0', borderRadius: 2 }}>
-                      <Typography variant="caption">Classical CNN</Typography>
-                      <Typography variant="h5" fontWeight={500}>{result.resultFile.cnn.result}</Typography>
-
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography fontWeight={500} variant='subtitle2' fontSize={20} color='grey' gutterBottom> Confidence</Typography>
-                        <Typography variant="body2" color="grey">{(result.resultFile.cnn.score * 100).toFixed(2)}%</Typography>
-                      </Box>
-
-                      <div ref={targetRef1} >
-                        <div style={{ background: '#eee', borderRadius: 4, height: 8 }}>
-                          <div style={{
-                            width: isVisible ? `${(result.resultFile.cnn.score * 100).toFixed(2)}%` : '0%',
-                            background: '#1565C0',
-                            height: '100%',
-                            borderRadius: 4,
-                            transition: 'width 1s ease'
-                          }} />
-                        </div>
-                      </div>
-
-
-
-                    </Box>
-                  </Box>
-
-                </>
-
-              )}
-
-            </Paper>
-
-
-            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 7, padding: '1rem', }}>
-              <Button
-                variant="contained"
-                size="large"
-                disabled={!file || loading}
-                onClick={handleReset}
-
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2, textAlign: 'left' }}>
+            {SUPPORT_ORGS.map((org, i) => (
+              <Box
+                key={i}
+                component="a"
+                href={org.url}
+                target="_blank"
+                rel="noopener noreferrer"
                 sx={{
-                  px: 5,
-                  py: 1.5,
-
-                  fontSize: '1rem',
-                  backgroundColor: selectedMode.color,
-                  '&:hover': { backgroundColor: selectedMode.color, filter: 'brightness(0.9)' },
-                  '&:disabled': { backgroundColor: 'rgba(0,0,0,0.1)' },
+                  display: 'flex', alignItems: 'flex-start', gap: 1.5,
+                  p: 2.5, borderRadius: 2,
+                  backgroundColor: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  textDecoration: 'none',
+                  transition: 'all 0.2s',
+                  '&:hover': { backgroundColor: 'rgba(0,212,160,0.07)', borderColor: 'rgba(0,212,160,0.25)', transform: 'translateY(-2px)' },
                 }}
               >
-                {'Reset'}
-              </Button>
-            </Box>
-
-
-          </>
-        )}
-
-
-
-        <Dialog
-          open={detailsOpen}
-          onClose={handleCloseDetails}
-          aria-labelledby="analysis-details-dialog-title"
-          aria-describedby="analysis-details-dialog-description"
-          fullWidth
-          maxWidth="sm"
-        >
-          <DialogTitle id="analysis-details-dialog-title">
-            How do these models differ?
-          </DialogTitle>
-          <DialogContent>
-            <Box component="ul" sx={{ pl: 2, mb: 2 }}>
-              <Typography component="li" variant="body2" sx={{ mb: 2 }}>
-                <strong>Classical CNN</strong>:
-              </Typography>
-              <Typography component="li" variant="body2" sx={{ mb: 2 }}>
-                <strong>Quantum AI</strong>:
-              </Typography>
-              <Typography component="li" variant="body2" sx={{ mb: 2 }}>
-                <strong>Classical + Quantum</strong>:
-              </Typography>
-            </Box>
-            <Box sx={{ mt: 3, p: 2, backgroundColor: 'rgba(21, 101, 192, 0.08)', borderRadius: 1, borderLeft: `4px solid #1565C0` }}>
-              <Typography variant="body2" color="text.secondary">
-                <strong>Want to learn more?</strong> Visit the Models page for an in-depth explanation of how each model works, training data, accuracy metrics, and more.
-              </Typography>
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCloseDetails}>
-              Close
-            </Button>
-            <Button
-              onClick={() => {
-                handleCloseDetails();
-                navigate('/models');
-              }}
-              variant="contained"
-              color="primary"
-            >
-              View Models
-            </Button>
-          </DialogActions>
-        </Dialog>
+                <LinkIcon sx={{ fontSize: 16, color: 'rgba(255,255,255,0.25)', mt: '3px', flexShrink: 0 }} />
+                <Box>
+                  <Typography variant="subtitle2" sx={{ color: 'white', fontWeight: 700, fontSize: '0.85rem', mb: 0.4 }}>
+                    {org.name}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.78rem', lineHeight: 1.5 }}>
+                    {org.description}
+                  </Typography>
+                </Box>
+              </Box>
+            ))}
+          </Box>
+        </Box>
       </Container>
-    </Box >
+
+      {/* ── About This Project ── */}
+      <Container maxWidth="md" sx={{ mt: { xs: 6, md: 8 } }}>
+        <Box sx={{ textAlign: 'center', mb: 4 }}>
+          <Chip
+            label="[Course code · Unit name]"
+            size="small"
+            sx={{ mb: 2, backgroundColor: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.35)', border: '1px solid rgba(255,255,255,0.1)', fontSize: '0.68rem', letterSpacing: '0.06em' }}
+          />
+          <Typography variant="h5" sx={{ fontWeight: 800, color: 'white', mb: 1 }}>
+            About This Project
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.4)', maxWidth: 480, mx: 'auto' }}>
+            [Placeholder — one sentence summarising the project context, e.g. institution and unit.]
+          </Typography>
+        </Box>
+
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2.5 }}>
+
+          <Paper elevation={0} sx={{ p: 3, borderRadius: 2, borderLeft: '3px solid #00D4A0' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+              <SchoolIcon sx={{ fontSize: 18, color: '#00D4A0' }} />
+              <Typography variant="caption" sx={{ color: '#00D4A0', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                What is this?
+              </Typography>
+            </Box>
+            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.5)', lineHeight: 1.7 }}>
+              [Placeholder — describe the project goals, scope, and the problem it aims to solve.]
+            </Typography>
+          </Paper>
+
+          <Paper elevation={0} sx={{ p: 3, borderRadius: 2, borderLeft: '3px solid #7C3AED' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+              <HeartIcon sx={{ fontSize: 18, color: '#7C3AED' }} />
+              <Typography variant="caption" sx={{ color: '#7C3AED', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                Why it matters
+              </Typography>
+            </Box>
+            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.5)', lineHeight: 1.7 }}>
+              [Placeholder — explain the clinical or research motivation and the benefit this approach provides.]
+            </Typography>
+          </Paper>
+
+          <Paper elevation={0} sx={{ p: 3, borderRadius: 2, borderLeft: '3px solid #F59E0B' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+              <ClassicalIcon sx={{ fontSize: 18, color: '#F59E0B' }} />
+              <Typography variant="caption" sx={{ color: '#F59E0B', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                Technology
+              </Typography>
+            </Box>
+            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.5)', lineHeight: 1.7 }}>
+              [Placeholder — overview of the tech stack and architecture. e.g. React, FastAPI, PyTorch, PennyLane, CNN, quantum circuits.]
+            </Typography>
+          </Paper>
+
+          <Paper elevation={0} sx={{ p: 3, borderRadius: 2, borderLeft: '3px solid rgba(255,77,106,0.6)', backgroundColor: 'rgba(255,77,106,0.04)' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+              <InfoIcon sx={{ fontSize: 18, color: '#FF4D6A' }} />
+              <Typography variant="caption" sx={{ color: '#FF4D6A', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                Disclaimer
+              </Typography>
+            </Box>
+            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.5)', lineHeight: 1.7 }}>
+              [Placeholder — state clearly that this is a research prototype not intended for clinical use. Replace with your own wording if needed.]
+            </Typography>
+          </Paper>
+
+        </Box>
+      </Container>
+
+    </Box>
   );
 }
