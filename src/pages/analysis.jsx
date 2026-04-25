@@ -185,14 +185,33 @@ export default function An() {
       {/* ── Hero ── */}
       <Box
         sx={{
-          background: 'linear-gradient(135deg, #0D1B2A 0%, #1565C0 100%)',
+          position: 'relative',
+          overflow: 'hidden',
+          background: 'linear-gradient(160deg, #0A0F1A 0%, #0D1F3C 60%, #0A1628 100%)',
           color: 'white',
           py: { xs: 5, md: 4 },
           minHeight: '100vh',
           px: 2,
           textAlign: 'center',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: '-40%', left: '50%',
+            transform: 'translateX(-50%)',
+            width: '600px', height: '600px',
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(0,212,160,0.12) 0%, transparent 70%)',
+            pointerEvents: 'none',
+          },
         }}
       >
+
+        <Box sx={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          backgroundImage: `linear-gradient(rgba(0,212,160,0.04) 1px, transparent 1px), 
+                      linear-gradient(90deg, rgba(0,212,160,0.04) 1px, transparent 1px)`,
+          backgroundSize: '60px 60px',
+        }} />
         <Chip
           label="RESEARCH PROTOTYPE · NOT FOR CLINICAL USE"
           size="small"
