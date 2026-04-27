@@ -3,25 +3,32 @@ import pandas as pd
 import pennylane as qml
 from pennylane import numpy as pnp
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score, classification_report, roc_curve, auc, confusion_matrix
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 import joblib
 import matplotlib.pyplot as plt
 
-# settings
-CSV_PATH = "dataset/qml_500_pca4.csv"
+#vars
+CSV_PATH = "qml_900_pca4_multiclass.csv"
 LABEL_COLUMN = "label"
 FEATURE_COLUMNS = [f"pc{i}" for i in range(1, 5)]
 
 RANDOM_SEED = 42
 TEST_SIZE = 0.2
 N_QUBITS = 4
-N_LAYERS = 1
-EPOCHS = 20
+N_LAYERS = 2
+N_CLASSES = 3
+EPOCHS = 25
 BATCH_SIZE = 16
-LEARNING_RATE = 0.05
+LEARNING_RATE = 0.03
 
-MODEL_SAVE_PATH = "vqc_500_pca4_best.joblib"
-HISTORY_SAVE_PATH = "vqc_500_pca4_history.joblib"
+MODEL_SAVE_PATH = "vqc_900_pca4_multiclass_best.joblib"
+HISTORY_SAVE_PATH = "vqc_900_pca4_multiclass_history.joblib"
+
+LABEL_NAMES = {
+    0: "normal",
+    1: "benign",
+    2: "malignant"
+}
 
 np.random.seed(RANDOM_SEED)
 
@@ -33,13 +40,13 @@ if "split" in df.columns:
     test_df = df[df["split"] == "test"].copy()
 
     X_train = train_df[FEATURE_COLUMNS].values.astype(np.float64)
-    y_train = train_df[LABEL_COLUMN].values.astype(np.float64)
+    y_train = train_df[LABEL_COLUMN].values.astype(np.int64)
 
     X_test = test_df[FEATURE_COLUMNS].values.astype(np.float64)
-    y_test = test_df[LABEL_COLUMN].values.astype(np.float64)
+    y_test = test_df[LABEL_COLUMN].values.astype(np.int64)
 else:
     X = df[FEATURE_COLUMNS].values.astype(np.float64)
-    y = df[LABEL_COLUMN].values.astype(np.float64)
+    y = df[LABEL_COLUMN].values.astype(np.int64)
 
     X_train, X_test, y_train, y_test = train_test_split(
         X,
@@ -51,11 +58,11 @@ else:
 
 print("Train shape:", X_train.shape)
 print("Test shape:", X_test.shape)
+print("Train label distribution:", dict(zip(*np.unique(y_train, return_counts=True))))
+print("Test label distribution:", dict(zip(*np.unique(y_test, return_counts=True))))
 
-# QUANTUM DVEICE
 dev = qml.device("default.qubit", wires=N_QUBITS)
 
-#circuit definition
 def variational_layer(weights):
     for i in range(N_QUBITS):
         qml.RY(weights[i, 0], wires=i)
@@ -66,7 +73,6 @@ def variational_layer(weights):
 
 @qml.qnode(dev, interface="autograd")
 def circuit(x, weights):
-    # richer input encoding
     for i in range(N_QUBITS):
         qml.RY(x[i], wires=i)
         qml.RZ(x[i], wires=i)
@@ -74,31 +80,43 @@ def circuit(x, weights):
     for layer in range(N_LAYERS):
         variational_layer(weights[layer])
 
-    return qml.expval(qml.PauliZ(0))
+    return [
+        qml.expval(qml.PauliZ(0)),
+        qml.expval(qml.PauliZ(1)),
+        qml.expval(qml.PauliZ(2))
+    ]
 
-#helper models
-def predict_score(x, weights):
-    raw = circuit(x, weights)
-    prob = (raw + 1.0) / 2.0
-    return pnp.clip(prob, 1e-7, 1 - 1e-7)
+def softmax(logits):
+    logits = pnp.array(logits)
+    shifted = logits - pnp.max(logits)
+    exp_vals = pnp.exp(shifted)
+    return exp_vals / pnp.sum(exp_vals)
+
+def predict_probs(x, weights):
+    raw_outputs = circuit(x, weights)
+    probs = softmax(raw_outputs)
+    return probs
 
 def predict_label(x, weights):
-    return 1 if float(predict_score(x, weights)) >= 0.5 else 0
+    probs = predict_probs(x, weights)
+    return int(pnp.argmax(probs))
 
-def binary_cross_entropy(y_true, y_pred):
-    return -(y_true * pnp.log(y_pred) + (1 - y_true) * pnp.log(1 - y_pred))
+def multiclass_cross_entropy(y_true, y_pred_probs):
+    return -pnp.log(y_pred_probs[int(y_true)] + 1e-10)
 
 def cost(weights, X_batch, y_batch):
-    losses = [binary_cross_entropy(y, predict_score(x, weights)) for x, y in zip(X_batch, y_batch)]
+    losses = [
+        multiclass_cross_entropy(y, predict_probs(x, weights))
+        for x, y in zip(X_batch, y_batch)
+    ]
     return sum(losses) / len(losses)
 
 def evaluate(X, y, weights):
-    probs = np.array([float(predict_score(x, weights)) for x in X])
-    preds = (probs >= 0.5).astype(int)
+    probs = np.array([np.array(predict_probs(x, weights), dtype=np.float64) for x in X])
+    preds = np.argmax(probs, axis=1)
     acc = accuracy_score(y, preds)
     return acc, probs, preds
 
-#init trainable weights
 weights = pnp.array(
     np.random.normal(
         loc=0.0,
@@ -110,7 +128,6 @@ weights = pnp.array(
 
 opt = qml.AdamOptimizer(stepsize=LEARNING_RATE)
 
-#history and best tracking
 train_loss_history = []
 test_loss_history = []
 train_acc_history = []
@@ -121,11 +138,10 @@ best_test_loss = float("inf")
 best_epoch = -1
 best_weights = None
 
-#main training loop
 num_train = len(X_train)
 num_batches = int(np.ceil(num_train / BATCH_SIZE))
 
-print("\nStarting VQC training...")
+print("\nStarting multiclass VQC training...")
 print(f"Training samples: {num_train}")
 print(f"Batches per epoch: {num_batches}")
 print(f"Epochs: {EPOCHS}\n")
@@ -169,18 +185,22 @@ for epoch in range(EPOCHS):
         f"Train Acc: {train_acc:.4f} | Test Acc: {test_acc:.4f}"
     )
 
-    sample_probs = np.array([float(predict_score(x, weights)) for x in X_train[:10]])
-    print("Sample probs:", np.round(sample_probs, 4))
+    sample_probs = np.array([np.array(predict_probs(x, weights), dtype=np.float64) for x in X_train[:5]])
+    print("Sample probs:")
+    print(np.round(sample_probs, 4))
+    print("Sample preds:", np.argmax(sample_probs, axis=1))
     print("Weight sample:", round(float(weights[0, 0, 0]), 6))
     print("Weight mean:", round(float(pnp.mean(weights)), 6))
     print("Weight std:", round(float(pnp.std(weights)), 6))
     print()
 
-#best weights
 weights = best_weights
-print(f"Using best weights from epoch {best_epoch} | Best Test Acc: {best_test_acc:.4f} | Best Test Loss: {best_test_loss:.4f}")
+print(
+    f"Using best weights from epoch {best_epoch} | "
+    f"Best Test Acc: {best_test_acc:.4f} | "
+    f"Best Test Loss: {best_test_loss:.4f}"
+)
 
-#final eval
 train_acc, train_probs, train_preds = evaluate(X_train, y_train, weights)
 test_acc, test_probs, test_preds = evaluate(X_test, y_test, weights)
 
@@ -188,26 +208,28 @@ print("\nFinal Train Accuracy:", round(train_acc, 4))
 print("Final Test Accuracy:", round(test_acc, 4))
 
 print("\nClassification Report:")
-print(classification_report(y_test.astype(int), test_preds, digits=4))
+print(
+    classification_report(
+        y_test,
+        test_preds,
+        target_names=[LABEL_NAMES[i] for i in range(N_CLASSES)],
+        digits=4
+    )
+)
 
-cm = confusion_matrix(y_test.astype(int), test_preds)
+cm = confusion_matrix(y_test, test_preds)
 print("\nConfusion Matrix:")
 print(cm)
 
-# ROC AUC
-fpr, tpr, _ = roc_curve(y_test.astype(int), test_probs)
-roc_auc = auc(fpr, tpr)
-print(f"\nROC AUC: {roc_auc:.4f}")
-
-#save model
 joblib.dump(
     {
-        "weights": np.array(weights),
+        "weights": np.array(weights, dtype=np.float64),
         "feature_columns": FEATURE_COLUMNS,
         "n_qubits": N_QUBITS,
         "n_layers": N_LAYERS,
+        "n_classes": N_CLASSES,
         "label_column": LABEL_COLUMN,
-        "threshold": 0.5,
+        "label_names": LABEL_NAMES,
         "best_epoch": best_epoch,
         "best_test_acc": best_test_acc,
         "best_test_loss": best_test_loss
@@ -223,7 +245,8 @@ joblib.dump(
         "test_acc_history": test_acc_history,
         "test_probs": test_probs,
         "test_preds": test_preds,
-        "y_test": y_test
+        "y_test": y_test,
+        "confusion_matrix": cm
     },
     HISTORY_SAVE_PATH
 )
@@ -231,7 +254,6 @@ joblib.dump(
 print(f"\nSaved best model to {MODEL_SAVE_PATH}")
 print(f"Saved history to {HISTORY_SAVE_PATH}")
 
-#plots
 epochs_range = range(1, EPOCHS + 1)
 
 plt.figure()
@@ -254,15 +276,4 @@ plt.title("Training and Test Accuracy")
 plt.legend()
 plt.tight_layout()
 plt.savefig("vqc_accuracy_curve.png")
-plt.show()
-
-plt.figure()
-plt.plot(fpr, tpr, label=f"AUC = {roc_auc:.4f}")
-plt.plot([0, 1], [0, 1], linestyle="--")
-plt.xlabel("False Positive Rate")
-plt.ylabel("True Positive Rate")
-plt.title("ROC Curve")
-plt.legend()
-plt.tight_layout()
-plt.savefig("vqc_roc_curve.png")
 plt.show()
