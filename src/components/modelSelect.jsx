@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Box, Container, Typography, Paper } from '@mui/material';
 import {
-    ImageSearch as ClassificationIcon,
-    TrendingUp as RiskIcon,
+    ImageSearch as CNNIcon,
+    AutoAwesome as QMLIcon,
+    QueryStats as ComparisonIcon
 } from '@mui/icons-material';
 
 const MODELS = [
@@ -11,7 +12,7 @@ const MODELS = [
         title: 'Classical AI',
         color: '#1565C0',
         description: 'Analyze a single mammogram image to detect and classify potential abnormalities including masses, calcifications, and other findings.',
-        icon: <ClassificationIcon sx={{ fontSize: 32 }} />,
+        icon: <CNNIcon sx={{ fontSize: 32 }} />,
 
     },
     {
@@ -19,7 +20,7 @@ const MODELS = [
         title: 'Quantum AI',
         color: '#6A0DAD',
         description: 'Upload sequential mammogram images over time to predict future breast cancer risk using temporal pattern analysis.',
-        icon: <RiskIcon sx={{ fontSize: 32 }} />,
+        icon: <QMLIcon sx={{ fontSize: 32 }} />,
 
     },
     {
@@ -27,7 +28,7 @@ const MODELS = [
         title: 'Comparison',
         color: '#C2185B',
         description: 'Upload sequential mammogram images over time to predict future breast cancer risk using temporal pattern analysis.',
-        icon: <RiskIcon sx={{ fontSize: 32 }} />,
+        icon: <ComparisonIcon sx={{ fontSize: 32 }} />,
 
     },
 ];

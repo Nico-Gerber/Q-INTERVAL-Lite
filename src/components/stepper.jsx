@@ -8,7 +8,7 @@ const CustomStepIcon = ({ active, completed, icon }) => (
   <Box sx={{
     width: 52,
     height: 52,
-    borderRadius: '14px',
+    borderRadius: '50%',
     backgroundColor: active || completed
       ? '#2DD4BF'
       : 'rgba(255,255,255,0.1)',
@@ -41,9 +41,9 @@ const CustomStepIcon = ({ active, completed, icon }) => (
 );
 
 const STEPS = [
-  { label: 'Select Mode',   sub: 'Choose analysis type' },
+  { label: 'Select Mode', sub: 'Choose analysis type' },
   { label: 'Upload Images', sub: 'Add mammogram scans' },
-  { label: 'View Results',  sub: 'AI analysis results' },
+  { label: 'View Results', sub: 'AI analysis results' },
 ];
 
 export default function AnalysisStepper({ activeStep }) {

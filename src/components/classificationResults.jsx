@@ -115,7 +115,7 @@ export default function ClassificationResults({ analyisedImage, reset, currentMo
                                 justifyContent: 'center',
                                 textAlign: 'center',
                             }}>
-                                <Typography sx={{ color: 'rgba(255,255,255,0.3)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600, mb: 0.8 }}>
+                                <Typography sx={{ color: 'rgba(255,255,255,0.3)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600, mb: 0.8, mt: -1 }}>
                                     Classical AI
                                 </Typography>
                                 <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
@@ -124,6 +124,9 @@ export default function ClassificationResults({ analyisedImage, reset, currentMo
                                     </Typography>
                                     <Typography sx={{ color: 'rgba(255,255,255,0.4)', fontSize: 16, fontWeight: 400 }}>%</Typography>
                                 </Box>
+                                <Typography sx={{ color: 'rgba(255,255,255,0.3)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', paddingTop: 1, mb: -1 }}>
+                                    {cnnResult.result}
+                                </Typography>
                             </Box>
 
                             {/* Models Agree? */}
@@ -163,7 +166,7 @@ export default function ClassificationResults({ analyisedImage, reset, currentMo
                                 justifyContent: 'center',
                                 textAlign: 'center',
                             }}>
-                                <Typography sx={{ color: 'rgba(255,255,255,0.3)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600, mb: 0.8 }}>
+                                <Typography sx={{ color: 'rgba(255,255,255,0.3)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600, mb: 0.8, mt: -1 }}>
                                     Quantum AI
                                 </Typography>
                                 <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
@@ -172,6 +175,9 @@ export default function ClassificationResults({ analyisedImage, reset, currentMo
                                     </Typography>
                                     <Typography sx={{ color: 'rgba(255,255,255,0.4)', fontSize: 16, fontWeight: 400 }}>%</Typography>
                                 </Box>
+                                <Typography sx={{ color: 'rgba(255,255,255,0.3)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', paddingTop: 1, mb: -1 }}>
+                                    {qmlResult.result}
+                                </Typography>
                             </Box>
                         </Box>
 
