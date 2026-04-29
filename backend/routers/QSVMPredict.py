@@ -18,8 +18,10 @@ X_TRAIN_PATH = BASE_DIR / "dataset/X_train.joblib"
 
 RESIZE_TO = (16, 16)
 
+class_names = ["Normal", "Benign", "Malignant"]
+
 # =========================
-# LOAD MODELS (once at startup)
+# LOAD MODELS 
 # =========================
 pca = joblib.load(PCA_PATH)
 scaler = joblib.load(SCALER_PATH)
@@ -73,10 +75,13 @@ def compute_kernel_vector(x):
 def preprocess_image(image_bytes):
     img = Image.open(io.BytesIO(image_bytes)).convert("L")
     img = img.resize(RESIZE_TO, Image.Resampling.LANCZOS)
+    
     arr = np.array(img, dtype=np.float32) / 255.0
     arr = arr.flatten().reshape(1, -1)
+    
     arr_pca = pca.transform(arr)
     arr_scaled = scaler.transform(arr_pca)
+    
     return arr_scaled[0]
 
 # =========================
@@ -86,6 +91,7 @@ router = APIRouter(prefix="/QMLPredict", tags=["predict"])
 
 @router.post("")
 async def predict(file: UploadFile = File(...)):
+    
     if file.content_type not in {"image/jpeg", "image/png", "image/webp"}:
         raise HTTPException(status_code=415, detail="Unsupported file type")
 
@@ -100,11 +106,14 @@ async def predict(file: UploadFile = File(...)):
     # QSVM PREDICTION
     # =========================
     K_test = compute_kernel_vector(features)
-    score = model.predict_proba(K_test) [:, 1][0]
-    label = int(score >= 0.5)
+    probs = model.predict_proba(K_test)[0]
+    label_idx = int(np.argmax(probs))
 
     return JSONResponse(content={
-        "score": round(score, 4),
-        "prediction": label,
-        "result": "Cancer" if label == 1 else "No Cancer"
+        "probabilities": {
+            class_names[i]: float(round(probs[i], 4))
+            for i in range(len(class_names))
+        },
+        "prediction": label_idx,
+        "result": class_names[label_idx]
     })

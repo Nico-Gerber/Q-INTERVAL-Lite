@@ -3,16 +3,19 @@ import pandas as pd
 import numpy as np
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, ConfusionMatrixDisplay, roc_curve, auc
+from sklearn.preprocessing import label_binarize
 import matplotlib.pyplot as plt
 import joblib
 
 # Settings
-CSV_PATH = "QML/dataset/qml_500_pca4NEW.csv"
+CSV_PATH = "QML/dataset/qml_900_pca4_multiclass.csv"
 FEATURE_COLUMNS = ["pc1", "pc2", "pc3", "pc4"]
 LABEL_COLUMN = "label"
 
 N_QUBITS = 4
 RANDOM_SEED = 42
+
+class_names = ["Normal", "Benign", "Malignant"]
 
 np.random.seed(RANDOM_SEED)
 
@@ -60,7 +63,7 @@ def quantum_kernel(x1, x2):
     return qml.probs(wires=range(N_QUBITS))
 
 def kernel_function(x1, x2):
-    return quantum_kernel(x1, x2)[0]
+    return float(quantum_kernel(x1, x2)[0])
 
 
 # Kernel Matrix
@@ -108,13 +111,19 @@ print("Confusion Matrix:")
 print(confusion_matrix(y_test, y_pred))
 
 #ROC graph
-scores = model.predict_proba(K_test)[:, 1]
-fpr, tpr, _ = roc_curve(y_test, scores)
-roc_auc = auc(fpr, tpr)
+y_test_bin = label_binarize(y_test, classes=[0, 1, 2])
+y_score = model.predict_proba(K_test)
 
-plt.plot(fpr, tpr, label=f"AUC = {roc_auc:.2f}")
-plt.plot([0,1],[0,1],"--")
-plt.title("ROC Curve")
+plt.figure()
+
+for i in range(3):
+    fpr, tpr, _ = roc_curve(y_test_bin[:, i], y_score[:, i])
+    roc_auc = auc(fpr, tpr)
+
+    plt.plot(fpr, tpr, label=f"{class_names[i]} AUC = {roc_auc:.2f}")
+
+plt.plot([0, 1], [0, 1], "--")
+plt.title("QSVM Multiclass ROC")
 plt.legend()
 plt.show()
 
