@@ -1,3 +1,4 @@
+/* App.css */
 * {
   box-sizing: border-box;
 }
@@ -6,6 +7,7 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background-color: #0A0F1A;
 }
 
 .app-root > main,
