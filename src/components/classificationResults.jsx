@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Paper, Button, Container } from '@mui/material';
+import { Box, Typography, Paper, Button, Container, Slider } from '@mui/material';
 import { ResetTvSharp } from '@mui/icons-material';
 
 function AnimatedBar({ value, color, delay = 0 }) {
@@ -24,6 +24,8 @@ function AnimatedBar({ value, color, delay = 0 }) {
 
 export default function ClassificationResults({ analyisedImage, reset, currentModel, results }) {
     const [mounted, setMounted] = useState(false);
+
+    const [heatmapOpacity, setHeatmapOpacity] = useState(50);
 
     const cnnResult = results?.resultFile?.cnn
 
@@ -412,38 +414,82 @@ export default function ClassificationResults({ analyisedImage, reset, currentMo
                             </Box>
                         </Box>
 
-                        {/* Main content row */}
+
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
 
-                            {/* Image panel */}
-                            <Box sx={{
-                                borderRadius: 1,
-                                overflow: 'hidden',
-                                border: '1px solid rgba(255,255,255,0.07)',
-                                position: 'relative',
-                                background: '#000',
-                                minHeight: 360,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                            }}>
-                                <Box
-                                    component="img"
-                                    src={analyisedImage}
-                                    alt="Analysed mammogram"
-                                    sx={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
-                                />
-                                {/* Corner bracket decorations */}
-                                {[
-                                    { top: 10, left: 10, borderTop: '2px solid rgba(255,77,77,0.5)', borderLeft: '2px solid rgba(255,77,77,0.5)' },
-                                    { top: 10, right: 10, borderTop: '2px solid rgba(255,77,77,0.5)', borderRight: '2px solid rgba(255,77,77,0.5)' },
-                                    { bottom: 10, left: 10, borderBottom: '2px solid rgba(255,77,77,0.5)', borderLeft: '2px solid rgba(255,77,77,0.5)' },
-                                    { bottom: 10, right: 10, borderBottom: '2px solid rgba(255,77,77,0.5)', borderRight: '2px solid rgba(255,77,77,0.5)' },
-                                ].map((style, i) => (
-                                    <Box key={i} sx={{ position: 'absolute', width: 16, height: 16, ...style }} />
-                                ))}
-                            </Box>
 
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+
+
+                                <Box sx={{
+                                    borderRadius: 1,
+                                    overflow: 'hidden',
+                                    border: '1px solid rgba(255,255,255,0.07)',
+                                    position: 'relative',
+                                    background: '#000',
+                                    minHeight: 360,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                }}>
+                                    {/* Image + heatmap stack */}
+                                    <Box sx={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <Box
+                                            component="img"
+                                            src={cnnResult?.gradcam?.base_image_base64
+                                                ? `data:image/png;base64,${cnnResult.gradcam.base_image_base64}`
+                                                : analyisedImage}
+                                            alt="Analysed mammogram"
+                                            sx={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+                                        />
+                                        {currentModel === 'Classical' && cnnResult?.gradcam?.heatmap_base64 && (
+                                            <Box
+                                                component="img"
+                                                src={`data:image/png;base64,${cnnResult.gradcam.heatmap_base64}`}
+                                                alt="Grad-CAM heatmap"
+                                                sx={{
+                                                    position: 'absolute',
+                                                    top: 0, left: 0,
+                                                    width: '100%', height: '100%',
+                                                    objectFit: 'contain',
+                                                    opacity: heatmapOpacity / 100,
+                                                    mixBlendMode: 'multiply',
+                                                    pointerEvents: 'none',
+                                                    transition: 'opacity 0.2s ease',
+                                                }}
+                                            />
+                                        )}
+                                    </Box>
+
+
+                                    {[
+                                        { top: 10, left: 10, borderTop: '2px solid rgba(255,77,77,0.5)', borderLeft: '2px solid rgba(255,77,77,0.5)' },
+                                        { top: 10, right: 10, borderTop: '2px solid rgba(255,77,77,0.5)', borderRight: '2px solid rgba(255,77,77,0.5)' },
+                                        { bottom: 10, left: 10, borderBottom: '2px solid rgba(255,77,77,0.5)', borderLeft: '2px solid rgba(255,77,77,0.5)' },
+                                        { bottom: 10, right: 10, borderBottom: '2px solid rgba(255,77,77,0.5)', borderRight: '2px solid rgba(255,77,77,0.5)' },
+                                    ].map((style, i) => (
+                                        <Box key={i} sx={{ position: 'absolute', width: 16, height: 16, ...style }} />
+                                    ))}
+                                </Box>
+
+
+                                {currentModel === 'Classical' && cnnResult?.gradcam?.heatmap_base64 && (
+                                    <Box sx={{ px: 1 }}>
+                                        <Typography sx={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', mb: 0.5 }}>
+                                            Heatmap Opacity
+                                        </Typography>
+                                        <Slider
+                                            value={heatmapOpacity}
+                                            onChange={(e, val) => setHeatmapOpacity(val)}
+                                            aria-label="Heatmap opacity"
+                                            valueLabelDisplay="auto"
+                                            min={0}
+                                            max={100}
+                                        />
+                                    </Box>
+                                )}
+
+                            </Box>
                             {/* Classifications panel */}
                             <Box sx={{
                                 borderRadius: 3,
