@@ -147,17 +147,17 @@ export default function Home() {
       <Box id="hero" sx={{ height: sectionH, position: 'relative', overflow: 'hidden', background: (theme) => theme.palette.background.hero, display: 'flex', flexDirection: 'column', '&::before': { content: '""', position: 'absolute', top: '-30%', left: '50%', transform: 'translateX(-50%)', width: '800px', height: '800px', borderRadius: '50%', background: (theme) => `radial-gradient(circle, ${theme.palette.primary.main}0F 0%, transparent 70%)`, pointerEvents: 'none' } }}>
         <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none', backgroundImage: (theme) => `linear-gradient(${theme.palette.primary.main}07 1px, transparent 1px), linear-gradient(90deg, ${theme.palette.primary.main}07 1px, transparent 1px)`, backgroundSize: '60px 60px' }} />
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', px: 2, py: 2, position: 'relative' }}>
-          <Chip label="● [Status badge — e.g. V1.4 Diagnostic Engine Live]" size="small"
+          <Chip label="● Version 0.2 - Sprint 2" size="small"
             sx={{ mb: 2.5, bgcolor: (theme) => `${theme.palette.primary.main}12`, color: 'primary.main', letterSpacing: '0.06em', fontSize: '0.7rem', fontWeight: 700, border: '1px solid', borderColor: (theme) => `${theme.palette.primary.main}28`, borderRadius: '999px' }}
           />
           <Typography variant="h1" sx={{ mb: 1, fontSize: { xs: '2.2rem', md: '3.5rem' }, maxWidth: 800, mx: 'auto', color: 'text.primary' }}>
-            [Primary Headline.]
+            Revealing the
           </Typography>
-          <Typography variant="h1" sx={{ mb: 3, fontSize: { xs: '2.2rem', md: '3.5rem' }, maxWidth: 800, mx: 'auto', background: (theme) => `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.primary.light})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            [Accent Word.]
+          <Typography variant="h1" sx={{ mb: 3, fontSize: { xs: '2.2rem', md: '3.5rem' }, maxWidth: 800, mx: 'auto', fontStyle: 'italic', background: (theme) => `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.primary.light})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            Invisible.
           </Typography>
-          <Typography sx={{ color: 'text.secondary', maxWidth: 540, mx: 'auto', lineHeight: 1.8, mb: 4, fontSize: '1rem' }}>
-            [Placeholder — add a 2–3 sentence description of what this project does and why it matters.]
+          <Typography sx={{ color: 'text.secondary', maxWidth: 500, mx: 'auto', lineHeight: 1.8, mb: 4, fontSize: '1rem', fontStyle: 'italic' }}>
+            An educational platform comparing standard and quantum-enhanced AI to detect hidden precursors of breast cancer — making complex diagnostics transparent and visual.
           </Typography>
           <Box sx={{ display: 'flex', gap: 1.5, justifyContent: 'center', flexWrap: 'wrap' }}>
             <Button variant="contained" onClick={() => navigate('/Analysis')} sx={{ px: 3, py: 1.1, fontSize: '0.88rem' }}>
@@ -179,7 +179,7 @@ export default function Home() {
                     {stat.icon}
                   </Box>
                   <Typography sx={{ fontWeight: 700, fontSize: { xs: '1.25rem', md: '1.5rem' }, color: 'primary.main', lineHeight: 1.1, mb: 0.75 }}>{stat.value}</Typography>
-                  <Typography variant="caption" sx={{ color: '#E8EEF8', fontSize: '0.67rem', lineHeight: 1.45, display: 'block', maxWidth: 160 }}>{stat.label}</Typography>
+                  <Typography variant="caption" sx={{ color: '#E8EEF8', fontSize: '0.67rem', lineHeight: 1.45, display: 'block', maxWidth: 160, fontStyle: 'italic' }}>{stat.label}</Typography>
                 </Box>
               ))}
             </Box>
