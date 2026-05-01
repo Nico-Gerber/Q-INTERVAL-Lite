@@ -1,11 +1,14 @@
 import io
 from pathlib import Path
 from PIL import Image
-from fastapi import APIRouter, File, UploadFile, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, File, UploadFile, HTTPException, Query
+from fastapi.responses import JSONResponse, StreamingResponse
 import torch
 import torch.nn as nn
 from torchvision import models, transforms
+
+from .gradcam_utils import generate_gradcam, pil_to_base64
+
 
 # =========================
 # SETTINGS
@@ -51,7 +54,7 @@ print("CNN model loaded successfully.")
 def preprocess_image(image_bytes):
     img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
     tensor = transform(img).unsqueeze(0).to(device)  # add batch dimension
-    return tensor
+    return tensor, img
 
 # =========================
 # ROUTE
@@ -59,17 +62,21 @@ def preprocess_image(image_bytes):
 router = APIRouter(prefix="/CNNPredict", tags=["CNNPredict"])
 
 @router.post("/")
-async def predict(file: UploadFile = File(...)):
+async def predict(
+    file: UploadFile = File(...),
+    include_gradcam: bool = Query(False, description="If true, include base64 Grad-CAM heatmap in response")
+):
     if file.content_type not in ALLOWED_TYPES:
         raise HTTPException(status_code=415, detail=f"Unsupported file type '{file.content_type}'.")
 
     contents = await file.read()
 
     try:
-        tensor = preprocess_image(contents)
+        tensor, pil_image = preprocess_image(contents)
     except Exception as e:
         raise HTTPException(status_code=422, detail=f"Image processing failed: {str(e)}")
 
+ 
     try:
         with torch.no_grad():
             outputs = model(tensor)
@@ -79,15 +86,78 @@ async def predict(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Inference failed: {str(e)}")
 
-    return JSONResponse(
-        status_code=200,
-        content={
-            "prediction": predicted_idx,
-            "result": CLASS_NAMES[predicted_idx],
-            "score": round(confidence, 4),
-               "class_probabilities": {
+    response_content = {
+        "prediction": predicted_idx,
+        "result": CLASS_NAMES[predicted_idx],
+        "score": round(confidence, 4),
+        "class_probabilities": {
             CLASS_NAMES[i]: round(probabilities[0][i].item(), 4)
             for i in range(len(CLASS_NAMES))
-        }
-        }
-    )
+        },
+    }
+
+
+    if include_gradcam:
+        try:
+            overlay_pil, heatmap_pil, base_pil, _ = generate_gradcam(
+                model=model,
+                input_tensor=tensor,
+                original_pil_image=pil_image,
+                target_class=predicted_idx,
+            )
+            response_content["gradcam"] = {
+                "heatmap_base64": pil_to_base64(heatmap_pil),  # raw heatmap, no overlay
+                "base_image_base64": pil_to_base64(base_pil),  # resized base for stacking
+                "overlay_base64": pil_to_base64(overlay_pil),  # pre-blended (optional fallback)
+                "width": base_pil.width,
+                "height": base_pil.height,
+            }
+        except Exception as e:
+            response_content["gradcam_error"] = str(e)
+            
+    return JSONResponse(status_code=200, content=response_content) 
+
+
+@router.post("/gradcam")
+async def gradcam_only(
+    file: UploadFile = File(...),
+    target_class: int = Query(None, description="Class index to explain. If omitted, uses predicted class."),
+    mode: str = Query("heatmap", description="What to return: 'heatmap', 'base', or 'overlay'"),
+):
+ 
+    if file.content_type not in ALLOWED_TYPES:
+        raise HTTPException(status_code=415, detail=f"Unsupported file type '{file.content_type}'.")
+
+    contents = await file.read()
+
+    try:
+        tensor, pil_image = preprocess_image(contents)
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=f"Image processing failed: {str(e)}")
+
+    if target_class is None:
+        with torch.no_grad():
+            outputs = model(tensor)
+            target_class = torch.argmax(outputs, dim=1).item()
+
+    try:
+        overlay_pil, heatmap_pil, base_pil, _ = generate_gradcam(
+            model=model,
+            input_tensor=tensor,
+            original_pil_image=pil_image,
+            target_class=target_class,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Grad-CAM generation failed: {str(e)}")
+
+    if mode == "base":
+        chosen = base_pil
+    elif mode == "overlay":
+        chosen = overlay_pil
+    else:  
+        chosen = heatmap_pil
+
+    buf = io.BytesIO()
+    chosen.save(buf, format="PNG")
+    buf.seek(0)
+    return StreamingResponse(buf, media_type="image/png")
