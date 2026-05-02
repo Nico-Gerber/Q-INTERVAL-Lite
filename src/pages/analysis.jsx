@@ -8,35 +8,36 @@ import ModeSelect from '../components/modeselect';
 import ImageUpload from '../components/ImageUpload';
 import ImageUploadOrder from '../components/ImageUploadOrder';
 import ModelSelect from '../components/modelSelect';
-import ClassificaionResults from '../components/classificationResults';
+import ClassificationResults from '../components/classificationResults';
+import { Atom } from "react-loading-indicators";
 
 const API_BASE = 'http://localhost:8000';
 
 const STEP_CONTENT = [
-  { title: 'Select Analysis Mode',   subtitle: 'Choose the type of analysis you want to perform' },
+  { title: 'Select Analysis Mode', subtitle: 'Choose the type of analysis you want to perform' },
   { title: 'Upload Mammogram Image', subtitle: 'Drag and drop or browse to upload your mammogram scan' },
-  { title: 'View Results',           subtitle: 'Review the AI analysis output and confidence scores' },
+  { title: 'View Results', subtitle: 'Review the AI analysis output and confidence scores' },
 ];
 
 export default function Analysis() {
-  const [file, setFile]                 = useState(null);
-  const [files, setFiles]               = useState([]);
-  const [preview, setPreview]           = useState(null);
-  const [status, setStatus]             = useState(null);
-  const [loading, setLoading]           = useState(false);
-  const [result, setResult]             = useState(null);
-  const targetRef                       = useRef(null);
-  const targetRef1                      = useRef(null);
+  const [file, setFile] = useState(null);
+  const [files, setFiles] = useState([]);
+  const [preview, setPreview] = useState(null);
+  const [status, setStatus] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+  const targetRef = useRef(null);
+  const targetRef1 = useRef(null);
   const [analysisMode, setAnalysisMode] = useState(null);
-  const [modelMode, setModelMode]       = useState('Classical');
-  const [isVisible, setIsVisible]       = useState(false);
-  const [isVisible1, setIsVisible1]     = useState(false);
-  const [activeStep, setActiveStep]     = useState(0);
+  const [modelMode, setModelMode] = useState('Classical');
+  const [isVisible, setIsVisible] = useState(false);
+  const [isVisible1, setIsVisible1] = useState(false);
+  const [activeStep, setActiveStep] = useState(0);
 
   useEffect(() => {
-    const observer  = new IntersectionObserver(([e]) => setIsVisible(e.isIntersecting),  { threshold: 0.1 });
+    const observer = new IntersectionObserver(([e]) => setIsVisible(e.isIntersecting), { threshold: 0.1 });
     const observer1 = new IntersectionObserver(([e]) => setIsVisible1(e.isIntersecting), { threshold: 0.1 });
-    if (targetRef.current)  observer.observe(targetRef.current);
+    if (targetRef.current) observer.observe(targetRef.current);
     if (targetRef1.current) observer1.observe(targetRef1.current);
     return () => { observer.disconnect(); observer1.disconnect(); };
   }, [result]);
@@ -50,13 +51,13 @@ export default function Analysis() {
     try {
       const [uploadRes, qmlRes, cnnRes] = await Promise.all([
         fetch(`${API_BASE}/images/upload`, { method: 'POST', body: formData }),
-        fetch(`${API_BASE}/QMLPredict`,    { method: 'POST', body: formData }),
+        fetch(`${API_BASE}/QMLPredict`, { method: 'POST', body: formData }),
         // teammate addition — gradcam overlay support
         fetch(`${API_BASE}/CNNPredict/?include_gradcam=true`, { method: 'POST', body: formData }),
       ]);
       const uploadData = await uploadRes.json();
-      const qmlData    = await qmlRes.json();
-      const cnnData    = await cnnRes.json();
+      const qmlData = await qmlRes.json();
+      const cnnData = await cnnRes.json();
       setResult({ filename: uploadData.filename, resultFile: { qml: qmlData, cnn: cnnData } });
     } catch {
       setStatus({ ok: false, msg: 'Cannot reach the server. Make sure the backend is running.' });
@@ -132,10 +133,25 @@ export default function Analysis() {
         {activeStep === 2 && (
           analysisMode === 'classification' ? (
             <>
-              <ModelSelect selectedModel={modelMode} onModelSelect={setModelMode} />
-              <Container maxWidth="xl">
-                <ClassificaionResults analyisedImage={preview} reset={handleReset} currentModel={modelMode} results={result} />
-              </Container>
+              {loading === true ?
+
+                <Box sx={{ mt: 15 }}>
+
+                  <Atom color='#2dd4bf' />
+
+                </Box>
+
+
+
+                : (
+                  <>
+                    <ModelSelect selectedModel={modelMode} onModelSelect={setModelMode} />
+                    <Container maxWidth="xl">
+                      <ClassificationResults analyisedImage={preview} reset={handleReset} currentModel={modelMode} results={result} />
+                    </Container>
+                  </>
+                )}
+
             </>
           ) : (
             <Container />
