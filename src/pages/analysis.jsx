@@ -11,6 +11,8 @@ import ModelSelect from '../components/modelSelect';
 import ClassificationResults from '../components/classificationResults';
 import FutureRiskResults from '../components/futureRiskResults';
 
+import NeuralCanvas from '../components/neuralCanvas';
+
 import { Atom } from "react-loading-indicators";
 
 const API_BASE = 'http://localhost:8000';
@@ -54,7 +56,7 @@ export default function Analysis() {
       const [uploadRes, qmlRes, cnnRes] = await Promise.all([
         fetch(`${API_BASE}/images/upload`, { method: 'POST', body: formData }),
         fetch(`${API_BASE}/QMLPredict`, { method: 'POST', body: formData }),
-        // teammate addition — gradcam overlay support
+
         fetch(`${API_BASE}/CNNPredict/?include_gradcam=true`, { method: 'POST', body: formData }),
       ]);
       const uploadData = await uploadRes.json();
@@ -77,11 +79,39 @@ export default function Analysis() {
   };
 
   return (
-    <Box sx={{ backgroundColor: 'background.default', minHeight: '100%', position: 'relative', overflow: 'hidden' }}>
-      {/* Radial glow */}
-      <Box sx={{ position: 'absolute', top: '-20%', left: '50%', transform: 'translateX(-50%)', width: '700px', height: '700px', borderRadius: '50%', background: (theme) => `radial-gradient(circle, ${theme.palette.primary.main}0F 0%, transparent 65%)`, pointerEvents: 'none', zIndex: 0 }} />
-      {/* Grid overlay */}
-      <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0, backgroundImage: (theme) => `linear-gradient(${theme.palette.primary.main}06 1px, transparent 1px), linear-gradient(90deg, ${theme.palette.primary.main}06 1px, transparent 1px)`, backgroundSize: '60px 60px' }} />
+    <Box sx={{
+      backgroundColor: 'background.default',
+      minHeight: '100%',
+      position: 'relative',
+      overflow: 'hidden',
+      background: (theme) => theme.palette.background.hero,
+    }}>
+
+      <Box sx={{
+        position: 'absolute',
+        top: '-20%',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: '700px',
+        height: '700px',
+        borderRadius: '50%',
+        background: (theme) => `radial-gradient(circle, ${theme.palette.primary.main}12 0%, transparent 65%)`,
+        //                                                                 
+        pointerEvents: 'none',
+        zIndex: 0,
+      }} />
+
+      <Box sx={{
+        position: 'absolute',
+        inset: 0,
+        pointerEvents: 'none',
+        zIndex: 0,
+        backgroundImage: (theme) => `linear-gradient(${theme.palette.primary.main}06 1px, transparent 1px), linear-gradient(90deg, ${theme.palette.primary.main}06 1px, transparent 1px)`,
+        backgroundSize: '60px 60px',
+      }} />
+
+
+      <NeuralCanvas />
 
       <Box sx={{ position: 'relative', zIndex: 1, textAlign: 'center', pt: { xs: 6, md: 8 }, pb: { xs: 8, md: 12 }, px: 2 }}>
 
