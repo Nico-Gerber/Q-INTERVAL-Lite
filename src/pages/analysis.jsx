@@ -9,6 +9,8 @@ import ImageUpload from '../components/ImageUpload';
 import ImageUploadOrder from '../components/ImageUploadOrder';
 import ModelSelect from '../components/modelSelect';
 import ClassificationResults from '../components/classificationResults';
+import FutureRiskResults from '../components/futureRiskResults';
+
 import { Atom } from "react-loading-indicators";
 
 const API_BASE = 'http://localhost:8000';
@@ -154,7 +156,27 @@ export default function Analysis() {
 
             </>
           ) : (
-            <Container />
+            <>
+              {loading === true ?
+
+                <Box sx={{ mt: 15 }}>
+
+                  <Atom color='#2dd4bf' />
+
+                </Box>
+
+
+
+                : (
+                  <>
+                    <ModelSelect selectedModel={modelMode} onModelSelect={setModelMode} />
+                    <Container maxWidth="xl">
+                      <FutureRiskResults analyisedImage={preview} reset={handleReset} currentModel={modelMode} results={result} />
+                    </Container>
+                  </>
+                )}
+
+            </>
           )
         )}
 
