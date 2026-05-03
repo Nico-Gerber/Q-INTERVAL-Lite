@@ -7,6 +7,9 @@ import AnimatedRiskGauge from './animatedRiskGauge';
 
 import RiskChart from './riskChart';
 
+import ExamTimeline from './timeLine';
+
+import ExamContribution from './ContributionPanel';
 
 function AnimatedBar({ value, color, delay = 0 }) {
     const [width, setWidth] = useState(0);
@@ -37,6 +40,23 @@ export default function FutureRiskResults({ analyisedImage, reset, currentModel,
         { year: '3 year', risk: 7.2 },
         { year: '4 year', risk: 10.8 },
         { year: '5 year', risk: 14.2 },
+    ];
+
+    const qmlHorizons = [
+        { year: '1 year', risk: 0.3 },
+        { year: '2 year', risk: 1.6 },
+        { year: '3 year', risk: 4.7 },
+        { year: '4 year', risk: 8.4 },
+        { year: '5 year', risk: 10.2 },
+    ];
+
+
+
+    const examHistory = [
+        { year: 2019, weight: 0.03, isCurrent: false, label: 'prior' },
+        { year: 2021, weight: 0.07, isCurrent: false, label: 'prior' },
+        { year: 2023, weight: 0.62, isCurrent: false, label: 'prior · key' },
+        { year: 2025, weight: 0.28, isCurrent: true, label: 'current' },
     ];
 
     useEffect(() => {
@@ -77,7 +97,7 @@ export default function FutureRiskResults({ analyisedImage, reset, currentModel,
                     transition: 'opacity 0.6s ease, transform 0.6s ease',
                 }}>
 
-                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 2, mb: 3 }}>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 2, mb: 0 }}>
                         <Box sx={{
                             borderRadius: 3,
                             border: '1px solid rgba(255,255,255,0.07)',
@@ -124,13 +144,32 @@ export default function FutureRiskResults({ analyisedImage, reset, currentModel,
 
 
                             <RiskChart
-                                data={cnnHorizons}
+                                data={currentModel === 'Classical' ? cnnHorizons : qmlHorizons}
                                 color="rgba(178, 34, 34, 1)"
                                 label="Risk Over Time"
                                 threshold={6}
                             />
                         </Box>
                     </Box>
+
+
+                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 3, mt: 4 }}>
+
+
+                        <ExamTimeline exams={examHistory} />
+
+
+
+
+
+
+
+                        <ExamContribution exams={examHistory} />
+
+
+
+                    </Box>
+
                 </Box>
             )}
         </>
