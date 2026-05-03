@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Typography, Paper, Button, Container, Slider } from '@mui/material';
 import { ResetTvSharp } from '@mui/icons-material';
+import Tooltip from '../components/Tooltip';
 
 function AnimatedBar({ value, color, delay = 0 }) {
     const [width, setWidth] = useState(0);
@@ -25,7 +26,7 @@ function AnimatedBar({ value, color, delay = 0 }) {
 export default function ClassificationResults({ analyisedImage, reset, currentModel, results }) {
     const [mounted, setMounted] = useState(false);
 
-    const [heatmapOpacity, setHeatmapOpacity] = useState(50);
+    const [heatmapOpacity, setHeatmapOpacity] = useState(0);
 
     const cnnResult = results?.resultFile?.cnn
 
@@ -200,7 +201,9 @@ export default function ClassificationResults({ analyisedImage, reset, currentMo
                             }}>
                                 <Box
                                     component="img"
-                                    src={analyisedImage}
+                                    src={cnnResult?.gradcam?.base_image_base64
+                                        ? `data:image/png;base64,${cnnResult.gradcam.base_image_base64}`
+                                        : analyisedImage}
                                     alt="Analysed mammogram"
                                     sx={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
                                 />
@@ -475,17 +478,24 @@ export default function ClassificationResults({ analyisedImage, reset, currentMo
 
                                 {currentModel === 'Classical' && cnnResult?.gradcam?.heatmap_base64 && (
                                     <Box sx={{ px: 1 }}>
-                                        <Typography sx={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', mb: 0.5 }}>
-                                            Heatmap Opacity
-                                        </Typography>
-                                        <Slider
-                                            value={heatmapOpacity}
-                                            onChange={(e, val) => setHeatmapOpacity(val)}
-                                            aria-label="Heatmap opacity"
-                                            valueLabelDisplay="auto"
-                                            min={0}
-                                            max={100}
-                                        />
+                                        <Box sx={{ position: 'relative', mb: 0.5, width: '100%' }}>
+                                            <Box sx={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)' }}>
+                                                <Tooltip text="Grad-CAM highlights which regions of the image most influenced the model's prediction, shown as a heatmap overlay." />
+                                            </Box>
+                                            <Typography sx={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', textAlign: 'center' }}>
+                                                Grad-CAM Heatmap Opacity
+                                            </Typography>
+                                        </Box>
+                                        <Box sx={{ pl: 1 }}>
+                                            <Slider
+                                                value={heatmapOpacity}
+                                                onChange={(e, val) => setHeatmapOpacity(val)}
+                                                aria-label="Heatmap opacity"
+                                                valueLabelDisplay="auto"
+                                                min={0}
+                                                max={100}
+                                            />
+                                        </Box>
                                     </Box>
                                 )}
 
