@@ -37,6 +37,7 @@ export default function RiskChart({
   label = 'Risk Over Time',
   threshold = null,
   thresholdLabel = 'Elevated Threshold',
+
 }) {
   return (
     <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -109,6 +110,7 @@ export default function RiskChart({
               activeDot={{ r: 6, strokeWidth: 2, stroke: 'white' }}
               animationDuration={1200}
               animationEasing="ease-out"
+
             />
           </AreaChart>
         </ResponsiveContainer>

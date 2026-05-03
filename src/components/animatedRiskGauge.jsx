@@ -4,7 +4,7 @@ import { CircularProgressbarWithChildren, buildStyles } from 'react-circular-pro
 import 'react-circular-progressbar/dist/styles.css';
 import { animate } from 'framer-motion';
 
-function AnimatedRiskGauge({ targetValue, color, label, isVisible = true, duration = 1.8 }) {
+function AnimatedRiskGauge({ targetValue, color, label, isVisible = true, duration = 1.8, insideText }) {
   const [animatedValue, setAnimatedValue] = useState(0);
 
   useEffect(() => {
@@ -44,7 +44,7 @@ function AnimatedRiskGauge({ targetValue, color, label, isVisible = true, durati
             {animatedValue.toFixed(1)}%
           </Typography>
           <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: 16, mt: 1 }}>
-            over the next 5 years
+            {insideText}
           </Typography>
         </CircularProgressbarWithChildren>
       </Box>
