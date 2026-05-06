@@ -22,8 +22,8 @@ EPOCHS = 25
 BATCH_SIZE = 16
 LEARNING_RATE = 0.01
 
-MODEL_SAVE_PATH = "vqc_900_pca4_multiclass_v4.joblib"
-HISTORY_SAVE_PATH = "vqc_900_pca4_multiclass_v4_history.joblib"
+MODEL_SAVE_PATH = "vqc_900_pca4_multiclass_v5.joblib"
+HISTORY_SAVE_PATH = "vqc_900_pca4_multiclass_v5_history.joblib"
 
 LABEL_NAMES = {
     0: "normal",
@@ -64,25 +64,29 @@ print("Test label distribution:", dict(zip(*np.unique(y_test, return_counts=True
 
 dev = qml.device("default.qubit", wires=N_QUBITS)
 
-def variational_layer(weights):
+def variational_layer(weights, x):
+    # re-upload with per-layer learnable scale (weights[:, 2])
+    for i in range(N_QUBITS):
+        qml.RY(weights[i, 2] * x[i], wires=i)
+        qml.RZ(weights[i, 2] * x[(i + 1) % len(x)], wires=i)
+
+    # trainable rotations
     for i in range(N_QUBITS):
         qml.RY(weights[i, 0], wires=i)
         qml.RZ(weights[i, 1], wires=i)
 
-    for i in range(N_QUBITS):
-        qml.CNOT(wires=[i, (i + 1) % N_QUBITS])
+    # brick-layer entanglement
+    for i in range(0, N_QUBITS - 1, 2):
+        qml.CNOT(wires=[i, i + 1])
+    for i in range(1, N_QUBITS - 1, 2):
+        qml.CNOT(wires=[i, i + 1])
 
 @qml.qnode(dev, interface="autograd")
 def circuit(x, weights):
     for layer in range(N_LAYERS):
-
-        for i in range(N_QUBITS):
-            qml.RY(x[i], wires=i)
-            qml.RZ(x[(i+1) % len(x)], wires=i)
-
-        variational_layer(weights[layer])
-
+        variational_layer(weights[layer], x)
     return [qml.expval(qml.PauliZ(i)) for i in range(N_QUBITS)]
+
 
 def softmax(logits):
     logits = pnp.array(logits)
