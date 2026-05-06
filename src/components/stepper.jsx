@@ -1,98 +1,87 @@
 import React from 'react';
-import {
-  Box, Step, StepLabel, Stepper, Typography, Container
-} from '@mui/material';
+import { Box, Step, StepLabel, Stepper, Typography, Container } from '@mui/material';
 import { Check } from '@mui/icons-material';
 
 const CustomStepIcon = ({ active, completed, icon }) => (
   <Box sx={{
-    width: 52,
-    height: 52,
-    borderRadius: '50%',
-    backgroundColor: active || completed
-      ? '#2DD4BF'
-      : 'rgba(255,255,255,0.1)',
-    border: active
-      ? '2px solid #2DD4BF'
-      : completed
-        ? '2px solid #2DD4BF'
-        : '2px solid rgba(255,255,255,0.15)',
+    width: 48,
+    height: 48,
+    borderRadius: 2,
+    backgroundColor: active || completed ? 'primary.main' : 'rgba(255,255,255,0.07)',
+    border: '2px solid',
+    borderColor: active || completed ? 'primary.main' : 'rgba(255,255,255,0.12)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    color: active || completed ? '#13121A' : 'rgba(255,255,255,0.5)',
+    color: active || completed ? 'primary.contrastText' : 'text.disabled',
     fontWeight: 700,
-    fontSize: '1.1rem',
+    fontSize: '1rem',
     boxShadow: active
-      ? `0 0 0 6px rgba(45,212,191,0.2),
-         0 0 12px 4px rgba(45,212,191,0.45),
-         0 0 28px 10px rgba(45,212,191,0.2),
-         inset 0 1px 3px rgba(255,255,255,0.2)`
+      ? (theme) =>
+          `0 0 0 5px ${theme.palette.primary.main}22,
+           0 0 18px 4px ${theme.palette.primary.main}55`
       : completed
-        ? `0 0 8px 2px rgba(45,212,191,0.3)`
+        ? (theme) => `0 0 8px 2px ${theme.palette.primary.main}33`
         : 'none',
-    transition: 'box-shadow 0.3s ease, background-color 0.3s ease',
+    transition: 'all 0.3s ease',
   }}>
-    {completed
-      ? <Check sx={{ color: '#13121A', fontSize: '1.5rem' }} />
-      : icon
-    }
+    {completed ? <Check sx={{ fontSize: '1.1rem' }} /> : icon}
   </Box>
 );
 
 const STEPS = [
-  { label: 'Select Mode', sub: 'Choose analysis type' },
-  { label: 'Upload Images', sub: 'Add mammogram scans' },
-  { label: 'View Results', sub: 'AI analysis results' },
+  { label: 'Select Mode',   sub: 'Choose analysis type' },
+  { label: 'Upload Images', sub: 'Add mammogram scans'  },
+  { label: 'View Results',  sub: 'AI analysis results'  },
 ];
 
 export default function AnalysisStepper({ activeStep }) {
   return (
-    <Container maxWidth="lg" sx={{ py: '3rem' }}>
+    <Container maxWidth="sm" sx={{ pt: 3, pb: 2 }}>
       <Stepper
         activeStep={activeStep}
         alternativeLabel
         sx={{
           '& .MuiStepConnector-root': {
-            top: 26,
-            left: 'calc(-50% + 36px)',
-            right: 'calc(50% + 36px)',
+            top: 24,
+            left: 'calc(-50% + 32px)',
+            right: 'calc(50% + 32px)',
           },
           '& .MuiStepConnector-line': {
             borderTopWidth: 2,
-            borderColor: 'rgba(255,255,255,0.15)',
+            borderColor: 'divider',
           },
           '& .MuiStepConnector-root.Mui-active .MuiStepConnector-line': {
-            backgroundColor: '#2DD4BF',
+            backgroundColor: 'primary.main',
             border: 'none',
             height: 2,
-            boxShadow: `
-              0 0 6px 2px rgba(45,212,191,0.7),
-              0 0 14px 4px rgba(45,212,191,0.35)
-            `,
+            boxShadow: (theme) =>
+              `0 0 8px 2px ${theme.palette.primary.main}AA,
+               0 0 16px 4px ${theme.palette.primary.main}55`,
           },
           '& .MuiStepConnector-root.Mui-completed .MuiStepConnector-line': {
-            backgroundColor: '#2DD4BF',
+            backgroundColor: 'primary.main',
             border: 'none',
             height: 2,
-            boxShadow: `
-              0 0 6px 2px rgba(45,212,191,0.7),
-              0 0 14px 4px rgba(45,212,191,0.35)
-            `,
+            boxShadow: (theme) =>
+              `0 0 8px 2px ${theme.palette.primary.main}AA,
+               0 0 16px 4px ${theme.palette.primary.main}55`,
           },
           '& .MuiStepLabel-label': {
-            fontSize: '1rem',
-            fontWeight: 500,
-            color: 'rgba(255,255,255,0.45)',
-            mt: 0.5,
+            fontSize: '0.78rem',
+            fontWeight: 600,
+            color: 'text.disabled',
+            mt: 0.75,
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
           },
           '& .MuiStepLabel-label.Mui-active': {
-            color: 'white',
+            color: 'text.primary',
             fontWeight: 700,
           },
           '& .MuiStepLabel-label.Mui-completed': {
-            color: '#2DD4BF',
-            fontWeight: 600,
+            color: 'primary.main',
+            fontWeight: 700,
           },
         }}
       >
@@ -101,7 +90,7 @@ export default function AnalysisStepper({ activeStep }) {
             <StepLabel
               StepIconComponent={CustomStepIcon}
               optional={
-                <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.35)', fontSize: '14px' }}>
+                <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.68rem' }}>
                   {sub}
                 </Typography>
               }
