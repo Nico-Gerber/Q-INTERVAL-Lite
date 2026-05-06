@@ -119,7 +119,7 @@ weights = pnp.array(
     np.random.normal(
         loc=0.0,
         scale=0.1,
-        size=(N_LAYERS, N_QUBITS, 2)
+        size=(N_LAYERS, N_QUBITS, 3)
     ),
     requires_grad=True
 )
