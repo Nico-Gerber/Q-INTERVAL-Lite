@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Paper, Button, Container, Slider } from '@mui/material';
-import { ResetTvSharp } from '@mui/icons-material';
+import { Box, Typography, Button, Container, Slider } from '@mui/material';
 import Tooltip from '../components/Tooltip';
 
 function AnimatedBar({ value, color, delay = 0 }) {
@@ -10,53 +9,64 @@ function AnimatedBar({ value, color, delay = 0 }) {
         return () => clearTimeout(t);
     }, [value, delay]);
     return (
-        <Box sx={{ height: 4, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 99, overflow: 'hidden', mt: 1 }}>
+        <Box sx={{ height: 3, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 99, overflow: 'hidden', mt: 1 }}>
             <Box sx={{
                 width: `${width}%`,
                 height: '100%',
                 backgroundColor: color,
                 borderRadius: 99,
                 transition: 'width 1.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                boxShadow: color !== 'rgba(255,255,255,0.25)' ? `0 0 12px ${color}88` : 'none',
             }} />
         </Box>
     );
 }
 
+const MONO = { fontFamily: 'monospace' };
+
+const MetricCell = ({ label, value, color, borderRight = true }) => (
+    <Box sx={{
+        p: 2,
+        background: 'rgba(255,255,255,0.02)',
+        borderRight: borderRight ? '1px solid rgba(255,255,255,0.07)' : 'none',
+    }}>
+        <Typography sx={{ ...MONO, fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', mb: 0.75 }}>
+            {label}
+        </Typography>
+        <Typography sx={{ ...MONO, fontSize: 20, fontWeight: 500, color: color ?? 'white', lineHeight: 1 }}>
+            {value}
+        </Typography>
+    </Box>
+);
+
 export default function ClassificationResults({ analyisedImage, reset, currentModel, results }) {
     const [mounted, setMounted] = useState(false);
-
     const [heatmapOpacity, setHeatmapOpacity] = useState(0);
 
-    const cnnResult = results?.resultFile?.cnn
-
-    const qmlResult = results?.resultFile?.qml
-
-    const activeResult = currentModel === 'Quantum' ? qmlResult : cnnResult
+    const cnnResult = results?.resultFile?.cnn;
+    const qmlResult = results?.resultFile?.qml;
+    const activeResult = currentModel === 'Quantum' ? qmlResult : cnnResult;
 
     useEffect(() => {
-        setMounted(false)
-        if (!activeResult) return
-        const t = setTimeout(() => setMounted(true), 50)
-        return () => clearTimeout(t)
-    }, [activeResult])
+        setMounted(false);
+        if (!activeResult) return;
+        const t = setTimeout(() => setMounted(true), 50);
+        return () => clearTimeout(t);
+    }, [activeResult]);
 
-    if (!activeResult) return null
+    if (!activeResult) return null;
 
+    const resultColor = activeResult.result === 'Malignant'
+        ? '#e05252'
+        : activeResult.result === 'Benign'
+            ? '#d4a017'
+            : '#3fcf8e';
 
-    const MalignantColor = 'rgba(255, 77, 77, 1)'
-    const BenignColor = 'rgba(229, 255, 0, 1)'
-    const NormalColor = 'rgba(34, 252, 27, 1)'
+    const verdictColor = qmlResult.result === cnnResult.result ? '#3fcf8e' : '#e05252';
+    const verdictText = qmlResult.result === cnnResult.result ? 'Models agree' : 'Models disagree';
 
-    const resultColor = activeResult?.result === 'Malignant'
-        ? 'rgba(255, 77, 77, 0.6)'
-        : activeResult?.result === 'Benign'
-            ? 'rgba(229, 255, 0, 0.6)'
-            : 'rgba(34, 252, 27, 0.6)'
-
-    const verdictColor = qmlResult.result === cnnResult.result ?
-        ('rgba(34, 252, 27, 0.6)') : ('rgba(255, 77, 77, 0.6)')
-
+    const MalignantColor = '#e05252';
+    const BenignColor = '#d4a017';
+    const NormalColor = '#3fcf8e';
 
     const classifications = [
         { label: 'Malignant', value: (activeResult.class_probabilities.Malignant * 100).toFixed(2), color: MalignantColor },
@@ -65,500 +75,213 @@ export default function ClassificationResults({ analyisedImage, reset, currentMo
     ];
 
     const comparisonClassifications = [
-        { label: 'Malignant', cnnValue: (cnnResult.class_probabilities.Malignant * 100).toFixed(2), qmlValue: (qmlResult.class_probabilities.Malignant * 100).toFixed(2), color: MalignantColor },
-        { label: 'Benign', cnnValue: (cnnResult.class_probabilities.Benign * 100).toFixed(2), qmlValue: (qmlResult.class_probabilities.Benign * 100).toFixed(2), color: BenignColor },
-        { label: 'Normal', cnnValue: (cnnResult.class_probabilities.Normal * 100).toFixed(2), qmlValue: (qmlResult.class_probabilities.Normal * 100).toFixed(2), color: NormalColor },
-    ]
+        { label: 'Malignant', cnn: (cnnResult.class_probabilities.Malignant * 100).toFixed(2), qml: (qmlResult.class_probabilities.Malignant * 100).toFixed(2), color: MalignantColor },
+        { label: 'Benign', cnn: (cnnResult.class_probabilities.Benign * 100).toFixed(2), qml: (qmlResult.class_probabilities.Benign * 100).toFixed(2), color: BenignColor },
+        { label: 'Normal', cnn: (cnnResult.class_probabilities.Normal * 100).toFixed(2), qml: (qmlResult.class_probabilities.Normal * 100).toFixed(2), color: NormalColor },
+    ];
+
+    const cardBorder = { border: '1px solid rgba(255,255,255,0.07)', borderRadius: 2 };
 
     return (
-        <>
-            {currentModel === 'Both' ? (
+        <Box sx={{
+            width: '100%',
+            maxWidth: 1100,
+            mx: 'auto',
+            py: 4,
+            opacity: mounted ? 1 : 0,
+            transform: mounted ? 'none' : 'translateY(16px)',
+            transition: 'opacity 0.6s ease, transform 0.6s ease',
+        }}>
+
+            {/* ── Header ── */}
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5, flexWrap: 'wrap', gap: 1 }}>
+                <Box>
+                    <Typography variant="h4" sx={{ fontWeight: 700, color: 'text.primary', mb: 0.5 }}>
+                        Classification Results
+                    </Typography>
+                    <Typography sx={{ ...MONO, fontSize: 11, letterSpacing: '0.06em', color: 'rgba(255,255,255,0.35)' }}>
+                        {currentModel.toUpperCase()} MODEL · SINGLE IMAGE
+                    </Typography>
+                </Box>
                 <Box sx={{
-                    fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
-                    width: '100%',
-                    maxWidth: 1100,
-                    mx: 'auto',
-                    py: 4,
-                    opacity: mounted ? 1 : 0,
-                    transform: mounted ? 'none' : 'translateY(16px)',
-                    transition: 'opacity 0.6s ease, transform 0.6s ease',
+                    display: 'inline-flex', alignItems: 'center', gap: 1,
+                    px: 1.5, py: 0.75, borderRadius: 999,
+                    border: `1px solid ${resultColor}40`,
+                    background: `${resultColor}12`,
                 }}>
-                    <Box>
+                    <Box sx={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: resultColor }} />
+                    <Typography sx={{ ...MONO, fontSize: 11, fontWeight: 500, color: resultColor }}>
+                        {activeResult.result}
+                    </Typography>
+                </Box>
+            </Box>
 
-                        {/* Header label */}
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
-                            <Box sx={{
-                                width: 8, height: 8, borderRadius: '50%',
-                                backgroundColor: '#FF4D4D',
-                                boxShadow: '0 0 8px #FF4D4Dcc',
-                                animation: 'pulse 2s ease-in-out infinite',
-                                '@keyframes pulse': {
-                                    '0%, 100%': { opacity: 1, transform: 'scale(1)' },
-                                    '50%': { opacity: 0.5, transform: 'scale(1.4)' },
-                                }
-                            }} />
-                            <Typography sx={{ color: 'rgba(255,255,255,0.35)', fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 500 }}>
-                                Analysis Complete
-                            </Typography>
-                        </Box>
-
-                        {/* Stat cards row */}
-                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2, mb: 3 }}>
-
-
-                            {/* Classical AI */}
-                            <Box sx={{
-                                p: 3,
-                                borderRadius: 3,
-                                background: 'rgba(255,255,255,0.03)',
-                                border: '1px solid rgba(255,255,255,0.08)',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                textAlign: 'center',
-                            }}>
-                                <Typography sx={{ color: 'rgba(255,255,255,0.3)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600, mb: 0.8, mt: -1 }}>
-                                    Classical AI
-                                </Typography>
-                                <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
-                                    <Typography sx={{ color: 'white', fontSize: 28, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1 }}>
-                                        {(activeResult.score * 100).toFixed(2)}
-                                    </Typography>
-                                    <Typography sx={{ color: 'rgba(255,255,255,0.4)', fontSize: 16, fontWeight: 400 }}>%</Typography>
-                                </Box>
-                                <Typography sx={{ color: 'rgba(255,255,255,0.3)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', paddingTop: 1, mb: -1 }}>
-                                    {cnnResult.result}
-                                </Typography>
-                            </Box>
-
-                            {/* Models Agree? */}
-                            <Box sx={{
-                                p: 3,
-                                borderRadius: 3,
-                                background: `linear-gradient(135deg,  ${verdictColor} , rgba(255,77,77,0.06) 100%)`,
-                                border: `1px solid ${verdictColor}`,
-                                position: 'relative',
-                                overflow: 'hidden',
-                                '&::before': {
-                                    content: '""',
-                                    position: 'absolute',
-                                    top: 0, left: 0, right: 0,
-                                    height: 2,
-                                    background: `linear-gradient(90deg, ${verdictColor}, transparent)`,
-                                    borderRadius: '3px 3px 0 0',
-                                }
-                            }}>
-                                <Typography sx={{ color: verdictColor, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600, mb: 0.8 }}>
-                                    Verdict
-                                </Typography>
-                                <Typography sx={{ color: verdictColor, fontSize: 28, fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1 }}>
-                                    {qmlResult.result === cnnResult.result ? ('Models Agree') : ('Models Disagree')}
-                                </Typography>
-                            </Box>
-
-                            {/* Quantum AI */}
-                            <Box sx={{
-                                p: 3,
-                                borderRadius: 3,
-                                background: 'rgba(255,255,255,0.03)',
-                                border: '1px solid rgba(255,255,255,0.08)',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                textAlign: 'center',
-                            }}>
-                                <Typography sx={{ color: 'rgba(255,255,255,0.3)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600, mb: 0.8, mt: -1 }}>
-                                    Quantum AI
-                                </Typography>
-                                <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
-                                    <Typography sx={{ color: 'white', fontSize: 28, fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1 }}>
-                                        {(qmlResult.score * 100).toFixed(2)}
-                                    </Typography>
-                                    <Typography sx={{ color: 'rgba(255,255,255,0.4)', fontSize: 16, fontWeight: 400 }}>%</Typography>
-                                </Box>
-                                <Typography sx={{ color: 'rgba(255,255,255,0.3)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', paddingTop: 1, mb: -1 }}>
-                                    {qmlResult.result}
-                                </Typography>
-                            </Box>
-                        </Box>
-
-                        {/* Main content row */}
-                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-
-                            {/* Image panel */}
-                            <Box sx={{
-                                borderRadius: 1,
-                                overflow: 'hidden',
-                                border: '1px solid rgba(255,255,255,0.07)',
-                                position: 'relative',
-                                background: '#000',
-                                minHeight: 360,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                            }}>
-                                <Box
-                                    component="img"
-                                    src={cnnResult?.gradcam?.base_image_base64
-                                        ? `data:image/png;base64,${cnnResult.gradcam.base_image_base64}`
-                                        : analyisedImage}
-                                    alt="Analysed mammogram"
-                                    sx={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
-                                />
-                                {/* Corner bracket decorations */}
-                                {[
-                                    { top: 10, left: 10, borderTop: '2px solid rgba(255,77,77,0.5)', borderLeft: '2px solid rgba(255,77,77,0.5)' },
-                                    { top: 10, right: 10, borderTop: '2px solid rgba(255,77,77,0.5)', borderRight: '2px solid rgba(255,77,77,0.5)' },
-                                    { bottom: 10, left: 10, borderBottom: '2px solid rgba(255,77,77,0.5)', borderLeft: '2px solid rgba(255,77,77,0.5)' },
-                                    { bottom: 10, right: 10, borderBottom: '2px solid rgba(255,77,77,0.5)', borderRight: '2px solid rgba(255,77,77,0.5)' },
-                                ].map((style, i) => (
-                                    <Box key={i} sx={{ position: 'absolute', width: 16, height: 16, ...style }} />
-                                ))}
-                            </Box>
-
-                            {/* Classifications panel */}
-                            <Box sx={{
-                                borderRadius: 3,
-                                border: '1px solid rgba(255,255,255,0.07)',
-                                background: 'rgba(255,255,255,0.02)',
-                                p: 3.5,
-                                display: 'flex',
-                                flexDirection: 'column',
-                                justifyContent: 'space-between',
-                            }}>
-                                <Box>
-                                    <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: 30, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600, mb: 3 }}>
-                                        All Classifications
-                                    </Typography>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
-                                        <Box sx={{
-                                            width: 8, height: 8, borderRadius: '50%',
-
-                                            backgroundColor: '#4dff74ff',
-                                            boxShadow: '0 0 8px #4dff74ff',
-                                            animation: 'pulse 2s ease-in-out infinite',
-                                            '@keyframes pulse': {
-                                                '0%, 100%': { opacity: 1, transform: 'scale(1)' },
-                                                '50%': { opacity: 0.5, transform: 'scale(1.4)' },
-                                            }
-                                        }} />
-                                        <Typography sx={{ color: 'rgba(255,255,255,0.35)', fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 500 }}>
-                                            Classical Model
-                                        </Typography>
-                                        <Box sx={{
-                                            width: 8, height: 8, borderRadius: '50%',
-                                            backgroundColor: 'rgba(202, 77, 255, 1)',
-                                            boxShadow: '0 0 8px rgba(202, 77, 255, 1)',
-                                            animation: 'pulse 2s ease-in-out infinite',
-                                            '@keyframes pulse': {
-                                                '0%, 100%': { opacity: 1, transform: 'scale(1)' },
-                                                '50%': { opacity: 0.5, transform: 'scale(1.4)' },
-                                            }
-                                        }} />
-                                        <Typography sx={{ color: 'rgba(255,255,255,0.35)', fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 500 }}>
-                                            Quantum Model
-                                        </Typography>
-                                    </Box>
-                                    {comparisonClassifications.map(({ label, qmlValue, cnnValue, color }, i) => (
-                                        <Box key={label} sx={{ mb: i < comparisonClassifications.length - 1 ? 3.5 : 0 }}>
-
-                                            {/* Label row */}
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                                <Box sx={{
-                                                    width: 6, height: 6, borderRadius: '50%',
-                                                    backgroundColor: color, flexShrink: 0,
-                                                    boxShadow: `0 0 6px ${color}`,
-                                                }} />
-                                                <Typography sx={{ color: 'rgba(255,255,255,0.8)', fontSize: 16, fontWeight: 500 }}>
-                                                    {label}
-                                                </Typography>
-                                            </Box>
-
-                                            {/* CNN row */}
-                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <Typography sx={{ color: '#4dff74ff', fontSize: 12 }}>Classical</Typography>
-                                                <Typography sx={{ color: '#4dff74ff', fontSize: 12, fontWeight: 700 }}>{cnnValue}%</Typography>
-                                            </Box>
-                                            <AnimatedBar value={cnnValue} color={'#4dff74ff'} delay={i * 150} />
-
-                                            {/* QML row */}
-                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 0.75 }}>
-                                                <Typography sx={{ color: 'rgba(202, 77, 255, 1)', fontSize: 12 }}>Quantum</Typography>
-                                                <Typography sx={{ color: 'rgba(202, 77, 255, 1)', fontSize: 12, fontWeight: 700 }}>{qmlValue}%</Typography>
-                                            </Box>
-                                            <AnimatedBar value={qmlValue} color={'rgba(202, 77, 255, 1)'} delay={i * 150 + 75} />
-
-                                        </Box>
-                                    ))}
-
-                                    {/* Disclaimer footer */}
-                                    < Box sx={{
-                                        mt: 4,
-                                        pt: 3,
-                                        borderTop: '1px solid rgba(255,255,255,0.06)',
-                                    }}>
-                                        <Typography sx={{ color: 'rgba(255,255,255,0.2)', fontSize: 11, lineHeight: 1.6 }}>
-                                            This result is intended to assist qualified medical professionals. Not a substitute for clinical diagnosis.
-                                        </Typography>
-                                    </Box>
-                                </Box>
-                            </Box>
-
-                        </Box>
-
-                        <Container sx={{ padding: 5 }}>
-                            <Button variant="contained" onClick={() => reset()}>Reset</Button>
-                        </Container>
-
-                    </Box>
+            {/* ── Metric cells ── */}
+            {currentModel === 'Both' ? (
+                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0,1fr))', ...cardBorder, overflow: 'hidden', mb: 2 }}>
+                    <MetricCell label="Classical result" value={cnnResult.result} color={cnnResult.result === 'Malignant' ? '#e05252' : cnnResult.result === 'Benign' ? '#d4a017' : '#3fcf8e'} />
+                    <MetricCell label="Classical conf." value={`${(cnnResult.score * 100).toFixed(1)}%`} />
+                    <MetricCell label="Quantum result" value={qmlResult.result} color={qmlResult.result === 'Malignant' ? '#e05252' : qmlResult.result === 'Benign' ? '#d4a017' : '#3fcf8e'} />
+                    <MetricCell label="Verdict" value={verdictText} color={verdictColor} borderRight={false} />
                 </Box>
             ) : (
-
-
-                <Box sx={{
-                    fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
-                    width: '100%',
-                    maxWidth: 1100,
-                    mx: 'auto',
-                    py: 4,
-                    opacity: mounted ? 1 : 0,
-                    transform: mounted ? 'none' : 'translateY(16px)',
-                    transition: 'opacity 0.6s ease, transform 0.6s ease',
-                }}>
-                    <Box>
-
-                        {/* Header label */}
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
-                            <Box sx={{
-                                width: 8, height: 8, borderRadius: '50%',
-                                backgroundColor: '#FF4D4D',
-                                boxShadow: '0 0 8px #FF4D4Dcc',
-                                animation: 'pulse 2s ease-in-out infinite',
-                                '@keyframes pulse': {
-                                    '0%, 100%': { opacity: 1, transform: 'scale(1)' },
-                                    '50%': { opacity: 0.5, transform: 'scale(1.4)' },
-                                }
-                            }} />
-                            <Typography sx={{ color: 'rgba(255,255,255,0.35)', fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 500 }}>
-                                Analysis Complete
-                            </Typography>
-                        </Box>
-
-                        {/* Stat cards row */}
-                        <Box sx={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr', gap: 2, mb: 3 }}>
-                            {/* Result card — elevated */}
-                            <Box sx={{
-                                p: 3,
-                                borderRadius: 3,
-                                background: `linear-gradient(135deg, ${resultColor} , rgba(255,77,77,0.06) 100%)`,
-                                border: `1px solid ${resultColor}`,
-                                position: 'relative',
-                                overflow: 'hidden',
-                                '&::before': {
-                                    content: '""',
-                                    position: 'absolute',
-                                    top: 0, left: 0, right: 0,
-                                    height: 2,
-                                    background: `linear-gradient(90deg, ${resultColor}, transparent)`,
-                                    borderRadius: '3px 3px 0 0',
-                                }
-                            }}>
-                                <Typography sx={{ color: resultColor, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600, mb: 0.8 }}>
-                                    Result
-                                </Typography>
-                                <Typography sx={{ color: resultColor, fontSize: 28, fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1 }}>
-                                    {activeResult.result}
-                                </Typography>
-                            </Box>
-
-                            {/* Confidence */}
-                            <Box sx={{
-                                p: 3,
-                                borderRadius: 3,
-                                background: 'rgba(255,255,255,0.03)',
-                                border: '1px solid rgba(255,255,255,0.08)',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                textAlign: 'center',
-                            }}>
-                                <Typography sx={{ color: 'rgba(255,255,255,0.3)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600, mb: 0.8 }}>
-                                    Confidence
-                                </Typography>
-                                <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
-                                    <Typography sx={{ color: 'white', fontSize: 28, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1 }}>
-                                        {(activeResult.score * 100).toFixed(2)}
-                                    </Typography>
-                                    <Typography sx={{ color: 'rgba(255,255,255,0.4)', fontSize: 16, fontWeight: 400 }}>%</Typography>
-                                </Box>
-                            </Box>
-
-                            {/* Model */}
-                            <Box sx={{
-                                p: 3,
-                                borderRadius: 3,
-                                background: 'rgba(255,255,255,0.03)',
-                                border: '1px solid rgba(255,255,255,0.08)',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                textAlign: 'center',
-                            }}>
-                                <Typography sx={{ color: 'rgba(255,255,255,0.3)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600, mb: 0.8 }}>
-                                    Model
-                                </Typography>
-                                <Typography sx={{ color: 'white', fontSize: 28, fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1 }}>
-                                    {currentModel}
-                                </Typography>
-                            </Box>
-                        </Box>
-
-
-                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-
-
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-
-
-                                <Box sx={{
-                                    borderRadius: 1,
-                                    overflow: 'hidden',
-                                    border: '1px solid rgba(255,255,255,0.07)',
-                                    position: 'relative',
-                                    background: '#000',
-                                    minHeight: 360,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                }}>
-                                    {/* Image + heatmap stack */}
-                                    <Box sx={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        <Box
-                                            component="img"
-                                            src={cnnResult?.gradcam?.base_image_base64
-                                                ? `data:image/png;base64,${cnnResult.gradcam.base_image_base64}`
-                                                : analyisedImage}
-                                            alt="Analysed mammogram"
-                                            sx={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
-                                        />
-                                        {currentModel === 'Classical' && cnnResult?.gradcam?.heatmap_base64 && (
-                                            <Box
-                                                component="img"
-                                                src={`data:image/png;base64,${cnnResult.gradcam.heatmap_base64}`}
-                                                alt="Grad-CAM heatmap"
-                                                sx={{
-                                                    position: 'absolute',
-                                                    top: 0, left: 0,
-                                                    width: '100%', height: '100%',
-                                                    objectFit: 'contain',
-                                                    opacity: heatmapOpacity / 100,
-                                                    mixBlendMode: 'multiply',
-                                                    pointerEvents: 'none',
-                                                    transition: 'opacity 0.2s ease',
-                                                }}
-                                            />
-                                        )}
-                                    </Box>
-
-
-                                    {[
-                                        { top: 10, left: 10, borderTop: '2px solid rgba(255,77,77,0.5)', borderLeft: '2px solid rgba(255,77,77,0.5)' },
-                                        { top: 10, right: 10, borderTop: '2px solid rgba(255,77,77,0.5)', borderRight: '2px solid rgba(255,77,77,0.5)' },
-                                        { bottom: 10, left: 10, borderBottom: '2px solid rgba(255,77,77,0.5)', borderLeft: '2px solid rgba(255,77,77,0.5)' },
-                                        { bottom: 10, right: 10, borderBottom: '2px solid rgba(255,77,77,0.5)', borderRight: '2px solid rgba(255,77,77,0.5)' },
-                                    ].map((style, i) => (
-                                        <Box key={i} sx={{ position: 'absolute', width: 16, height: 16, ...style }} />
-                                    ))}
-                                </Box>
-
-
-                                {currentModel === 'Classical' && cnnResult?.gradcam?.heatmap_base64 && (
-                                    <Box sx={{ px: 1 }}>
-                                        <Box sx={{ position: 'relative', mb: 0.5, width: '100%' }}>
-                                            <Box sx={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)' }}>
-                                                <Tooltip text="Grad-CAM highlights which regions of the image most influenced the model's prediction, shown as a heatmap overlay." />
-                                            </Box>
-                                            <Typography sx={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', textAlign: 'center' }}>
-                                                Grad-CAM Heatmap Opacity
-                                            </Typography>
-                                        </Box>
-                                        <Box sx={{ pl: 1 }}>
-                                            <Slider
-                                                value={heatmapOpacity}
-                                                onChange={(e, val) => setHeatmapOpacity(val)}
-                                                aria-label="Heatmap opacity"
-                                                valueLabelDisplay="auto"
-                                                min={0}
-                                                max={100}
-                                            />
-                                        </Box>
-                                    </Box>
-                                )}
-
-                            </Box>
-                            {/* Classifications panel */}
-                            <Box sx={{
-                                borderRadius: 3,
-                                border: '1px solid rgba(255,255,255,0.07)',
-                                background: 'rgba(255,255,255,0.02)',
-                                p: 3.5,
-                                display: 'flex',
-                                flexDirection: 'column',
-                                justifyContent: 'space-between',
-                            }}>
-                                <Box>
-                                    <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: 30, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600, mb: 3 }}>
-                                        All Classifications
-                                    </Typography>
-
-                                    {classifications.map(({ label, value, color }, i) => (
-                                        <Box key={label} sx={{ mb: i < classifications.length - 1 ? 3.5 : 0 }}>
-                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                    <Box sx={{
-                                                        width: 6, height: 6, borderRadius: '50%',
-                                                        backgroundColor: color,
-                                                        flexShrink: 0,
-                                                        boxShadow: color !== 'rgba(255,255,255,0.25)' ? `0 0 6px ${color}` : 'none',
-                                                    }} />
-                                                    <Typography sx={{ color: 'rgba(255,255,255,0.8)', fontSize: 20, fontWeight: 500 }}>
-                                                        {label}
-                                                    </Typography>
-                                                </Box>
-                                                <Typography sx={{ color, fontSize: 14, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
-                                                    {value}%
-                                                </Typography>
-                                            </Box>
-                                            <AnimatedBar value={value} color={color} delay={i * 150} />
-                                        </Box>
-                                    ))}
-                                </Box>
-
-                                {/* Disclaimer footer */}
-                                <Box sx={{
-                                    mt: 4,
-                                    pt: 3,
-                                    borderTop: '1px solid rgba(255,255,255,0.06)',
-                                }}>
-                                    <Typography sx={{ color: 'rgba(255,255,255,0.2)', fontSize: 11, lineHeight: 1.6 }}>
-                                        This result is intended to assist qualified medical professionals. Not a substitute for clinical diagnosis.
-                                    </Typography>
-                                </Box>
-                            </Box>
-                        </Box>
-
-                    </Box>
-
-                    <Container sx={{ padding: 5 }}>
-                        <Button variant="contained" onClick={() => reset()}>Reset</Button>
-                    </Container>
-
+                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0,1fr))', ...cardBorder, overflow: 'hidden', mb: 2 }}>
+                    <MetricCell label="Result" value={activeResult.result} color={resultColor} />
+                    <MetricCell label="Confidence" value={`${(activeResult.score * 100).toFixed(2)}%`} />
+                    <MetricCell label="Model" value={currentModel} borderRight={false} />
                 </Box>
             )}
-        </>
+
+            {/* ── Main content ── */}
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+
+                {/* Image panel */}
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                    <Box sx={{
+                        ...cardBorder,
+                        overflow: 'hidden',
+                        position: 'relative',
+                        background: '#000',
+                        minHeight: 360,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                    }}>
+                        <Box sx={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Box
+                                component="img"
+                                src={cnnResult?.gradcam?.base_image_base64
+                                    ? `data:image/png;base64,${cnnResult.gradcam.base_image_base64}`
+                                    : analyisedImage}
+                                alt="Analysed mammogram"
+                                sx={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+                            />
+                            {currentModel === 'Classical' && cnnResult?.gradcam?.heatmap_base64 && (
+                                <Box
+                                    component="img"
+                                    src={`data:image/png;base64,${cnnResult.gradcam.heatmap_base64}`}
+                                    alt="Grad-CAM heatmap"
+                                    sx={{
+                                        position: 'absolute', top: 0, left: 0,
+                                        width: '100%', height: '100%',
+                                        objectFit: 'contain',
+                                        opacity: heatmapOpacity / 100,
+                                        mixBlendMode: 'multiply',
+                                        pointerEvents: 'none',
+                                        transition: 'opacity 0.2s ease',
+                                    }}
+                                />
+                            )}
+                        </Box>
+                        {/* Corner brackets */}
+                        {[
+                            { top: 10, left: 10, borderTop: `1px solid ${resultColor}60`, borderLeft: `1px solid ${resultColor}60` },
+                            { top: 10, right: 10, borderTop: `1px solid ${resultColor}60`, borderRight: `1px solid ${resultColor}60` },
+                            { bottom: 10, left: 10, borderBottom: `1px solid ${resultColor}60`, borderLeft: `1px solid ${resultColor}60` },
+                            { bottom: 10, right: 10, borderBottom: `1px solid ${resultColor}60`, borderRight: `1px solid ${resultColor}60` },
+                        ].map((style, i) => (
+                            <Box key={i} sx={{ position: 'absolute', width: 16, height: 16, ...style }} />
+                        ))}
+                    </Box>
+
+                    {/* Grad-CAM slider */}
+                    {currentModel === 'Classical' && cnnResult?.gradcam?.heatmap_base64 && (
+                        <Box sx={{ ...cardBorder, p: 2, background: 'rgba(255,255,255,0.02)' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <Typography sx={{ ...MONO, fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)' }}>
+                                        Grad-CAM opacity
+                                    </Typography>
+                                    <Tooltip text="Grad-CAM highlights which regions most influenced the model's prediction." />
+                                </Box>
+                                <Typography sx={{ ...MONO, fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
+                                    {heatmapOpacity}%
+                                </Typography>
+                            </Box>
+                            <Slider
+                                value={heatmapOpacity}
+                                onChange={(e, val) => setHeatmapOpacity(val)}
+                                min={0} max={100}
+                                aria-label="Heatmap opacity"
+                            />
+                        </Box>
+                    )}
+                </Box>
+
+                {/* Classifications panel */}
+                <Box sx={{
+                    ...cardBorder,
+                    background: 'rgba(255,255,255,0.02)',
+                    p: 3,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                }}>
+                    <Box>
+                        <Typography sx={{ ...MONO, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', mb: 2.5 }}>
+                            {currentModel === 'Both' ? 'All classifications — both models' : 'All classifications'}
+                        </Typography>
+
+                        {/* Both model legend */}
+                        {currentModel === 'Both' && (
+                            <Box sx={{ display: 'flex', gap: 2, mb: 2.5 }}>
+                                {[{ color: '#3fcf8e', label: 'Classical' }, { color: 'rgba(202,77,255,1)', label: 'Quantum' }].map(({ color, label }) => (
+                                    <Box key={label} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                        <Box sx={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: color }} />
+                                        <Typography sx={{ ...MONO, fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)' }}>
+                                            {label}
+                                        </Typography>
+                                    </Box>
+                                ))}
+                            </Box>
+                        )}
+
+                        {currentModel === 'Both'
+                            ? comparisonClassifications.map(({ label, cnn, qml, color }, i) => (
+                                <Box key={label} sx={{ mb: i < comparisonClassifications.length - 1 ? 3 : 0 }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                        <Box sx={{ width: 5, height: 5, borderRadius: '50%', backgroundColor: color, flexShrink: 0 }} />
+                                        <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, fontWeight: 500 }}>{label}</Typography>
+                                    </Box>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <Typography sx={{ ...MONO, fontSize: 11, color: '#3fcf8e' }}>Classical</Typography>
+                                        <Typography sx={{ ...MONO, fontSize: 11, color: '#3fcf8e' }}>{cnn}%</Typography>
+                                    </Box>
+                                    <AnimatedBar value={cnn} color="#3fcf8e" delay={i * 150} />
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.75 }}>
+                                        <Typography sx={{ ...MONO, fontSize: 11, color: 'rgba(202,77,255,1)' }}>Quantum</Typography>
+                                        <Typography sx={{ ...MONO, fontSize: 11, color: 'rgba(202,77,255,1)' }}>{qml}%</Typography>
+                                    </Box>
+                                    <AnimatedBar value={qml} color="rgba(202,77,255,1)" delay={i * 150 + 75} />
+                                </Box>
+                            ))
+                            : classifications.map(({ label, value, color }, i) => (
+                                <Box key={label} sx={{ mb: i < classifications.length - 1 ? 3 : 0 }}>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <Box sx={{ width: 5, height: 5, borderRadius: '50%', backgroundColor: color, flexShrink: 0 }} />
+                                            <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, fontWeight: 500 }}>{label}</Typography>
+                                        </Box>
+                                        <Typography sx={{ ...MONO, fontSize: 12, color, fontWeight: 500 }}>{value}%</Typography>
+                                    </Box>
+                                    <AnimatedBar value={value} color={color} delay={i * 150} />
+                                </Box>
+                            ))
+                        }
+                    </Box>
+
+                    <Box sx={{ mt: 3, pt: 2.5, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                        <Typography sx={{ ...MONO, fontSize: 10, letterSpacing: '0.06em', color: 'rgba(255,255,255,0.18)', textTransform: 'uppercase' }}>
+                            Research prototype · Not for clinical use
+                        </Typography>
+                    </Box>
+                </Box>
+            </Box>
+
+            <Container sx={{ padding: 4, display: 'flex', justifyContent: 'center' }}>
+                <Button variant="contained" onClick={() => reset()}>Reset</Button>
+            </Container>
+
+        </Box>
     );
 }

@@ -41,7 +41,7 @@ function AnimatedRiskGauge({ targetValue, color, label, isVisible = true, durati
           })}
         >
           <Typography sx={{ color, fontSize: 64, fontWeight: 500, lineHeight: 1 }}>
-            {animatedValue.toFixed(1)}%
+            {animatedValue.toFixed(1)}
           </Typography>
           <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: 16, mt: 1 }}>
             {insideText}

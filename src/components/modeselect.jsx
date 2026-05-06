@@ -23,7 +23,7 @@ const MODES = [
     },
     {
         id: 'mammo-risk',
-        title: 'Future Risk Prediction',
+        title: 'Composite Risk Assessment',
         description: 'Upload one or more mammogram images to assess breast cancer risk using CNN-based density, BI-RADS, and malignancy scoring.',
         icon: <MammoRiskIcon sx={{ fontSize: 32 }} />,
         features: [

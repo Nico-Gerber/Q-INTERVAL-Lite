@@ -376,6 +376,8 @@ export default function FutureRiskResults({ analyisedImage, reset, currentModel,
 
                     </Box>
 
+
+
                 </Box>
             )}
         </>

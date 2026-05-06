@@ -104,7 +104,10 @@ export default function ImageUploadOrder({ file, setFiles, preview, setPreview, 
         }}>
 
           <Box sx={{
-            padding: 5
+            padding: 5,
+            alignItems: 'center',
+            display: 'flex',
+            flexDirection: 'column',
           }}
             {...getRootProps()}>
             <input {...getInputProps()} />

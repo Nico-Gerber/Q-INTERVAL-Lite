@@ -11,6 +11,8 @@ import ModelSelect from '../components/modelSelect';
 import ClassificationResults from '../components/classificationResults';
 import FutureRiskResults from '../components/futureRiskResults';
 
+import MammoRiskResults from '../components/mammoRiskResults';
+
 import NeuralCanvas from '../components/neuralCanvas';
 
 import { Atom } from "react-loading-indicators";
@@ -99,6 +101,7 @@ export default function Analysis() {
 
   const handleReset = () => {
     setFile(null);
+    setFiles([]);
     setPreview(null);
     setStatus(null);
     setResult(null);
@@ -114,7 +117,7 @@ export default function Analysis() {
       background: (theme) => theme.palette.background.hero,
     }}>
 
-      {/* Radial glow — matches models/ourteam */}
+
       <Box sx={{
         position: 'absolute',
         top: '-40%',
@@ -128,7 +131,7 @@ export default function Analysis() {
         zIndex: 0,
       }} />
 
-      {/* Grid overlay — matches models/ourteam */}
+
       <Box sx={{
         position: 'absolute',
         inset: 0,
@@ -140,7 +143,7 @@ export default function Analysis() {
 
       <NeuralCanvas />
 
-      {/* Hero header — py matches models/ourteam exactly */}
+
       <Box
         sx={{
           position: 'relative',
@@ -179,11 +182,13 @@ export default function Analysis() {
             <Alert severity="error">{status.msg}</Alert>
           </Container>
         )}
+
+        <AnalysisStepper activeStep={activeStep} />
       </Box>
 
       {/* Stepper + step content below the hero */}
       <Box sx={{ position: 'relative', zIndex: 1, pb: { xs: 8, md: 12 }, px: 2 }}>
-        <AnalysisStepper activeStep={activeStep} />
+
 
         <Container maxWidth="lg" sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mt: 1, mb: 2 }}>
           <Typography variant="h4" sx={{ fontWeight: 700, mb: 1, color: 'text.primary' }}>
@@ -204,7 +209,7 @@ export default function Analysis() {
               <ImageUpload file={file} setFile={setFile} preview={preview} setPreview={setPreview} setActiveStep={setActiveStep} handleAnalyse={handleAnalyse} />
             </Container>
           ) : (
-            <Container maxWidth="lg" sx={{ mt: 3 }}>
+            <Container maxWidth="lg" sx={{ mt: 3, }}>
               <ImageUploadOrder file={files} setFiles={setFiles} preview={preview} setPreview={setPreview} setActiveStep={setActiveStep} handleAnalyse={handleAnalyse} />
             </Container>
           )
@@ -213,7 +218,7 @@ export default function Analysis() {
         {activeStep === 2 && (
           <>
             {loading ? (
-              <Box sx={{ mt: 15 }}>
+              <Box sx={{ mt: 15, alignItems: 'center', display: 'flex', justifyContent: 'center' }}>
                 <Atom color='#2dd4bf' />
               </Box>
             ) : (
@@ -224,7 +229,11 @@ export default function Analysis() {
                     <ClassificationResults analyisedImage={preview} reset={handleReset} currentModel={modelMode} results={result} />
                   )}
                   {analysisMode === 'mammo-risk' && (
-                    <Box></Box>
+                    <Box>
+
+                      <MammoRiskResults results={result} reset={handleReset} />
+
+                    </Box>
                   )}
                   {analysisMode === 'future-risk' && (
                     <FutureRiskResults analyisedImage={preview} reset={handleReset} currentModel={modelMode} results={result} />
