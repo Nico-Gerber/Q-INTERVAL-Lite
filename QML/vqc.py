@@ -2,27 +2,28 @@ import numpy as np
 import pandas as pd
 import pennylane as qml
 from pennylane import numpy as pnp
+from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 import joblib
 import matplotlib.pyplot as plt
 
 #vars
-CSV_PATH = "qml_900_pca4_multiclass.csv"
+CSV_PATH = "dataset/qml_900_pca4_multiclass.csv"
 LABEL_COLUMN = "label"
 FEATURE_COLUMNS = [f"pc{i}" for i in range(1, 5)]
 
 RANDOM_SEED = 42
 TEST_SIZE = 0.2
 N_QUBITS = 4
-N_LAYERS = 2
+N_LAYERS = 4
 N_CLASSES = 3
 EPOCHS = 25
 BATCH_SIZE = 16
-LEARNING_RATE = 0.03
+LEARNING_RATE = 0.01
 
-MODEL_SAVE_PATH = "vqc_900_pca4_multiclass_best.joblib"
-HISTORY_SAVE_PATH = "vqc_900_pca4_multiclass_history.joblib"
+MODEL_SAVE_PATH = "vqc_900_pca4_multiclass_v4.joblib"
+HISTORY_SAVE_PATH = "vqc_900_pca4_multiclass_v4_history.joblib"
 
 LABEL_NAMES = {
     0: "normal",
@@ -73,18 +74,15 @@ def variational_layer(weights):
 
 @qml.qnode(dev, interface="autograd")
 def circuit(x, weights):
-    for i in range(N_QUBITS):
-        qml.RY(x[i], wires=i)
-        qml.RZ(x[i], wires=i)
-
     for layer in range(N_LAYERS):
+
+        for i in range(N_QUBITS):
+            qml.RY(x[i], wires=i)
+            qml.RZ(x[(i+1) % len(x)], wires=i)
+
         variational_layer(weights[layer])
 
-    return [
-        qml.expval(qml.PauliZ(0)),
-        qml.expval(qml.PauliZ(1)),
-        qml.expval(qml.PauliZ(2))
-    ]
+    return [qml.expval(qml.PauliZ(i)) for i in range(N_QUBITS)]
 
 def softmax(logits):
     logits = pnp.array(logits)
@@ -93,7 +91,7 @@ def softmax(logits):
     return exp_vals / pnp.sum(exp_vals)
 
 def predict_probs(x, weights):
-    raw_outputs = circuit(x, weights)
+    raw_outputs = circuit(x, weights)[:N_CLASSES]
     probs = softmax(raw_outputs)
     return probs
 
