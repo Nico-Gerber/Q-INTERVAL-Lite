@@ -6,7 +6,7 @@ import { motion } from "motion/react"
 import { Reorder } from 'framer-motion';
 
 
-export default function ImageUploadOrder({ file, setFiles, preview, setPreview, setActiveStep, activeStep }) {
+export default function ImageUploadOrder({ file, setFiles, preview, setPreview, setActiveStep, activeStep, handleAnalyse }) {
   const [status, setStatus] = useState(null);
 
   const onDrop = useCallback((accepted, rejected) => {
@@ -174,7 +174,7 @@ export default function ImageUploadOrder({ file, setFiles, preview, setPreview, 
       <Container maxWidth="lg" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
         <Button variant="contained" onClick={() => { setActiveStep(prev => prev - 1); setPreview(null); }}>Back</Button>
 
-        <Button variant="contained" onClick={() => setActiveStep(prev => prev + 1)}>Next</Button>
+        <Button variant="contained" onClick={() => { setActiveStep(prev => prev + 1); handleAnalyse(); }}>Next</Button>
       </Container>
 
     </Box >

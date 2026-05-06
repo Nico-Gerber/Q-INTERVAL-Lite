@@ -14,6 +14,7 @@ import FutureRiskResults from '../components/futureRiskResults';
 import NeuralCanvas from '../components/neuralCanvas';
 
 import { Atom } from "react-loading-indicators";
+import { m } from 'framer-motion';
 
 const API_BASE = 'http://localhost:8000';
 
@@ -47,26 +48,52 @@ export default function Analysis() {
   }, [result]);
 
   const handleAnalyse = async () => {
-    if (!file) return;
+    if (analysisMode === 'mammo-risk' && files.length === 0) return;
+    if (analysisMode !== 'mammo-risk' && !file) return;
+
     setLoading(true);
     setStatus(null);
-    const formData = new FormData();
-    formData.append('file', file);
-    try {
-      const [uploadRes, qmlRes, cnnRes] = await Promise.all([
-        fetch(`${API_BASE}/images/upload`, { method: 'POST', body: formData }),
-        fetch(`${API_BASE}/QMLPredict`, { method: 'POST', body: formData }),
 
-        fetch(`${API_BASE}/CNNPredict/?include_gradcam=true`, { method: 'POST', body: formData }),
-      ]);
-      const uploadData = await uploadRes.json();
-      const qmlData = await qmlRes.json();
-      const cnnData = await cnnRes.json();
-      setResult({ filename: uploadData.filename, resultFile: { qml: qmlData, cnn: cnnData } });
-    } catch {
-      setStatus({ ok: false, msg: 'Cannot reach the server. Make sure the backend is running.' });
-    } finally {
-      setLoading(false);
+    if (analysisMode === 'mammo-risk') {
+      const isMulti = files.length > 1;
+      const multiFormData = new FormData();
+      if (isMulti) {
+        files.forEach(f => multiFormData.append('files', f.file));
+      } else {
+        multiFormData.append('file', files[0].file);
+      }
+
+      try {
+        const res = await fetch(
+          `${API_BASE}/mammo-risk/predict/${isMulti ? 'multi' : 'single'}`,
+          { method: 'POST', body: multiFormData }
+        );
+        const mammoData = await res.json();
+        setResult({ resultFile: mammoData });
+      } catch {
+        setStatus({ ok: false, msg: 'Cannot reach the server. Make sure the backend is running.' });
+      } finally {
+        setLoading(false);
+      }
+
+    } else {
+      const formData = new FormData();
+      formData.append('file', file);
+      try {
+        const [uploadRes, qmlRes, cnnRes] = await Promise.all([
+          fetch(`${API_BASE}/images/upload`, { method: 'POST', body: formData }),
+          fetch(`${API_BASE}/QMLPredict`, { method: 'POST', body: formData }),
+          fetch(`${API_BASE}/CNNPredict/?include_gradcam=true`, { method: 'POST', body: formData }),
+        ]);
+        const uploadData = await uploadRes.json();
+        const qmlData = await qmlRes.json();
+        const cnnData = await cnnRes.json();
+        setResult({ filename: uploadData.filename, resultFile: { qml: qmlData, cnn: cnnData } });
+      } catch {
+        setStatus({ ok: false, msg: 'Cannot reach the server. Make sure the backend is running.' });
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -157,57 +184,34 @@ export default function Analysis() {
             </Container>
           ) : (
             <Container maxWidth="lg" sx={{ mt: 3 }}>
-              <ImageUploadOrder file={files} setFiles={setFiles} preview={preview} setPreview={setPreview} setActiveStep={setActiveStep} />
+              <ImageUploadOrder file={files} setFiles={setFiles} preview={preview} setPreview={setPreview} setActiveStep={setActiveStep} handleAnalyse={handleAnalyse} />
             </Container>
           )
         )}
 
         {activeStep === 2 && (
-          analysisMode === 'classification' ? (
-            <>
-              {loading === true ?
-
-                <Box sx={{ mt: 15 }}>
-
-                  <Atom color='#2dd4bf' />
-
-                </Box>
-
-
-
-                : (
-                  <>
-                    <ModelSelect selectedModel={modelMode} onModelSelect={setModelMode} />
-                    <Container maxWidth="xl">
-                      <ClassificationResults analyisedImage={preview} reset={handleReset} currentModel={modelMode} results={result} />
-                    </Container>
-                  </>
-                )}
-
-            </>
-          ) : (
-            <>
-              {loading === true ?
-
-                <Box sx={{ mt: 15 }}>
-
-                  <Atom color='#2dd4bf' />
-
-                </Box>
-
-
-
-                : (
-                  <>
-                    <ModelSelect selectedModel={modelMode} onModelSelect={setModelMode} />
-                    <Container maxWidth="xl">
-                      <FutureRiskResults analyisedImage={preview} reset={handleReset} currentModel={modelMode} results={result} />
-                    </Container>
-                  </>
-                )}
-
-            </>
-          )
+          <>
+            {loading ? (
+              <Box sx={{ mt: 15 }}>
+                <Atom color='#2dd4bf' />
+              </Box>
+            ) : (
+              <>
+                <ModelSelect selectedModel={modelMode} onModelSelect={setModelMode} />
+                <Container maxWidth="xl">
+                  {analysisMode === 'classification' && (
+                    <ClassificationResults analyisedImage={preview} reset={handleReset} currentModel={modelMode} results={result} />
+                  )}
+                  {analysisMode === 'mammo-risk' && (
+                    <Box></Box>
+                  )}
+                  {analysisMode === 'future-risk' && (
+                    <FutureRiskResults analyisedImage={preview} reset={handleReset} currentModel={modelMode} results={result} />
+                  )}
+                </Container>
+              </>
+            )}
+          </>
         )}
 
       </Box>

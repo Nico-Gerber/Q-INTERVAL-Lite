@@ -3,6 +3,7 @@ import { Box, Container, Typography, Paper, Alert } from '@mui/material';
 import {
     ImageSearch as ClassificationIcon,
     TrendingUp as RiskIcon,
+    MonitorHeart as MammoRiskIcon,
 } from '@mui/icons-material';
 
 import { Button } from '@mui/material';
@@ -21,9 +22,22 @@ const MODES = [
         ],
     },
     {
-        id: 'future-risk',
+        id: 'mammo-risk',
         title: 'Future Risk Prediction',
-        description: 'Upload sequential mammogram images over time to predict future breast cancer risk using temporal pattern analysis.',
+        description: 'Upload one or more mammogram images to assess breast cancer risk using CNN-based density, BI-RADS, and malignancy scoring.',
+        icon: <MammoRiskIcon sx={{ fontSize: 32 }} />,
+        features: [
+            'Single or multi-image support',
+            'Malignancy & density classification',
+            'BI-RADS scoring',
+            'Weighted risk score (0–100)',
+        ],
+    },
+
+    {
+        id: 'future-risk',
+        title: 'Sequential Future Risk Prediction',
+        description: `Upload sequential mammogram images over time to predict future breast cancer risk using temporal pattern analysis..... (Coming Soon)`,
         icon: <RiskIcon sx={{ fontSize: 32 }} />,
         features: [
             'Multi-image temporal analysis',
@@ -40,12 +54,14 @@ export default function ModeSelect({ selectedMode, onModeSelect, setActiveStep }
 
     return (
 
-        <Container maxWidth="lg">
+        <Container maxWidth="mx">
             <Box sx={{
                 display: 'grid',
-                gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+                gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' },
                 gap: 3,
-                padding: 5,
+                padding: 10,
+                paddingLeft: 27,
+                paddingRight: 27,
             }}>
                 {MODES.map((mode) => {
                     const isSelected = selectedMode === mode.id;
@@ -58,7 +74,7 @@ export default function ModeSelect({ selectedMode, onModeSelect, setActiveStep }
 
                                 p: 3,
                                 cursor: 'pointer',
-                                minHeight: 430,
+                                height: 370,
                                 borderRadius: 3,
                                 border: isSelected
                                     ? '2px solid #64B5F6'
@@ -96,7 +112,7 @@ export default function ModeSelect({ selectedMode, onModeSelect, setActiveStep }
                             </Box>
 
                             {/* Description */}
-                            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', mb: 2, textAlign: 'left', fontSize: 20 }}>
+                            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', mb: 2, textAlign: 'left', fontSize: 15 }}>
                                 {mode.description}
                             </Typography>
 
@@ -111,7 +127,7 @@ export default function ModeSelect({ selectedMode, onModeSelect, setActiveStep }
                                             backgroundColor: isSelected ? '#64B5F6' : 'rgba(255,255,255,0.4)',
                                             flexShrink: 0,
                                         }} />
-                                        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)', fontSize: 20 }}>
+                                        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)', fontSize: 15 }}>
                                             {feature}
                                         </Typography>
                                     </Box>
@@ -144,7 +160,7 @@ export default function ModeSelect({ selectedMode, onModeSelect, setActiveStep }
                     Please select an analysis mode
                 </Alert>
             )}
-            <Container maxWidth="lg" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
+            <Container maxWidth="lg" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 0 }}>
                 <Button disabled></Button>
 
                 {selectedMode ? (<Button variant="contained" onClick={() => setActiveStep(prev => prev + 1)}>Next</Button>) : (<Button variant="contained" onClick={() => setStatus(true)} sx={{ opacity: 0.3 }} >Next</Button>)}
