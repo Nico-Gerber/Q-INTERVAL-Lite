@@ -1,175 +1,186 @@
-import React, { useCallback, useState } from 'react';
-import { Box, Container, Typography, Paper, Alert } from '@mui/material';
+import React, { useState } from 'react';
+import { Box, Container, Typography, Paper, Alert, Button } from '@mui/material';
 import {
-    ImageSearch as ClassificationIcon,
-    TrendingUp as RiskIcon,
-    MonitorHeart as MammoRiskIcon,
+  ImageSearch as ClassificationIcon,
+  TrendingUp as RiskIcon,
+  MonitorHeart as MammoRiskIcon,
 } from '@mui/icons-material';
 
-import { Button } from '@mui/material';
-
 const MODES = [
-    {
-        id: 'classification',
-        title: 'Classification Analysis',
-        description: 'Analyze a single mammogram image to detect and classify potential abnormalities including masses, calcifications, and other findings.',
-        icon: <ClassificationIcon sx={{ fontSize: 32 }} />,
-        features: [
-            'Single image analysis',
-            'Three-way classification',
-            'Lesion detection & localization',
-            'Confidence scoring',
-        ],
-    },
-    {
-        id: 'mammo-risk',
-        title: 'Composite Risk Assessment',
-        description: 'Upload one or more mammogram images to assess breast cancer risk using CNN-based density, BI-RADS, and malignancy scoring.',
-        icon: <MammoRiskIcon sx={{ fontSize: 32 }} />,
-        features: [
-            'Single or multi-image support',
-            'Malignancy & density classification',
-            'BI-RADS scoring',
-            'Weighted risk score (0–100)',
-        ],
-    },
-
-    {
-        id: 'future-risk',
-        title: 'Sequential Future Risk Prediction',
-        description: `Upload sequential mammogram images over time to predict future breast cancer risk using temporal pattern analysis..... (Coming Soon)`,
-        icon: <RiskIcon sx={{ fontSize: 32 }} />,
-        features: [
-            'Multi-image temporal analysis',
-            '5-year risk prediction',
-            'Density change tracking',
-            'Trend visualization',
-        ],
-    },
+  {
+    id: 'classification',
+    title: 'Classification Analysis',
+    description: 'Analyze a single mammogram image to detect and classify potential abnormalities including masses, calcifications, and other findings.',
+    icon: <ClassificationIcon sx={{ fontSize: 26 }} />,
+    color: 'primary',
+    features: [
+      'Single image analysis',
+      'Three-way classification',
+      'Lesion detection & localization',
+      'Confidence scoring',
+    ],
+  },
+  {
+    id: 'mammo-risk',
+    title: 'Composite Risk Assessment',
+    description: 'Upload one or more mammogram images to assess breast cancer risk using CNN-based density, BI-RADS, and malignancy scoring.',
+    icon: <MammoRiskIcon sx={{ fontSize: 26 }} />,
+    color: 'warning',
+    features: [
+      'Single or multi-image support',
+      'Malignancy & density classification',
+      'BI-RADS scoring',
+      'Weighted risk score (0–100)',
+    ],
+  },
+  {
+    id: 'future-risk',
+    title: 'Sequential Future Risk',
+    description: 'Upload sequential mammogram images over time to predict future breast cancer risk using temporal pattern analysis. (Coming Soon)',
+    icon: <RiskIcon sx={{ fontSize: 26 }} />,
+    color: 'secondary',
+    features: [
+      'Multi-image temporal analysis',
+      '5-year risk prediction',
+      'Density change tracking',
+      'Trend visualization',
+    ],
+  },
 ];
 
 export default function ModeSelect({ selectedMode, onModeSelect, setActiveStep }) {
+  const [status, setStatus] = useState(false);
 
-    const [status, setStatus] = useState(false);
+  return (
+    <Container maxWidth="xl">
+      <Box sx={{
+        display: 'grid',
+        gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' },
+        gap: 2,
+        pt: 1,
+        pb: 0.5,
+      }}>
+        {MODES.map((mode) => {
+          const isSelected = selectedMode === mode.id;
+          return (
+            <Paper
+              key={mode.id}
+              onClick={() => { onModeSelect(mode.id); setStatus(false); }}
+              elevation={isSelected ? 6 : 1}
+              sx={{
+                p: 2.5,
+                cursor: 'pointer',
+                borderRadius: 3,
+                border: '1px solid',
+                borderColor: isSelected ? `${mode.color}.main` : 'divider',
+                backgroundColor: isSelected
+                  ? (theme) => `${theme.palette[mode.color].main}12`
+                  : 'background.paper',
+                transition: 'all 0.22s ease',
+                display: 'flex',
+                flexDirection: 'column',
+                '&:hover': {
+                  borderColor: `${mode.color}.main`,
+                  backgroundColor: (theme) => `${theme.palette[mode.color].main}0C`,
+                  transform: 'translateY(-3px)',
+                  boxShadow: (theme) =>
+                    `0 8px 28px rgba(0,0,0,0.35), 0 0 0 1px ${theme.palette[mode.color].main}25`,
+                },
+              }}
+            >
+              {/* Stacked icon */}
+              <Box sx={{
+                width: 48,
+                height: 48,
+                borderRadius: 2,
+                backgroundColor: isSelected
+                  ? `${mode.color}.main`
+                  : 'rgba(255,255,255,0.07)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: isSelected ? `${mode.color}.contrastText` : 'text.secondary',
+                mb: 1.5,
+                transition: 'all 0.22s ease',
+              }}>
+                {mode.icon}
+              </Box>
 
-    return (
+              {/* Title */}
+              <Typography sx={{
+                color: 'text.primary',
+                fontWeight: 700,
+                fontSize: '0.95rem',
+                mb: 0.75,
+                lineHeight: 1.3,
+              }}>
+                {mode.title}
+              </Typography>
 
-        <Container maxWidth="mx">
-            <Box sx={{
-                display: 'grid',
-                gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' },
-                gap: 3,
-                padding: 10,
-                paddingLeft: 27,
-                paddingRight: 27,
-            }}>
-                {MODES.map((mode) => {
-                    const isSelected = selectedMode === mode.id;
-                    return (
-                        <Paper
-                            key={mode.id}
-                            onClick={() => { onModeSelect(mode.id); setStatus(false); }}
-                            elevation={isSelected ? 4 : 1}
-                            sx={{
+              {/* Description */}
+              <Typography variant="body2" sx={{
+                color: 'text.secondary',
+                lineHeight: 1.6,
+                fontSize: '0.8rem',
+                mb: 1.5,
+              }}>
+                {mode.description}
+              </Typography>
 
-                                p: 3,
-                                cursor: 'pointer',
-                                height: 370,
-                                borderRadius: 3,
-                                border: isSelected
-                                    ? '2px solid #64B5F6'
-                                    : '2px solid rgba(255,255,255,0.1)',
-                                backgroundColor: isSelected
-                                    ? 'rgba(100,181,246,0.2)'
-                                    : 'rgba(255,255,255,0.05)',
-                                transition: 'all 0.2s ease',
-                                '&:hover': {
-                                    border: '2px solid rgba(100,181,246,0.5)',
-                                    backgroundColor: 'rgba(100,181,246,0.05)',
-                                    transform: 'translateY(-4px)',
-                                    boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
-                                },
-                            }}
-                        >
-                            {/* Icon + Title */}
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                                <Box sx={{
-                                    width: 56,
-                                    height: 56,
-                                    borderRadius: 2,
-                                    backgroundColor: isSelected ? '#64B5F6' : 'rgba(255,255,255,0.1)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    color: 'white',
-                                    flexShrink: 0,
-                                }}>
-                                    {mode.icon}
-                                </Box>
-                                <Typography variant="h6" sx={{ color: 'white', fontWeight: 700 }}>
-                                    {mode.title}
-                                </Typography>
-                            </Box>
+              {/* Feature bullets */}
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, flex: 1 }}>
+                {mode.features.map((feature) => (
+                  <Box key={feature} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                    <Box sx={{
+                      width: 4,
+                      height: 4,
+                      borderRadius: '50%',
+                      backgroundColor: isSelected ? `${mode.color}.main` : 'text.disabled',
+                      flexShrink: 0,
+                      transition: 'background-color 0.2s ease',
+                    }} />
+                    <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.75rem' }}>
+                      {feature}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
 
-                            {/* Description */}
-                            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', mb: 2, textAlign: 'left', fontSize: 15 }}>
-                                {mode.description}
-                            </Typography>
+              {/* Selected indicator — always reserves space */}
+              <Box sx={{
+                mt: 1.5,
+                pt: 1.25,
+                borderTop: '1px solid',
+                borderColor: isSelected
+                  ? (theme) => `${theme.palette[mode.color].main}30`
+                  : 'divider',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.75,
+                visibility: isSelected ? 'visible' : 'hidden',
+              }}>
+                <Box sx={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: `${mode.color}.main` }} />
+                <Typography variant="caption" sx={{ color: `${mode.color}.main`, fontWeight: 600, fontSize: '0.72rem' }}>
+                  Selected
+                </Typography>
+              </Box>
+            </Paper>
+          );
+        })}
+      </Box>
 
-                            {/* Features */}
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.8, alignItems: 'flex-start', }}>
-                                {mode.features.map((feature) => (
-                                    <Box key={feature} sx={{ display: 'flex', alignItems: 'center', gap: 1, }}>
-                                        <Box sx={{
-                                            width: 6,
-                                            height: 6,
-                                            borderRadius: '50%',
-                                            backgroundColor: isSelected ? '#64B5F6' : 'rgba(255,255,255,0.4)',
-                                            flexShrink: 0,
-                                        }} />
-                                        <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)', fontSize: 15 }}>
-                                            {feature}
-                                        </Typography>
-                                    </Box>
-                                ))}
-                            </Box>
+      {status && (
+        <Alert severity="warning" sx={{ mt: 1.5 }}>
+          Please select an analysis mode to continue
+        </Alert>
+      )}
 
-                            {/* Selected indicator */}
-                            {isSelected && (
-                                <Box sx={{
-                                    mt: 2,
-                                    pt: 2,
-                                    borderTop: '1px solid rgba(100,181,246,0.3)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 1,
-                                }}>
-                                    <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#64B5F6' }} />
-                                    <Typography variant="caption" sx={{ color: '#64B5F6', fontWeight: 600 }}>
-                                        Selected
-                                    </Typography>
-                                </Box>
-                            )}
-                        </Paper>
-                    );
-                })}
-            </Box>
-
-            {status && (
-                <Alert severity="warning" sx={{ mt: 0 }}>
-                    Please select an analysis mode
-                </Alert>
-            )}
-            <Container maxWidth="lg" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 0 }}>
-                <Button disabled></Button>
-
-                {selectedMode ? (<Button variant="contained" onClick={() => setActiveStep(prev => prev + 1)}>Next</Button>) : (<Button variant="contained" onClick={() => setStatus(true)} sx={{ opacity: 0.3 }} >Next</Button>)}
-            </Container>
-
-
-
-
-
-        </Container >
-    );
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+        {selectedMode
+          ? <Button variant="contained" size="large" onClick={() => setActiveStep(prev => prev + 1)} sx={{ px: 5, fontWeight: 700 }}>Continue →</Button>
+          : <Button variant="contained" size="large" onClick={() => setStatus(true)} sx={{ px: 5, fontWeight: 700, opacity: 0.35 }}>Continue →</Button>
+        }
+      </Box>
+    </Container>
+  );
 }
