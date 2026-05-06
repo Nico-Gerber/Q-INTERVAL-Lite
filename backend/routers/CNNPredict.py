@@ -106,9 +106,9 @@ async def predict(
                 target_class=predicted_idx,
             )
             response_content["gradcam"] = {
-                "heatmap_base64": pil_to_base64(heatmap_pil),  # raw heatmap, no overlay
-                "base_image_base64": pil_to_base64(base_pil),  # resized base for stacking
-                "overlay_base64": pil_to_base64(overlay_pil),  # pre-blended (optional fallback)
+                "heatmap_base64": pil_to_base64(heatmap_pil),  
+                "base_image_base64": pil_to_base64(base_pil),  
+                "overlay_base64": pil_to_base64(overlay_pil),  
                 "width": base_pil.width,
                 "height": base_pil.height,
             }

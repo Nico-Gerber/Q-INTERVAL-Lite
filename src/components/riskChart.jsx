@@ -22,7 +22,7 @@ function CustomTooltip({ active, payload, color }) {
       backdropFilter: 'blur(8px)',
     }}>
       <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, mb: 0.25 }}>
-        {payload[0].payload.year} horizon
+        {payload[0].payload.year}
       </Typography>
       <Typography sx={{ color, fontSize: 14, fontWeight: 700 }}>
         {payload[0].value.toFixed(1)}%

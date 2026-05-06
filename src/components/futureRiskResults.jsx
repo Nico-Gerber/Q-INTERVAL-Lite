@@ -282,15 +282,15 @@ export default function FutureRiskResults({ analyisedImage, reset, currentModel,
                     </Box>
 
                     <Box sx={{ mt: 2 }}>
-                        {mounted && (
-                            <ComparisonRiskChart
-                                classicalData={cnnHorizons}
-                                quantumData={qmlHorizons}
-                                threshold={6}
-                                classicalCrossYears={(classicalCrossYears).toFixed(1)}
-                                quantumCrossYears={(quantumCrossYears).toFixed(1)}
-                            />
-                        )}
+
+                        <ComparisonRiskChart
+                            classicalData={cnnHorizons}
+                            quantumData={qmlHorizons}
+                            threshold={6}
+                            classicalCrossYears={(classicalCrossYears).toFixed(1)}
+                            quantumCrossYears={(quantumCrossYears).toFixed(1)}
+                        />
+
                     </Box>
 
                 </Box>
@@ -319,16 +319,16 @@ export default function FutureRiskResults({ analyisedImage, reset, currentModel,
 
                                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
 
-                                    {mounted && (
-                                        <AnimatedRiskGauge
-                                            targetValue={14.2}
-                                            color='rgba(178, 34, 34, 1)'
-                                            label='5-Year Cumulative Risk'
-                                            isVisible={mounted}
-                                            duration={1.2}
-                                            insideText='over the next 5 years'
-                                        />
-                                    )}
+
+                                    <AnimatedRiskGauge
+                                        targetValue={14.2}
+                                        color='rgba(178, 34, 34, 1)'
+                                        label='5-Year Cumulative Risk'
+                                        isVisible={mounted}
+                                        duration={1.2}
+                                        insideText='over the next 5 years'
+                                    />
+
 
                                 </Box>
 
@@ -350,15 +350,15 @@ export default function FutureRiskResults({ analyisedImage, reset, currentModel,
                         }}>
 
 
-                            {mounted && (
-                                <RiskChart
-                                    data={currentModel === 'Classical' ? cnnHorizons : qmlHorizons}
-                                    color="rgba(178, 34, 34, 1)"
-                                    label="Risk Over Time"
-                                    threshold={6}
 
-                                />
-                            )}
+                            <RiskChart
+                                data={currentModel === 'Classical' ? cnnHorizons : qmlHorizons}
+                                color="rgba(178, 34, 34, 1)"
+                                label="Risk Over Time"
+                                threshold={6}
+
+                            />
+
 
                         </Box>
                     </Box>
