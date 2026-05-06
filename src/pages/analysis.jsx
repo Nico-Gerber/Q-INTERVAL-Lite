@@ -56,7 +56,6 @@ export default function Analysis() {
       const [uploadRes, qmlRes, cnnRes] = await Promise.all([
         fetch(`${API_BASE}/images/upload`, { method: 'POST', body: formData }),
         fetch(`${API_BASE}/QMLPredict`, { method: 'POST', body: formData }),
-
         fetch(`${API_BASE}/CNNPredict/?include_gradcam=true`, { method: 'POST', body: formData }),
       ]);
       const uploadData = await uploadRes.json();
@@ -87,44 +86,62 @@ export default function Analysis() {
       background: (theme) => theme.palette.background.hero,
     }}>
 
+      {/* Radial glow — matches models/ourteam */}
       <Box sx={{
         position: 'absolute',
-        top: '-20%',
+        top: '-40%',
         left: '50%',
         transform: 'translateX(-50%)',
-        width: '700px',
-        height: '700px',
+        width: '500px',
+        height: '500px',
         borderRadius: '50%',
-        background: (theme) => `radial-gradient(circle, ${theme.palette.primary.main}12 0%, transparent 65%)`,
-        //                                                                 
+        background: (theme) => `radial-gradient(circle, ${theme.palette.primary.main}0F 0%, transparent 70%)`,
         pointerEvents: 'none',
         zIndex: 0,
       }} />
 
+      {/* Grid overlay — matches models/ourteam */}
       <Box sx={{
         position: 'absolute',
         inset: 0,
         pointerEvents: 'none',
         zIndex: 0,
-        backgroundImage: (theme) => `linear-gradient(${theme.palette.primary.main}06 1px, transparent 1px), linear-gradient(90deg, ${theme.palette.primary.main}06 1px, transparent 1px)`,
+        backgroundImage: (theme) => `linear-gradient(${theme.palette.primary.main}07 1px, transparent 1px), linear-gradient(90deg, ${theme.palette.primary.main}07 1px, transparent 1px)`,
         backgroundSize: '60px 60px',
       }} />
 
-
       <NeuralCanvas />
 
-      <Box sx={{ position: 'relative', zIndex: 1, textAlign: 'center', pt: { xs: 6, md: 8 }, pb: { xs: 8, md: 12 }, px: 2 }}>
-
+      {/* Hero header — py matches models/ourteam exactly */}
+      <Box
+        sx={{
+          position: 'relative',
+          zIndex: 1,
+          py: { xs: 6, md: 10 },
+          px: 2,
+          textAlign: 'center',
+        }}
+      >
         <Chip
           label="RESEARCH PROTOTYPE · NOT FOR CLINICAL USE"
           size="small"
-          sx={{ mb: 2, bgcolor: (theme) => `${theme.palette.error.main}18`, color: 'error.main', letterSpacing: '0.08em', fontSize: '0.65rem', fontWeight: 700, border: '1px solid', borderColor: (theme) => `${theme.palette.error.main}35`, borderRadius: '999px' }}
+          sx={{
+            mb: 3,
+            bgcolor: (theme) => `${theme.palette.error.main}18`,
+            color: 'error.main',
+            letterSpacing: '0.08em',
+            fontSize: '0.65rem',
+            fontWeight: 700,
+            border: '1px solid',
+            borderColor: (theme) => `${theme.palette.error.main}35`,
+            borderRadius: '999px',
+          }}
         />
 
-        <Typography variant="h3" sx={{ fontWeight: 700, mb: 1, letterSpacing: '-0.01em', color: 'text.primary' }}>
+        <Typography variant="h3" sx={{ fontWeight: 700, mb: 1.5, letterSpacing: '-0.01em', color: 'text.primary' }}>
           Mammogram Analysis
         </Typography>
-        <Typography variant="h6" sx={{ color: 'text.secondary', fontWeight: 400, maxWidth: 700, mx: 'auto', fontSize: 15 }}>
+        <Typography variant="h6" sx={{ color: 'text.secondary', fontWeight: 400, maxWidth: 580, mx: 'auto', lineHeight: 1.7 }}>
           Select an analysis mode — Classification or Future Risk Prediction — upload your mammogram image(s),
           and view results from your choice of Classical CNN, Quantum AI, or both.
         </Typography>
@@ -134,10 +151,13 @@ export default function Analysis() {
             <Alert severity="error">{status.msg}</Alert>
           </Container>
         )}
+      </Box>
 
+      {/* Stepper + step content below the hero */}
+      <Box sx={{ position: 'relative', zIndex: 1, pb: { xs: 8, md: 12 }, px: 2 }}>
         <AnalysisStepper activeStep={activeStep} />
 
-        <Container maxWidth="lg" sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mt: 1 }}>
+        <Container maxWidth="lg" sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mt: 1, mb: 2 }}>
           <Typography variant="h4" sx={{ fontWeight: 700, mb: 1, color: 'text.primary' }}>
             {STEP_CONTENT[activeStep].title}
           </Typography>
@@ -165,51 +185,36 @@ export default function Analysis() {
         {activeStep === 2 && (
           analysisMode === 'classification' ? (
             <>
-              {loading === true ?
-
+              {loading === true ? (
                 <Box sx={{ mt: 15 }}>
-
                   <Atom color='#2dd4bf' />
-
                 </Box>
-
-
-
-                : (
-                  <>
-                    <ModelSelect selectedModel={modelMode} onModelSelect={setModelMode} />
-                    <Container maxWidth="xl">
-                      <ClassificationResults analyisedImage={preview} reset={handleReset} currentModel={modelMode} results={result} />
-                    </Container>
-                  </>
-                )}
-
+              ) : (
+                <>
+                  <ModelSelect selectedModel={modelMode} onModelSelect={setModelMode} />
+                  <Container maxWidth="xl">
+                    <ClassificationResults analyisedImage={preview} reset={handleReset} currentModel={modelMode} results={result} />
+                  </Container>
+                </>
+              )}
             </>
           ) : (
             <>
-              {loading === true ?
-
+              {loading === true ? (
                 <Box sx={{ mt: 15 }}>
-
                   <Atom color='#2dd4bf' />
-
                 </Box>
-
-
-
-                : (
-                  <>
-                    <ModelSelect selectedModel={modelMode} onModelSelect={setModelMode} />
-                    <Container maxWidth="xl">
-                      <FutureRiskResults analyisedImage={preview} reset={handleReset} currentModel={modelMode} results={result} />
-                    </Container>
-                  </>
-                )}
-
+              ) : (
+                <>
+                  <ModelSelect selectedModel={modelMode} onModelSelect={setModelMode} />
+                  <Container maxWidth="xl">
+                    <FutureRiskResults analyisedImage={preview} reset={handleReset} currentModel={modelMode} results={result} />
+                  </Container>
+                </>
+              )}
             </>
           )
         )}
-
       </Box>
     </Box>
   );
