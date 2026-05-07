@@ -3,10 +3,10 @@ import { Box, Chip, Container, Typography, Alert } from '@mui/material';
 import { AnimatePresence, motion } from 'framer-motion';
 
 import AnalysisStepper from '../components/stepper';
-import ModeSelect from '../components/modeselect';
-import ImageUpload from '../components/ImageUpload';
-import ImageUploadOrder from '../components/ImageUploadOrder';
-import ModelSelect from '../components/modelSelect';
+import ModeSelect from '../components/AnalysisModeSelect';
+import ImageUpload from '../components/SingleImageUpload';
+import ImageUploadOrder from '../components/MultiImageUpload';
+import ModelSelect from '../components/ModelResultSelect';
 import ClassificationResults from '../components/classificationResults';
 import FutureRiskResults from '../components/futureRiskResults';
 import MammoRiskResults from '../components/mammoRiskResults';
