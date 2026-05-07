@@ -160,6 +160,3 @@ grad-cam       # only if heatmap output is required
 - The temperature value is fitted on the validation set using L-BFGS to minimise NLL, following Guo et al. (ICML 2017).
 - The model expects 3-channel RGB input even though mammograms are grayscale; OpenCV read + RGB conversion replicates the grayscale value across all 3 channels automatically.
 
-## Contact
-
-For questions about model loading, preprocessing, or output format, ping me on Discord.
