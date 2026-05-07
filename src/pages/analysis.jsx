@@ -18,9 +18,9 @@ const API_BASE = 'http://localhost:8000';
 
 // Shared fade+slide up variant for step transitions
 const stepVariants = {
-  hidden:  { opacity: 0, y: 18 },
+  hidden: { opacity: 0, y: 18 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' } },
-  exit:    { opacity: 0, y: -12, transition: { duration: 0.2, ease: 'easeIn' } },
+  exit: { opacity: 0, y: -12, transition: { duration: 0.2, ease: 'easeIn' } },
 };
 
 export default function Analysis() {
@@ -56,19 +56,33 @@ export default function Analysis() {
 
     if (analysisMode === 'mammo-risk') {
       const isMulti = files.length > 1;
-      const multiFormData = new FormData();
+      const endpoint = isMulti ? 'multi' : 'single';
+
+      const cnnFormData = new FormData();
+      const qmlFormData = new FormData();
+
       if (isMulti) {
-        files.forEach(f => multiFormData.append('files', f.file));
+        files.forEach(f => {
+          cnnFormData.append('files', f.file);
+          qmlFormData.append('files', f.file);
+        });
       } else {
-        multiFormData.append('file', files[0].file);
+        cnnFormData.append('file', files[0].file);
+        qmlFormData.append('file', files[0].file);
       }
+
       try {
-        const res = await fetch(
-          `${API_BASE}/mammo-risk/predict/${isMulti ? 'multi' : 'single'}`,
-          { method: 'POST', body: multiFormData }
-        );
-        const mammoData = await res.json();
-        setResult({ resultFile: mammoData });
+        const [cnnRes, qmlRes] = await Promise.all([
+          fetch(`${API_BASE}/mammo-risk/predict/${endpoint}`, { method: 'POST', body: cnnFormData }),
+          fetch(`${API_BASE}/qml-mammo-risk/predict/${endpoint}`, { method: 'POST', body: qmlFormData }),
+        ]);
+
+        const [cnnData, qmlData] = await Promise.all([
+          cnnRes.json(),
+          qmlRes.json(),
+        ]);
+
+        setResult({ resultFile: { cnn: cnnData, qml: qmlData } });
       } catch {
         setStatus({ ok: false, msg: 'Cannot reach the server. Make sure the backend is running.' });
       } finally {
@@ -110,9 +124,9 @@ export default function Analysis() {
   };
 
   const stepPb = {
-    0: { xs: 4, md: 5  },
+    0: { xs: 4, md: 5 },
     1: { xs: 10, md: 14 },
-    2: { xs: 4, md: 5  },
+    2: { xs: 4, md: 5 },
   };
 
   return (
@@ -249,7 +263,8 @@ export default function Analysis() {
                   )}
                   {analysisMode === 'mammo-risk' && (
                     <Container maxWidth="xl">
-                      <MammoRiskResults results={result} reset={handleReset} />
+                      <ModelSelect selectedModel={modelMode} onModelSelect={setModelMode} />
+                      <MammoRiskResults results={result} reset={handleReset} currentModel={modelMode} />
                     </Container>
                   )}
                   {analysisMode === 'future-risk' && (
