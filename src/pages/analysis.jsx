@@ -18,31 +18,31 @@ const API_BASE = 'http://localhost:8000';
 
 // Shared fade+slide up variant for step transitions
 const stepVariants = {
-  hidden:  { opacity: 0, y: 18 },
+  hidden: { opacity: 0, y: 18 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' } },
-  exit:    { opacity: 0, y: -12, transition: { duration: 0.2, ease: 'easeIn' } },
+  exit: { opacity: 0, y: -12, transition: { duration: 0.2, ease: 'easeIn' } },
 };
 
 export default function Analysis() {
-  const [file, setFile]                 = useState(null);
-  const [files, setFiles]               = useState([]);
-  const [preview, setPreview]           = useState(null);
-  const [status, setStatus]             = useState(null);
-  const [loading, setLoading]           = useState(false);
-  const [result, setResult]             = useState(null);
+  const [file, setFile] = useState(null);
+  const [files, setFiles] = useState([]);
+  const [preview, setPreview] = useState(null);
+  const [status, setStatus] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
   const [analysisMode, setAnalysisMode] = useState(null);
-  const [modelMode, setModelMode]       = useState('Classical');
-  const [activeStep, setActiveStep]     = useState(0);
-  const [isVisible, setIsVisible]       = useState(false);
-  const [isVisible1, setIsVisible1]     = useState(false);
+  const [modelMode, setModelMode] = useState('Classical');
+  const [activeStep, setActiveStep] = useState(0);
+  const [isVisible, setIsVisible] = useState(false);
+  const [isVisible1, setIsVisible1] = useState(false);
 
-  const targetRef  = useRef(null);
+  const targetRef = useRef(null);
   const targetRef1 = useRef(null);
 
   useEffect(() => {
-    const observer  = new IntersectionObserver(([e]) => setIsVisible(e.isIntersecting),  { threshold: 0.1 });
+    const observer = new IntersectionObserver(([e]) => setIsVisible(e.isIntersecting), { threshold: 0.1 });
     const observer1 = new IntersectionObserver(([e]) => setIsVisible1(e.isIntersecting), { threshold: 0.1 });
-    if (targetRef.current)  observer.observe(targetRef.current);
+    if (targetRef.current) observer.observe(targetRef.current);
     if (targetRef1.current) observer1.observe(targetRef1.current);
     return () => { observer.disconnect(); observer1.disconnect(); };
   }, [result]);
@@ -56,19 +56,33 @@ export default function Analysis() {
 
     if (analysisMode === 'mammo-risk') {
       const isMulti = files.length > 1;
-      const multiFormData = new FormData();
+      const endpoint = isMulti ? 'multi' : 'single';
+
+      const cnnFormData = new FormData();
+      const qmlFormData = new FormData();
+
       if (isMulti) {
-        files.forEach(f => multiFormData.append('files', f.file));
+        files.forEach(f => {
+          cnnFormData.append('files', f.file);
+          qmlFormData.append('files', f.file);
+        });
       } else {
-        multiFormData.append('file', files[0].file);
+        cnnFormData.append('file', files[0].file);
+        qmlFormData.append('file', files[0].file);
       }
+
       try {
-        const res = await fetch(
-          `${API_BASE}/mammo-risk/predict/${isMulti ? 'multi' : 'single'}`,
-          { method: 'POST', body: multiFormData }
-        );
-        const mammoData = await res.json();
-        setResult({ resultFile: mammoData });
+        const [cnnRes, qmlRes] = await Promise.all([
+          fetch(`${API_BASE}/mammo-risk/predict/${endpoint}`, { method: 'POST', body: cnnFormData }),
+          fetch(`${API_BASE}/qml-mammo-risk/predict/${endpoint}`, { method: 'POST', body: qmlFormData }),
+        ]);
+
+        const [cnnData, qmlData] = await Promise.all([
+          cnnRes.json(),
+          qmlRes.json(),
+        ]);
+
+        setResult({ resultFile: { cnn: cnnData, qml: qmlData } });
       } catch {
         setStatus({ ok: false, msg: 'Cannot reach the server. Make sure the backend is running.' });
       } finally {
@@ -80,12 +94,17 @@ export default function Analysis() {
       try {
         const [uploadRes, qmlRes, cnnRes] = await Promise.all([
           fetch(`${API_BASE}/images/upload`, { method: 'POST', body: formData }),
-          fetch(`${API_BASE}/QMLPredict`,    { method: 'POST', body: formData }),
-          fetch(`${API_BASE}/CNNPredict/?include_gradcam=true`, { method: 'POST', body: formData }),
+          fetch(`${API_BASE}/QMLPredictV2/`, { method: 'POST', body: formData }),
+          fetch(`${API_BASE}/S2CNNPredict/predict`, { method: 'POST', body: formData }),
+
         ]);
         const [uploadData, qmlData, cnnData] = await Promise.all([
           uploadRes.json(), qmlRes.json(), cnnRes.json(),
         ]);
+
+        console.log("result:", result);
+        console.log("cnn:", result?.resultFile?.cnn);
+
         setResult({ filename: uploadData.filename, resultFile: { qml: qmlData, cnn: cnnData } });
       } catch {
         setStatus({ ok: false, msg: 'Cannot reach the server. Make sure the backend is running.' });
@@ -105,9 +124,9 @@ export default function Analysis() {
   };
 
   const stepPb = {
-    0: { xs: 4, md: 5  },
+    0: { xs: 4, md: 5 },
     1: { xs: 10, md: 14 },
-    2: { xs: 4, md: 5  },
+    2: { xs: 4, md: 5 },
   };
 
   return (
@@ -244,7 +263,8 @@ export default function Analysis() {
                   )}
                   {analysisMode === 'mammo-risk' && (
                     <Container maxWidth="xl">
-                      <MammoRiskResults results={result} reset={handleReset} />
+                      <ModelSelect selectedModel={modelMode} onModelSelect={setModelMode} />
+                      <MammoRiskResults results={result} reset={handleReset} currentModel={modelMode} />
                     </Container>
                   )}
                   {analysisMode === 'future-risk' && (
