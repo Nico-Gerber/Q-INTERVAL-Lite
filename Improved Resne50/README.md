@@ -7,8 +7,7 @@ This branch contains the Sprint 2 final classification model for the Q-INTERVAL-
 | File | Description |
 |---|---|
 | `Memmo_Final_v2.ipynb` | Full training and inference notebook (22 sections, all steps documented) |
-| `final_model_bundle.pth` | Recommended file for inference. Bundle containing model weights, calibration temperature, normalization stats, input size, and class names |
-| `best_restnet50_5_mammobench.pth` | Raw model state dict only (alternative — use the bundle above instead) |
+| `best_restnet50_5_mammobench.pth` | Recommended file for inference. Bundle containing model weights, calibration temperature, normalization stats, input size, and class names |
 
 ## Final test metrics
 
