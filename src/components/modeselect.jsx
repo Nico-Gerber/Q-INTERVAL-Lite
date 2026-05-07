@@ -71,8 +71,8 @@ export default function ModeSelect({ selectedMode, onModeSelect, setActiveStep }
                 p: 2.5,
                 cursor: 'pointer',
                 borderRadius: 3,
-                border: '1px solid',
-                borderColor: isSelected ? `${mode.color}.main` : 'divider',
+                border: '2px solid',
+                borderColor: isSelected ? `${mode.color}.main` : 'rgba(255,255,255,0.12)',
                 backgroundColor: isSelected
                   ? (theme) => `${theme.palette[mode.color].main}12`
                   : 'background.paper',
@@ -106,10 +106,10 @@ export default function ModeSelect({ selectedMode, onModeSelect, setActiveStep }
                 {mode.icon}
               </Box>
 
-              {/* Title */}
+              {/* Title — always white, never changes */}
               <Typography sx={{
                 color: 'text.primary',
-                fontWeight: 700,
+                fontWeight: 800,
                 fontSize: '0.95rem',
                 mb: 0.75,
                 lineHeight: 1.3,
@@ -117,7 +117,7 @@ export default function ModeSelect({ selectedMode, onModeSelect, setActiveStep }
                 {mode.title}
               </Typography>
 
-              {/* Description */}
+              {/* Description — always text.secondary, never changes */}
               <Typography variant="body2" sx={{
                 color: 'text.secondary',
                 lineHeight: 1.6,
@@ -127,7 +127,7 @@ export default function ModeSelect({ selectedMode, onModeSelect, setActiveStep }
                 {mode.description}
               </Typography>
 
-              {/* Feature bullets */}
+              {/* Feature bullets — dot and text shift to accent when selected */}
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, flex: 1 }}>
                 {mode.features.map((feature) => (
                   <Box key={feature} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
@@ -137,9 +137,13 @@ export default function ModeSelect({ selectedMode, onModeSelect, setActiveStep }
                       borderRadius: '50%',
                       backgroundColor: isSelected ? `${mode.color}.main` : 'text.disabled',
                       flexShrink: 0,
-                      transition: 'background-color 0.2s ease',
+                      transition: 'background-color 0.22s ease',
                     }} />
-                    <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.75rem' }}>
+                    <Typography variant="caption" sx={{
+                      color: isSelected ? `${mode.color}.light` : 'text.primary',
+                      fontSize: '0.75rem',
+                      transition: 'color 0.22s ease',
+                    }}>
                       {feature}
                     </Typography>
                   </Box>

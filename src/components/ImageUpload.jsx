@@ -39,24 +39,25 @@ export default function ImageUpload({ file, setFile, preview, setPreview, setAct
 
   return (
     <Box>
-      {/* Fixed height wrapper so footer stays anchored regardless of state */}
-      <Box sx={{ minHeight: 260, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+      {/* minHeight matches mode card height so buttons line up with Continue */}
+      <Box sx={{ minHeight: 300, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
         {!file ? (
           <Paper
             {...getRootProps()}
             elevation={0}
             sx={{
-              border: '1px dashed',
-              borderColor: isDragActive ? 'primary.main' : 'divider',
+              border: '2px dashed',
+              borderColor: isDragActive ? 'primary.main' : 'rgba(255,255,255,0.12)',
               borderRadius: 3,
-              p: { xs: 4, md: 5 },
+              p: { xs: 6, md: 8 },
               textAlign: 'center',
               cursor: 'pointer',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 1,
+              gap: 1.5,
+              minHeight: 300,
               backgroundColor: isDragActive
                 ? (theme) => `${theme.palette.primary.main}0A`
                 : 'background.paper',
@@ -69,8 +70,8 @@ export default function ImageUpload({ file, setFile, preview, setPreview, setAct
           >
             <input {...getInputProps()} />
             <Box sx={{
-              width: 72,
-              height: 72,
+              width: 80,
+              height: 80,
               borderRadius: 3,
               backgroundColor: 'rgba(255,255,255,0.06)',
               display: 'flex',
@@ -78,14 +79,13 @@ export default function ImageUpload({ file, setFile, preview, setPreview, setAct
               justifyContent: 'center',
               mb: 1,
             }}>
-              <GalleryIcon sx={{ fontSize: 34, color: 'text.disabled' }} />
+              <GalleryIcon sx={{ fontSize: 38, color: 'text.disabled' }} />
             </Box>
             <Typography variant="subtitle1" fontWeight={700} sx={{ color: 'text.primary' }}>
               {isDragActive ? 'Drop the image here' : 'Image Upload Portal'}
             </Typography>
             <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-              Drag & drop a mammogram, 
-              <br />or click to browse
+              Drag & drop a mammogram, or click to browse
             </Typography>
             <Box sx={{
               display: 'inline-flex',
@@ -106,12 +106,15 @@ export default function ImageUpload({ file, setFile, preview, setPreview, setAct
           <Paper
             elevation={0}
             sx={{
-              border: '1px solid',
+              border: '2px solid',
               borderColor: (theme) => `${theme.palette.primary.main}40`,
               borderRadius: 3,
-              p: 2.5,
+              p: { xs: 4, md: 6 },
+              minHeight: 300,
               display: 'flex',
+              flexDirection: 'column',
               alignItems: 'center',
+              justifyContent: 'center',
               gap: 2.5,
               backgroundColor: (theme) => `${theme.palette.primary.main}08`,
             }}
@@ -121,20 +124,19 @@ export default function ImageUpload({ file, setFile, preview, setPreview, setAct
               src={preview}
               alt="Selected mammogram"
               sx={{
-                width: 80,
-                height: 80,
+                width: 120,
+                height: 120,
                 objectFit: 'cover',
                 borderRadius: 2,
-                border: '1px solid',
+                border: '2px solid',
                 borderColor: (theme) => `${theme.palette.primary.main}40`,
-                flexShrink: 0,
               }}
             />
-            <Box sx={{ flex: 1, textAlign: 'left' }}>
-              <Typography variant="subtitle2" fontWeight={700} sx={{ color: 'text.primary', mb: 0.25 }}>
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography variant="subtitle1" fontWeight={700} sx={{ color: 'text.primary', mb: 0.5 }}>
                 {file.name}
               </Typography>
-              <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
+              <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1.5 }}>
                 {file.size > 1024 * 1024
                   ? (file.size / 1000024).toFixed(2) + ' MB'
                   : (file.size / 1024).toFixed(1) + ' KB'}
@@ -144,22 +146,24 @@ export default function ImageUpload({ file, setFile, preview, setPreview, setAct
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 0.75,
-                px: 1.25,
-                py: 0.35,
+                px: 1.5,
+                py: 0.5,
                 borderRadius: '999px',
                 backgroundColor: (theme) => `${theme.palette.success.main}14`,
                 border: '1px solid',
                 borderColor: (theme) => `${theme.palette.success.main}30`,
+                mb: 2,
               }}>
-                <Box sx={{ width: 5, height: 5, borderRadius: '50%', backgroundColor: 'success.main' }} />
-                <Typography variant="caption" sx={{ color: 'success.main', fontWeight: 600, fontSize: '0.7rem' }}>
+                <Box sx={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: 'success.main' }} />
+                <Typography variant="caption" sx={{ color: 'success.main', fontWeight: 600, fontSize: '0.72rem' }}>
                   Ready for analysis
                 </Typography>
               </Box>
+              <br />
+              <Button size="small" variant="outlined" color="error" onClick={handleRemove}>
+                Remove
+              </Button>
             </Box>
-            <Button size="small" variant="outlined" color="error" onClick={handleRemove} sx={{ flexShrink: 0 }}>
-              Remove
-            </Button>
           </Paper>
         )}
       </Box>

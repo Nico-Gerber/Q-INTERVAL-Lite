@@ -42,25 +42,25 @@ export default function ImageUploadOrder({ file, setFiles, preview, setPreview, 
 
   return (
     <Box>
-      {/* Fixed height wrapper — matches ImageUpload so footer never jumps */}
-      <Box sx={{ minHeight: 260, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+      {/* minHeight matches mode card height so buttons line up with Continue */}
+      <Box sx={{ minHeight: 300, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
         {file.length === 0 ? (
-          /* ── Empty portal — identical to ImageUpload empty state ── */
           <Paper
             {...getRootProps()}
             elevation={0}
             sx={{
-              border: '1px dashed',
-              borderColor: isDragActive ? 'primary.main' : 'divider',
+              border: '2px dashed',
+              borderColor: isDragActive ? 'primary.main' : 'rgba(255,255,255,0.12)',
               borderRadius: 3,
-              p: { xs: 4, md: 5 },
+              p: { xs: 6, md: 8 },
               textAlign: 'center',
               cursor: 'pointer',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 1,
+              gap: 1.5,
+              minHeight: 300,
               backgroundColor: isDragActive
                 ? (theme) => `${theme.palette.primary.main}0A`
                 : 'background.paper',
@@ -73,8 +73,8 @@ export default function ImageUploadOrder({ file, setFiles, preview, setPreview, 
           >
             <input {...getInputProps()} />
             <Box sx={{
-              width: 72,
-              height: 72,
+              width: 80,
+              height: 80,
               borderRadius: 3,
               backgroundColor: 'rgba(255,255,255,0.06)',
               display: 'flex',
@@ -82,10 +82,10 @@ export default function ImageUploadOrder({ file, setFiles, preview, setPreview, 
               justifyContent: 'center',
               mb: 1,
             }}>
-              <GalleryIcon sx={{ fontSize: 34, color: 'text.disabled' }} />
+              <GalleryIcon sx={{ fontSize: 38, color: 'text.disabled' }} />
             </Box>
             <Typography variant="subtitle1" fontWeight={700} sx={{ color: 'text.primary' }}>
-              {isDragActive ? 'Drop images here' : 'Secure Upload Portal'}
+              {isDragActive ? 'Drop images here' : 'Image Upload Portal'}
             </Typography>
             <Typography variant="body2" sx={{ color: 'text.secondary' }}>
               Drag & drop up to 4 mammograms, or click to browse
@@ -106,22 +106,24 @@ export default function ImageUploadOrder({ file, setFiles, preview, setPreview, 
             </Box>
           </Paper>
         ) : (
-          /* ── Files loaded — portal strip + reorderable rows ── */
           <Paper
             elevation={0}
             sx={{
-              border: '1px solid',
+              border: '2px solid',
               borderColor: (theme) => `${theme.palette.primary.main}40`,
               borderRadius: 3,
+              minHeight: 300,
               backgroundColor: (theme) => `${theme.palette.primary.main}08`,
               overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
             }}
           >
             {/* Compact drop strip */}
             <Box
               {...getRootProps()}
               sx={{
-                p: 1.5,
+                p: 2,
                 textAlign: 'center',
                 cursor: 'pointer',
                 borderBottom: '1px solid',
@@ -151,7 +153,7 @@ export default function ImageUploadOrder({ file, setFiles, preview, setPreview, 
               display: 'grid',
               gridTemplateColumns: '48px 1fr 90px 72px 90px',
               px: 2.5,
-              py: 1,
+              py: 1.25,
               borderBottom: '1px solid',
               borderColor: 'divider',
               backgroundColor: 'rgba(255,255,255,0.03)',
@@ -174,7 +176,7 @@ export default function ImageUploadOrder({ file, setFiles, preview, setPreview, 
               axis="y"
               values={file}
               onReorder={setFiles}
-              style={{ listStyle: 'none', margin: 0, padding: 0 }}
+              style={{ listStyle: 'none', margin: 0, padding: 0, flex: 1 }}
             >
               {file.map((item, index) => (
                 <Reorder.Item key={item.id} value={item} style={{ cursor: 'grab' }}>
@@ -182,7 +184,7 @@ export default function ImageUploadOrder({ file, setFiles, preview, setPreview, 
                     display: 'grid',
                     gridTemplateColumns: '48px 1fr 90px 72px 90px',
                     px: 2.5,
-                    py: 1.5,
+                    py: 2,
                     alignItems: 'center',
                     borderBottom: '1px solid',
                     borderColor: 'divider',
@@ -191,8 +193,8 @@ export default function ImageUploadOrder({ file, setFiles, preview, setPreview, 
                     '&:hover': { backgroundColor: 'rgba(255,255,255,0.025)' },
                   }}>
                     <Box sx={{
-                      width: 24,
-                      height: 24,
+                      width: 26,
+                      height: 26,
                       borderRadius: 1,
                       backgroundColor: 'rgba(255,255,255,0.07)',
                       border: '1px solid',
@@ -201,7 +203,7 @@ export default function ImageUploadOrder({ file, setFiles, preview, setPreview, 
                       alignItems: 'center',
                       justifyContent: 'center',
                     }}>
-                      <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, fontSize: '0.7rem' }}>
+                      <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, fontSize: '0.72rem' }}>
                         {index + 1}
                       </Typography>
                     </Box>
@@ -218,8 +220,8 @@ export default function ImageUploadOrder({ file, setFiles, preview, setPreview, 
                       src={item.preview}
                       alt="preview"
                       sx={{
-                        width: 44,
-                        height: 44,
+                        width: 48,
+                        height: 48,
                         objectFit: 'cover',
                         borderRadius: 1.5,
                         border: '1px solid',

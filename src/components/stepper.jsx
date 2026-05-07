@@ -85,20 +85,33 @@ export default function AnalysisStepper({ activeStep }) {
           },
         }}
       >
-        {STEPS.map(({ label, sub }) => (
-          <Step key={label}>
-            <StepLabel
-              StepIconComponent={CustomStepIcon}
-              optional={
-                <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.68rem' }}>
-                  {sub}
-                </Typography>
-              }
-            >
-              {label}
-            </StepLabel>
-          </Step>
-        ))}
+        {STEPS.map(({ label, sub }, index) => {
+          const isActive    = activeStep === index;
+          const isCompleted = activeStep > index;
+          return (
+            <Step key={label}>
+              <StepLabel
+                StepIconComponent={CustomStepIcon}
+                optional={
+                  <Typography variant="caption" sx={{
+                    fontSize: '0.72rem',
+                    fontWeight: isActive ? 600 : 400,
+                    color: isActive
+                      ? 'text.primary'
+                      : isCompleted
+                        ? 'primary.main'
+                        : 'text.disabled',
+                    transition: 'color 0.2s ease',
+                  }}>
+                    {sub}
+                  </Typography>
+                }
+              >
+                {label}
+              </StepLabel>
+            </Step>
+          );
+        })}
       </Stepper>
     </Container>
   );

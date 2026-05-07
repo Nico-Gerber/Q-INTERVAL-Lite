@@ -96,6 +96,15 @@ export default function Analysis() {
     setActiveStep(0);
   };
 
+  // Step 0 (mode select) — footer naturally out of view, no extra pb needed
+  // Step 1 (upload) — needs more pb so footer clears the Back/Next buttons
+  // Step 2 (results) — results can scroll, standard pb
+  const stepPb = {
+    0: { xs: 4, md: 5 },
+    1: { xs: 10, md: 14 },
+    2: { xs: 4, md: 5 },
+  };
+
   return (
     <Box sx={{
       backgroundColor: 'background.default',
@@ -188,8 +197,8 @@ export default function Analysis() {
         <AnalysisStepper activeStep={activeStep} />
       </Box>
 
-      {/* ── Step content ── */}
-      <Box sx={{ position: 'relative', zIndex: 1, pb: { xs: 4, md: 5 }, px: 2 }}>
+      {/* ── Step content — pb varies per step ── */}
+      <Box sx={{ position: 'relative', zIndex: 1, pb: stepPb[activeStep], px: 2 }}>
 
         {activeStep === 0 && (
           <ModeSelect
