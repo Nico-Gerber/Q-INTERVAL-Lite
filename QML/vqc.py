@@ -2,28 +2,27 @@ import numpy as np
 import pandas as pd
 import pennylane as qml
 from pennylane import numpy as pnp
-from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 import joblib
 import matplotlib.pyplot as plt
 
 #vars
-CSV_PATH = "dataset/qml_900_pca4_multiclass.csv"
+CSV_PATH = "8pca/qml_4500_pca8_multiclass.csv"
 LABEL_COLUMN = "label"
-FEATURE_COLUMNS = [f"pc{i}" for i in range(1, 5)]
+FEATURE_COLUMNS = [f"pc{i}" for i in range(1, 9)]
 
 RANDOM_SEED = 42
 TEST_SIZE = 0.2
-N_QUBITS = 4
+N_QUBITS = 8
 N_LAYERS = 4
 N_CLASSES = 3
 EPOCHS = 25
 BATCH_SIZE = 16
 LEARNING_RATE = 0.01
 
-MODEL_SAVE_PATH = "vqc_900_pca4_multiclass_v5.joblib"
-HISTORY_SAVE_PATH = "vqc_900_pca4_multiclass_v5_history.joblib"
+MODEL_SAVE_PATH = "vqc_4500_pca8_multiclass_v1.joblib"
+HISTORY_SAVE_PATH = "vqc_4500_pca8_multiclass_v1_history.joblib"
 
 LABEL_NAMES = {
     0: "normal",
