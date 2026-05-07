@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Box, Chip, Container, Typography, Alert } from '@mui/material';
+import { AnimatePresence, motion } from 'framer-motion';
 
 import AnalysisStepper from '../components/stepper';
 import ModeSelect from '../components/modeselect';
@@ -14,6 +15,13 @@ import NeuralCanvas from '../components/neuralCanvas';
 import { Atom } from 'react-loading-indicators';
 
 const API_BASE = 'http://localhost:8000';
+
+// Shared fade+slide up variant for step transitions
+const stepVariants = {
+  hidden:  { opacity: 0, y: 18 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' } },
+  exit:    { opacity: 0, y: -12, transition: { duration: 0.2, ease: 'easeIn' } },
+};
 
 export default function Analysis() {
   const [file, setFile]                 = useState(null);
@@ -96,13 +104,10 @@ export default function Analysis() {
     setActiveStep(0);
   };
 
-  // Step 0 (mode select) — footer naturally out of view, no extra pb needed
-  // Step 1 (upload) — needs more pb so footer clears the Back/Next buttons
-  // Step 2 (results) — results can scroll, standard pb
   const stepPb = {
-    0: { xs: 4, md: 5 },
+    0: { xs: 4, md: 5  },
     1: { xs: 10, md: 14 },
-    2: { xs: 4, md: 5 },
+    2: { xs: 4, md: 5  },
   };
 
   return (
@@ -116,25 +121,16 @@ export default function Analysis() {
 
       {/* Radial glow */}
       <Box sx={{
-        position: 'absolute',
-        top: '-40%',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        width: '500px',
-        height: '500px',
+        position: 'absolute', top: '-40%', left: '50%',
+        transform: 'translateX(-50%)', width: '500px', height: '500px',
         borderRadius: '50%',
-        background: (theme) =>
-          `radial-gradient(circle, ${theme.palette.primary.main}0F 0%, transparent 70%)`,
-        pointerEvents: 'none',
-        zIndex: 0,
+        background: (theme) => `radial-gradient(circle, ${theme.palette.primary.main}0F 0%, transparent 70%)`,
+        pointerEvents: 'none', zIndex: 0,
       }} />
 
       {/* Grid overlay */}
       <Box sx={{
-        position: 'absolute',
-        inset: 0,
-        pointerEvents: 'none',
-        zIndex: 0,
+        position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0,
         backgroundImage: (theme) =>
           `linear-gradient(${theme.palette.primary.main}07 1px, transparent 1px),
            linear-gradient(90deg, ${theme.palette.primary.main}07 1px, transparent 1px)`,
@@ -143,131 +139,130 @@ export default function Analysis() {
 
       <NeuralCanvas />
 
-      {/* ── Hero ── */}
-      <Box sx={{
-        position: 'relative',
-        zIndex: 1,
-        pt: { xs: 5, md: 8 },
-        pb: 0,
-        px: 2,
-        textAlign: 'center',
-      }}>
-        <Chip
-          label="RESEARCH PROTOTYPE · NOT FOR CLINICAL USE"
-          size="small"
-          sx={{
-            mb: 2.5,
-            bgcolor: (theme) => `${theme.palette.error.main}18`,
-            color: 'error.main',
-            letterSpacing: '0.08em',
-            fontSize: '0.65rem',
-            fontWeight: 700,
-            border: '1px solid',
-            borderColor: (theme) => `${theme.palette.error.main}35`,
-            borderRadius: '999px',
-          }}
-        />
-        <Typography variant="h3" sx={{
-          fontWeight: 700,
-          mb: 1.5,
-          letterSpacing: '-0.01em',
-          color: 'text.primary',
-        }}>
-          Mammogram Analysis
-        </Typography>
-        <Typography variant="h6" sx={{
-          color: 'text.secondary',
-          fontWeight: 400,
-          maxWidth: 520,
-          mx: 'auto',
-          lineHeight: 1.6,
-        }}>
-          Upload a mammogram and let our AI models detect, classify, and predict risk.
-        </Typography>
-
-        {status && !status.ok && (
-          <Container maxWidth="sm" sx={{ mt: 2 }}>
-            <Alert severity="error">{status.msg}</Alert>
-          </Container>
-        )}
-      </Box>
-
-      {/* ── Stepper ── */}
-      <Box sx={{ position: 'relative', zIndex: 1 }}>
-        <AnalysisStepper activeStep={activeStep} />
-      </Box>
-
-      {/* ── Step content — pb varies per step ── */}
-      <Box sx={{ position: 'relative', zIndex: 1, pb: stepPb[activeStep], px: 2 }}>
-
-        {activeStep === 0 && (
-          <ModeSelect
-            selectedMode={analysisMode}
-            onModeSelect={setAnalysisMode}
-            setActiveStep={setActiveStep}
+      {/* ── Hero — fades in on mount ── */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
+        style={{ position: 'relative', zIndex: 1 }}
+      >
+        <Box sx={{ pt: { xs: 5, md: 8 }, pb: 0, px: 2, textAlign: 'center' }}>
+          <Chip
+            label="RESEARCH PROTOTYPE · NOT FOR CLINICAL USE"
+            size="small"
+            sx={{
+              mb: 2.5,
+              bgcolor: (theme) => `${theme.palette.error.main}18`,
+              color: 'error.main',
+              letterSpacing: '0.08em', fontSize: '0.65rem', fontWeight: 700,
+              border: '1px solid',
+              borderColor: (theme) => `${theme.palette.error.main}35`,
+              borderRadius: '999px',
+            }}
           />
-        )}
-
-        {activeStep === 1 && (
-          analysisMode === 'classification' ? (
-            <Container maxWidth="md" sx={{ mt: 1 }}>
-              <ImageUpload
-                file={file} setFile={setFile}
-                preview={preview} setPreview={setPreview}
-                setActiveStep={setActiveStep}
-                handleAnalyse={handleAnalyse}
-              />
+          <Typography variant="h3" sx={{ fontWeight: 700, mb: 1.5, letterSpacing: '-0.01em', color: 'text.primary' }}>
+            Mammogram Analysis
+          </Typography>
+          <Typography variant="h6" sx={{ color: 'text.secondary', fontWeight: 400, maxWidth: 520, mx: 'auto', lineHeight: 1.6 }}>
+            Upload a mammogram and let our AI models detect, classify, and predict risk.
+          </Typography>
+          {status && !status.ok && (
+            <Container maxWidth="sm" sx={{ mt: 2 }}>
+              <Alert severity="error">{status.msg}</Alert>
             </Container>
-          ) : (
-            <Container maxWidth="md" sx={{ mt: 1 }}>
-              <ImageUploadOrder
-                file={files} setFiles={setFiles}
-                preview={preview} setPreview={setPreview}
-                setActiveStep={setActiveStep}
-                handleAnalyse={handleAnalyse}
-              />
-            </Container>
-          )
-        )}
+          )}
+        </Box>
+      </motion.div>
 
-        {activeStep === 2 && (
-          loading ? (
-            <Box sx={{ mt: 8, display: 'flex', justifyContent: 'center' }}>
-              <Atom color='#2DD4BF' />
-            </Box>
-          ) : (
-            <>
-              {analysisMode === 'classification' && (
-                <>
-                  <ModelSelect selectedModel={modelMode} onModelSelect={setModelMode} />
-                  <Container maxWidth="xl">
-                    <ClassificationResults
-                      analyisedImage={preview} reset={handleReset}
-                      currentModel={modelMode} results={result}
-                    />
-                  </Container>
-                </>
-              )}
-              {analysisMode === 'mammo-risk' && (
-                <Container maxWidth="xl">
-                  <MammoRiskResults results={result} reset={handleReset} />
+      {/* ── Stepper — fades in slightly after hero ── */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.4, delay: 0.15, ease: 'easeOut' }}
+        style={{ position: 'relative', zIndex: 1 }}
+      >
+        <AnalysisStepper activeStep={activeStep} />
+      </motion.div>
+
+      {/* ── Step content — AnimatePresence swaps between steps ── */}
+      <Box sx={{ position: 'relative', zIndex: 1, pb: stepPb[activeStep], px: 2 }}>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeStep}
+            variants={stepVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+          >
+            {activeStep === 0 && (
+              <ModeSelect
+                selectedMode={analysisMode}
+                onModeSelect={setAnalysisMode}
+                setActiveStep={setActiveStep}
+              />
+            )}
+
+            {activeStep === 1 && (
+              analysisMode === 'classification' ? (
+                <Container maxWidth="md" sx={{ mt: 1 }}>
+                  <ImageUpload
+                    file={file} setFile={setFile}
+                    preview={preview} setPreview={setPreview}
+                    setActiveStep={setActiveStep}
+                    handleAnalyse={handleAnalyse}
+                  />
                 </Container>
-              )}
-              {analysisMode === 'future-risk' && (
-                <>
-                  <ModelSelect selectedModel={modelMode} onModelSelect={setModelMode} />
-                  <Container maxWidth="xl">
-                    <FutureRiskResults
-                      analyisedImage={preview} reset={handleReset}
-                      currentModel={modelMode} results={result}
-                    />
-                  </Container>
-                </>
-              )}
-            </>
-          )
-        )}
+              ) : (
+                <Container maxWidth="md" sx={{ mt: 1 }}>
+                  <ImageUploadOrder
+                    file={files} setFiles={setFiles}
+                    preview={preview} setPreview={setPreview}
+                    setActiveStep={setActiveStep}
+                    handleAnalyse={handleAnalyse}
+                  />
+                </Container>
+              )
+            )}
 
+            {activeStep === 2 && (
+              loading ? (
+                <Box sx={{ mt: 8, display: 'flex', justifyContent: 'center' }}>
+                  <Atom color='#2DD4BF' />
+                </Box>
+              ) : (
+                <>
+                  {analysisMode === 'classification' && (
+                    <>
+                      <ModelSelect selectedModel={modelMode} onModelSelect={setModelMode} />
+                      <Container maxWidth="xl">
+                        <ClassificationResults
+                          analyisedImage={preview} reset={handleReset}
+                          currentModel={modelMode} results={result}
+                        />
+                      </Container>
+                    </>
+                  )}
+                  {analysisMode === 'mammo-risk' && (
+                    <Container maxWidth="xl">
+                      <MammoRiskResults results={result} reset={handleReset} />
+                    </Container>
+                  )}
+                  {analysisMode === 'future-risk' && (
+                    <>
+                      <ModelSelect selectedModel={modelMode} onModelSelect={setModelMode} />
+                      <Container maxWidth="xl">
+                        <FutureRiskResults
+                          analyisedImage={preview} reset={handleReset}
+                          currentModel={modelMode} results={result}
+                        />
+                      </Container>
+                    </>
+                  )}
+                </>
+              )
+            )}
+          </motion.div>
+        </AnimatePresence>
       </Box>
     </Box>
   );

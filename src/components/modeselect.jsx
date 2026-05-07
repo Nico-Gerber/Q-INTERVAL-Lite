@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Container, Typography, Paper, Alert, Button } from '@mui/material';
+import { motion } from 'framer-motion';
 import {
   ImageSearch as ClassificationIcon,
   TrendingUp as RiskIcon,
@@ -10,7 +11,7 @@ const MODES = [
   {
     id: 'classification',
     title: 'Classification Analysis',
-    description: 'Analyze a single mammogram image to detect and classify potential abnormalities including masses, calcifications, and other findings.',
+    description: 'Analyze a single mammogram image to detect and classify potential abnormalities including masses and calcifications.',
     icon: <ClassificationIcon sx={{ fontSize: 26 }} />,
     color: 'primary',
     features: [
@@ -48,6 +49,14 @@ const MODES = [
   },
 ];
 
+const cardVariants = {
+  hidden:  { opacity: 0, y: 20 },
+  visible: (i) => ({
+    opacity: 1, y: 0,
+    transition: { duration: 0.35, delay: i * 0.08, ease: 'easeOut' },
+  }),
+};
+
 export default function ModeSelect({ selectedMode, onModeSelect, setActiveStep }) {
   const [status, setStatus] = useState(false);
 
@@ -59,116 +68,110 @@ export default function ModeSelect({ selectedMode, onModeSelect, setActiveStep }
         gap: 2,
         pt: 1,
         pb: 0.5,
+        // stretch makes every grid cell — and therefore every card — the same height
+        alignItems: 'stretch',
       }}>
-        {MODES.map((mode) => {
+        {MODES.map((mode, i) => {
           const isSelected = selectedMode === mode.id;
           return (
-            <Paper
+            <motion.div
               key={mode.id}
-              onClick={() => { onModeSelect(mode.id); setStatus(false); }}
-              elevation={isSelected ? 6 : 1}
-              sx={{
-                p: 2.5,
-                cursor: 'pointer',
-                borderRadius: 3,
-                border: '2px solid',
-                borderColor: isSelected ? `${mode.color}.main` : 'rgba(255,255,255,0.12)',
-                backgroundColor: isSelected
-                  ? (theme) => `${theme.palette[mode.color].main}12`
-                  : 'background.paper',
-                transition: 'all 0.22s ease',
-                display: 'flex',
-                flexDirection: 'column',
-                '&:hover': {
-                  borderColor: `${mode.color}.main`,
-                  backgroundColor: (theme) => `${theme.palette[mode.color].main}0C`,
-                  transform: 'translateY(-3px)',
-                  boxShadow: (theme) =>
-                    `0 8px 28px rgba(0,0,0,0.35), 0 0 0 1px ${theme.palette[mode.color].main}25`,
-                },
-              }}
+              custom={i}
+              variants={cardVariants}
+              initial="hidden"
+              animate="visible"
+              // motion.div must also stretch to fill its grid cell
+              style={{ display: 'flex' }}
             >
-              {/* Stacked icon */}
-              <Box sx={{
-                width: 48,
-                height: 48,
-                borderRadius: 2,
-                backgroundColor: isSelected
-                  ? `${mode.color}.main`
-                  : 'rgba(255,255,255,0.07)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: isSelected ? `${mode.color}.contrastText` : 'text.secondary',
-                mb: 1.5,
-                transition: 'all 0.22s ease',
-              }}>
-                {mode.icon}
-              </Box>
+              <Paper
+                onClick={() => { onModeSelect(mode.id); setStatus(false); }}
+                elevation={isSelected ? 6 : 1}
+                sx={{
+                  p: 2.5,
+                  cursor: 'pointer',
+                  borderRadius: 3,
+                  border: '2px solid',
+                  borderColor: isSelected ? `${mode.color}.main` : 'rgba(255,255,255,0.12)',
+                  backgroundColor: isSelected
+                    ? (theme) => `${theme.palette[mode.color].main}12`
+                    : 'background.paper',
+                  transition: 'all 0.22s ease',
+                  // flex column + full width/height = matches tallest card in row
+                  display: 'flex',
+                  flexDirection: 'column',
+                  width: '100%',
+                  '&:hover': {
+                    borderColor: `${mode.color}.main`,
+                    backgroundColor: (theme) => `${theme.palette[mode.color].main}0C`,
+                    transform: 'translateY(-3px)',
+                    boxShadow: (theme) =>
+                      `0 8px 28px rgba(0,0,0,0.35), 0 0 0 1px ${theme.palette[mode.color].main}25`,
+                  },
+                }}
+              >
+                {/* Stacked icon */}
+                <Box sx={{
+                  width: 48, height: 48, borderRadius: 2, flexShrink: 0,
+                  backgroundColor: isSelected ? `${mode.color}.main` : 'rgba(255,255,255,0.07)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: isSelected ? `${mode.color}.contrastText` : 'text.secondary',
+                  mb: 1.5, transition: 'all 0.22s ease',
+                }}>
+                  {mode.icon}
+                </Box>
 
-              {/* Title — always white, never changes */}
-              <Typography sx={{
-                color: 'text.primary',
-                fontWeight: 800,
-                fontSize: '0.95rem',
-                mb: 0.75,
-                lineHeight: 1.3,
-              }}>
-                {mode.title}
-              </Typography>
-
-              {/* Description — always text.secondary, never changes */}
-              <Typography variant="body2" sx={{
-                color: 'text.secondary',
-                lineHeight: 1.6,
-                fontSize: '0.8rem',
-                mb: 1.5,
-              }}>
-                {mode.description}
-              </Typography>
-
-              {/* Feature bullets — dot and text shift to accent when selected */}
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, flex: 1 }}>
-                {mode.features.map((feature) => (
-                  <Box key={feature} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                    <Box sx={{
-                      width: 4,
-                      height: 4,
-                      borderRadius: '50%',
-                      backgroundColor: isSelected ? `${mode.color}.main` : 'text.disabled',
-                      flexShrink: 0,
-                      transition: 'background-color 0.22s ease',
-                    }} />
-                    <Typography variant="caption" sx={{
-                      color: isSelected ? `${mode.color}.light` : 'text.primary',
-                      fontSize: '0.75rem',
-                      transition: 'color 0.22s ease',
-                    }}>
-                      {feature}
-                    </Typography>
-                  </Box>
-                ))}
-              </Box>
-
-              {/* Selected indicator — always reserves space */}
-              <Box sx={{
-                mt: 1.5,
-                pt: 1.25,
-                borderTop: '1px solid',
-                borderColor: isSelected
-                  ? (theme) => `${theme.palette[mode.color].main}30`
-                  : 'divider',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 0.75,
-                visibility: isSelected ? 'visible' : 'hidden',
-              }}>
-                <Box sx={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: `${mode.color}.main` }} />
-                <Typography variant="caption" sx={{ color: `${mode.color}.main`, fontWeight: 600, fontSize: '0.72rem' }}>
-                  Selected
+                {/* Title */}
+                <Typography sx={{
+                  color: 'text.primary', fontWeight: 800, fontSize: '0.95rem',
+                  mb: 0.75, lineHeight: 1.3, flexShrink: 0,
+                }}>
+                  {mode.title}
                 </Typography>
-              </Box>
-            </Paper>
+
+                {/* Description */}
+                <Typography variant="body2" sx={{
+                  color: 'text.secondary', lineHeight: 1.6, fontSize: '0.8rem',
+                  mb: 1.5, flexShrink: 0,
+                }}>
+                  {mode.description}
+                </Typography>
+
+                {/* Feature bullets — flex: 1 pushes selected indicator to bottom */}
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, flex: 1 }}>
+                  {mode.features.map((feature) => (
+                    <Box key={feature} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                      <Box sx={{
+                        width: 4, height: 4, borderRadius: '50%', flexShrink: 0,
+                        backgroundColor: isSelected ? `${mode.color}.main` : 'text.disabled',
+                        transition: 'background-color 0.22s ease',
+                      }} />
+                      <Typography variant="caption" sx={{
+                        color: isSelected ? `${mode.color}.light` : 'text.primary',
+                        fontSize: '0.75rem', transition: 'color 0.22s ease',
+                      }}>
+                        {feature}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Box>
+
+                {/* Selected indicator — pinned to bottom, always reserves space */}
+                <Box sx={{
+                  mt: 1.5, pt: 1.25, flexShrink: 0,
+                  borderTop: '1px solid',
+                  borderColor: isSelected
+                    ? (theme) => `${theme.palette[mode.color].main}30`
+                    : 'divider',
+                  display: 'flex', alignItems: 'center', gap: 0.75,
+                  visibility: isSelected ? 'visible' : 'hidden',
+                }}>
+                  <Box sx={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: `${mode.color}.main` }} />
+                  <Typography variant="caption" sx={{ color: `${mode.color}.main`, fontWeight: 600, fontSize: '0.72rem' }}>
+                    Selected
+                  </Typography>
+                </Box>
+              </Paper>
+            </motion.div>
           );
         })}
       </Box>
@@ -179,12 +182,18 @@ export default function ModeSelect({ selectedMode, onModeSelect, setActiveStep }
         </Alert>
       )}
 
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
-        {selectedMode
-          ? <Button variant="contained" size="large" onClick={() => setActiveStep(prev => prev + 1)} sx={{ px: 5, fontWeight: 700 }}>Continue →</Button>
-          : <Button variant="contained" size="large" onClick={() => setStatus(true)} sx={{ px: 5, fontWeight: 700, opacity: 0.35 }}>Continue →</Button>
-        }
-      </Box>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3, delay: 0.3 }}
+      >
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+          {selectedMode
+            ? <Button variant="contained" size="large" onClick={() => setActiveStep(prev => prev + 1)} sx={{ px: 5, fontWeight: 700 }}>Continue →</Button>
+            : <Button variant="contained" size="large" onClick={() => setStatus(true)} sx={{ px: 5, fontWeight: 700, opacity: 0.35 }}>Continue →</Button>
+          }
+        </Box>
+      </motion.div>
     </Container>
   );
 }
