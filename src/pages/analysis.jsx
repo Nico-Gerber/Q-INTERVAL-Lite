@@ -11,6 +11,7 @@ import ClassificationResults from '../components/classificationResults';
 import FutureRiskResults from '../components/futureRiskResults';
 import MammoRiskResults from '../components/mammoRiskResults';
 import NeuralCanvas from '../components/neuralCanvas';
+import MultiImageUploadDated from '../components/timeBasedMultiImage';
 
 import { Atom } from 'react-loading-indicators';
 
@@ -49,7 +50,9 @@ export default function Analysis() {
 
   const handleAnalyse = async () => {
     if (analysisMode === 'mammo-risk' && files.length === 0) return;
-    if (analysisMode !== 'mammo-risk' && !file) return;
+
+    if (analysisMode === 'future-risk' && files.length === 0) return;
+    if (analysisMode === 'classification' && !file) return;
 
     setLoading(true);
     setStatus(null);
@@ -76,18 +79,46 @@ export default function Analysis() {
           fetch(`${API_BASE}/mammo-risk/predict/${endpoint}`, { method: 'POST', body: cnnFormData }),
           fetch(`${API_BASE}/qml-mammo-risk/predict/${endpoint}`, { method: 'POST', body: qmlFormData }),
         ]);
-
         const [cnnData, qmlData] = await Promise.all([
           cnnRes.json(),
           qmlRes.json(),
         ]);
-
         setResult({ resultFile: { cnn: cnnData, qml: qmlData } });
       } catch {
         setStatus({ ok: false, msg: 'Cannot reach the server. Make sure the backend is running.' });
       } finally {
         setLoading(false);
       }
+
+    } else if (analysisMode === 'future-risk') {
+      const isMulti = files.length > 1;
+      const endpoint = isMulti ? 'multi' : 'single';
+
+      const qmlFormData = new FormData();
+      // const cnnFormData = new FormData(); // TODO: wire up CNN future risk endpoint when ready
+
+      if (isMulti) {
+        files.forEach(f => qmlFormData.append('files', f.file));
+      } else {
+        qmlFormData.append('file', files[0].file);
+      }
+
+      try {
+        const [qmlRes] = await Promise.all([
+          fetch(`${API_BASE}/qml-future-risk/predict/${endpoint}`, { method: 'POST', body: qmlFormData }),
+          // fetch(`${API_BASE}/cnn-future-risk/predict/${endpoint}`, { method: 'POST', body: cnnFormData }), // TODO: CNN future risk
+        ]);
+        const [qmlData] = await Promise.all([
+          qmlRes.json(),
+          // cnnRes.json(), // TODO: CNN future risk
+        ]);
+        setResult({ resultFile: { qml: qmlData, cnn: null } });
+      } catch {
+        setStatus({ ok: false, msg: 'Cannot reach the server. Make sure the backend is running.' });
+      } finally {
+        setLoading(false);
+      }
+
     } else {
       const formData = new FormData();
       formData.append('file', file);
@@ -96,15 +127,10 @@ export default function Analysis() {
           fetch(`${API_BASE}/images/upload`, { method: 'POST', body: formData }),
           fetch(`${API_BASE}/QMLPredictV2/`, { method: 'POST', body: formData }),
           fetch(`${API_BASE}/S2CNNPredict/predict`, { method: 'POST', body: formData }),
-
         ]);
         const [uploadData, qmlData, cnnData] = await Promise.all([
           uploadRes.json(), qmlRes.json(), cnnRes.json(),
         ]);
-
-        console.log("result:", result);
-        console.log("cnn:", result?.resultFile?.cnn);
-
         setResult({ filename: uploadData.filename, resultFile: { qml: qmlData, cnn: cnnData } });
       } catch {
         setStatus({ ok: false, msg: 'Cannot reach the server. Make sure the backend is running.' });
@@ -231,7 +257,7 @@ export default function Analysis() {
                     handleAnalyse={handleAnalyse}
                   />
                 </Container>
-              ) : (
+              ) : analysisMode === 'mammo-risk' ? (
                 <Container maxWidth="md" sx={{ mt: 1 }}>
                   <ImageUploadOrder
                     file={files} setFiles={setFiles}
@@ -240,7 +266,16 @@ export default function Analysis() {
                     handleAnalyse={handleAnalyse}
                   />
                 </Container>
-              )
+              ) : analysisMode === 'future-risk' ? (
+                <Container maxWidth="md" sx={{ mt: 1 }}>
+                  <MultiImageUploadDated
+                    file={files} setFiles={setFiles}
+                    preview={preview} setPreview={setPreview}
+                    setActiveStep={setActiveStep}
+                    handleAnalyse={handleAnalyse}
+                  />
+                </Container>
+              ) : null
             )}
 
             {activeStep === 2 && (
@@ -274,6 +309,7 @@ export default function Analysis() {
                         <FutureRiskResults
                           analyisedImage={preview} reset={handleReset}
                           currentModel={modelMode} results={result}
+                          uploadedFiles={files}
                         />
                       </Container>
                     </>

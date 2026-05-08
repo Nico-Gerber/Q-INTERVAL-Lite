@@ -14,7 +14,7 @@ from fastapi.responses import JSONResponse
 BASE_DIR = Path(__file__).parent.parent  # points to backend/
 PCA_PATH = BASE_DIR / "dataset/pcaObj.joblib"
 SCALER_PATH = BASE_DIR / "dataset/scalerObj.joblib"
-MODEL_PATH = BASE_DIR / "dataset/vqc_900_pca4_multiclass_v5.joblib"
+MODEL_PATH = BASE_DIR / "dataset/vqc_4500_pca8_multiclass_v1.joblib"
 
 RESIZE_TO = (16, 16)
 
