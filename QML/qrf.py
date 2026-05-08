@@ -11,14 +11,14 @@ import joblib
 # CONFIG
 # ============================================================
 
-CSV_PATH = "dataset/qml_900_pca4_multiclass.csv"
+CSV_PATH = "8pca/qml_4500_pca8_multiclass.csv"
 
 LABEL_COLUMN = "label"
-FEATURE_COLUMNS = [f"pc{i}" for i in range(1, 5)]
+FEATURE_COLUMNS = [f"pc{i}" for i in range(1, 9)]
 RANDOM_SEED = 42
 TEST_SIZE = 0.2
-N_QUBITS = 4
-N_LAYERS = 2
+N_QUBITS = 8
+N_LAYERS = 4
 MODEL_SAVE_PATH = "quantum_random_forest.joblib"
 LABEL_NAMES = {
     0: "normal",
@@ -120,14 +120,10 @@ def quantum_feature_map(x):
         measurements.append(qml.expval(qml.PauliZ(i)))
 
     # Two-qubit correlations
-    pairs = [
-        (0,1),
-        (0,2),
-        (0,3),
-        (1,2),
-        (1,3),
-        (2,3)
-    ]
+    pairs = []
+    for i in range(N_QUBITS):
+        for j in range(i + 1, N_QUBITS):
+            pairs.append((i, j))
 
     for a, b in pairs:
         measurements.append(
@@ -175,12 +171,13 @@ print("\nQuantum feature shape:", X_train_quantum.shape)
 # RANDOM FOREST CLASSIFIER
 # ============================================================
 clf = RandomForestClassifier(
-    n_estimators=120,
-    max_depth=4,
-    min_samples_split=10,
-    min_samples_leaf=5,
-    max_features="sqrt",
+    n_estimators=200,
+    max_depth=6,
+    min_samples_split=15,
+    min_samples_leaf=8,
+    max_features="log2",
     criterion="entropy",
+    bootstrap=True,
     random_state=RANDOM_SEED,
     n_jobs=-1
 )
@@ -224,16 +221,6 @@ print(
 cm = confusion_matrix(y_test, test_preds)
 print("\nConfusion Matrix:\n")
 print(cm)
-
-# ============================================================
-# FEATURE IMPORTANCE
-# ============================================================
-feature_importances = clf.feature_importances_
-print("\nQuantum Feature Importances:\n")
-for idx, importance in enumerate(feature_importances):
-    print(
-        f"Feature {idx + 1}: {importance:.6f}"
-    )
 
 # ============================================================
 # SAVE MODEL
