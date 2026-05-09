@@ -22,8 +22,8 @@ EPOCHS = 60
 BATCH_SIZE = 16
 LEARNING_RATE = 0.003
 
-MODEL_SAVE_PATH = "vqc_4500_pca8_multiclass_best.joblib"
-HISTORY_SAVE_PATH = "vqc_4500_pca8_multiclass_best_history.joblib"
+MODEL_SAVE_PATH = "vqc_4500_pca8_multiclass_v2.joblib"
+HISTORY_SAVE_PATH = "vqc_4500_pca8_multiclass_v2_history.joblib"
 
 LABEL_NAMES = {
     0: "normal",
@@ -62,10 +62,6 @@ print("Test shape:", X_test.shape)
 print("Train label distribution:", dict(zip(*np.unique(y_train, return_counts=True))))
 print("Test label distribution:", dict(zip(*np.unique(y_test, return_counts=True))))
 
-scaler = MinMaxScaler(feature_range=(0, np.pi))
-
-X_train = scaler.fit_transform(X_train)
-X_test = scaler.transform(X_test)
 dev = qml.device("default.qubit", wires=N_QUBITS)
 
 def variational_layer(weights):
@@ -81,11 +77,9 @@ def circuit(x, weights):
     for layer in range(N_LAYERS):
 
         # encoding
-        qml.templates.AngleEmbedding(
-            x,
-            wires=range(N_QUBITS),
-            rotation="Y"
-        )
+        for i in range(N_QUBITS):
+            qml.RY(x[i], wires=i)
+            qml.RZ(x[i], wires=i)
 
         # structured variational layer
         qml.templates.StronglyEntanglingLayers(
