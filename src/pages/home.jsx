@@ -435,11 +435,11 @@ export default function Home() {
         <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', overflow: 'hidden', position: 'relative', zIndex: 1 }}>
           <Container maxWidth="md" sx={{ width: '100%' }}>
             <FadeUp isVisible={inSupport}>
-              <Box sx={{ position: 'relative', borderRadius: 3, overflow: 'hidden', backgroundColor: 'background.default', border: '1px solid rgba(232,83,122,0.25)', boxShadow: '0 4px 24px rgba(232,83,122,0.08)', p: { xs: 3, md: 4 }, textAlign: 'center' }}>
+              <Box sx={{ position: 'relative', borderRadius: 3, overflow: 'hidden', backgroundColor: 'background.default', border: '2px solid rgba(232,83,122,0.25)', boxShadow: '0 4px 24px rgba(232,83,122,0.08)', p: { xs: 3, md: 4 }, textAlign: 'center' }}>
                 <Box sx={{ position: 'absolute', top: '-30%', left: '50%', transform: 'translateX(-50%)', width: 280, height: 280, borderRadius: '50%', background: 'radial-gradient(circle, rgba(232,83,122,0.07) 0%, transparent 70%)', pointerEvents: 'none' }} />
                 <HeartIcon sx={{ fontSize: 32, color: A.pink, mb: 1.25 }} />
                 <Typography variant="h5" sx={{ mb: 1.25, color: 'text.primary', fontWeight: 700 }}>Patient Support &amp; Resources</Typography>
-                <Typography sx={{ color: 'text.secondary', maxWidth: 500, mx: 'auto', mb: 3, lineHeight: 1.75, fontSize: '0.92rem' }}>
+                <Typography sx={{ color: 'text.primary', maxWidth: 500, mx: 'auto', mb: 3, lineHeight: 1.75, fontSize: '0.92rem' }}>
                   Whether you’re navigating a diagnosis, supporting a loved one, or seeking guidance, the organisations below provide trusted support, information, and screening services across Australia.
                 </Typography>
 
