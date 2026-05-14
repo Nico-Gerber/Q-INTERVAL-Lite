@@ -121,7 +121,7 @@ const theme = createTheme({
     },
     text: {
       primary:   '#E8EEF8',
-      secondary: '#8A96B0',
+      secondary: '#d7deef',
       disabled:  '#4A5568',
     },
     divider: 'rgba(255,255,255,0.07)',
