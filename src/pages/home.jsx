@@ -18,7 +18,7 @@ import {
   KeyboardArrowUp as ArrowUpIcon,
   KeyboardArrowDown as ArrowDownIcon,
 } from '@mui/icons-material';
-import { motion, animate } from 'framer-motion';
+import { motion, animate, AnimatePresence } from 'framer-motion';
 
 const A = {
   teal:   '#2DD4BF',
@@ -28,47 +28,70 @@ const A = {
   pink:   '#E8537A',
 };
 
+// ── Colours matching App.js palette ───────────────────────────────────────
+const TC = {
+  mode:    '#94A3B8', // classification slate
+  upload:  '#2DD4BF', // primary teal
+  cnn:     '#38BDF8', // cnn sky blue
+  qml:     '#9333EA', // qml purple
+  results: '#F59E0B', // results amber
+};
+
 const P = 'rgba(45,212,191,0.07)';
 const NAV_H = 70;
 const SECTION_IDS = ['hero', 'about', 'why', 'technology', 'support'];
 const ICON_SX = { fontSize: 26, color: '#2DD4BF' };
 
 const HERO_STATS = [
-  { icon: <PeopleIcon   sx={ICON_SX} />, value: '1 in 7',      numericEnd: 7,   prefix: '1 in ', suffix: '',   label: 'Australian women will be diagnosed with breast cancer in their lifetime.' },
-  { icon: <CalendarIcon sx={ICON_SX} />, value: '1.9 Million', numericEnd: 1.9, prefix: '',      suffix: 'M',  label: 'Australian women rely on routine screening cycles biennially.' },
-  { icon: <WarningIcon  sx={ICON_SX} />, value: '22%',         numericEnd: 22,  prefix: '',      suffix: '%',  label: "Of invasive cancers emerge as 'interval cancers' between routine clear screenings." },
-  { icon: <EyeOffIcon   sx={ICON_SX} />, value: '80%+',        numericEnd: 80,  prefix: '',      suffix: '%+', label: 'Of interval cancers are deemed clinically invisible to the human eye on prior scans.' },
+  {
+    icon: <PeopleIcon   sx={ICON_SX} />,
+    value: '1 in 7', numericEnd: 7, prefix: '1 in ', suffix: '',
+    label: 'Australian women will be diagnosed with breast cancer in their lifetime.',
+  },
+  {
+    icon: <CalendarIcon sx={ICON_SX} />,
+    value: '1.9 Million', numericEnd: 1.9, prefix: '', suffix: 'M',
+    label: 'Australian women rely on routine screening cycles biennially.',
+  },
+  {
+    icon: <WarningIcon  sx={ICON_SX} />,
+    value: '22%', numericEnd: 22, prefix: '', suffix: '%',
+    label: "Of invasive cancers emerge as 'interval cancers' between routine clear screenings.",
+  },
+  {
+    icon: <EyeOffIcon   sx={ICON_SX} />,
+    value: '80%+', numericEnd: 80, prefix: '', suffix: '%+',
+    label: 'Of interval cancers are deemed clinically invisible to the human eye on prior scans.',
+  },
 ];
 
-// ── Support organisations — real data, direct breast cancer links ──────────
 const SUPPORT_ORGS = [
   {
-  name: 'Cancer Council Australia',
-  domain: 'cancer.org.au',
-  description: 'Trusted cancer information, support programs, and a free 13 11 20 helpline for Australians affected by breast cancer.',
-  url: 'https://www.cancer.org.au/',
-},
-{
-  name: 'McGrath Foundation',
-  domain: 'mcgrathfoundation.com.au',
-  description: 'Providing free McGrath Breast Care Nurses and support to individuals and families experiencing breast cancer.',
-  url: 'https://www.mcgrathfoundation.com.au/',
-},
-{
-  name: 'Breast Cancer Network Australia',
-  domain: 'bcna.org.au',
-  description: 'Australia’s leading breast cancer network offering trusted resources, peer support, and the My Journey care tool.',
-  url: 'https://www.bcna.org.au/',
-},
-{
-  name: 'BreastScreen Victoria',
-  domain: 'breastscreen.org.au',
-  description: 'Free breast screening and mammogram services for Victorian women aged 40+, helping detect cancer early.',
-  url: 'https://www.breastscreen.org.au/',
-},
+    name: 'Cancer Council Australia',
+    domain: 'cancer.org.au',
+    description: 'Trusted cancer information, support programs, and a free 13 11 20 helpline for Australians affected by breast cancer.',
+    url: 'https://www.cancer.org.au/',
+  },
+  {
+    name: 'McGrath Foundation',
+    domain: 'mcgrathfoundation.com.au',
+    description: 'Providing free McGrath Breast Care Nurses and support to individuals and families experiencing breast cancer.',
+    url: 'https://www.mcgrathfoundation.com.au/',
+  },
+  {
+    name: 'Breast Cancer Network Australia',
+    domain: 'bcna.org.au',
+    description: "Australia's leading breast cancer network offering trusted resources, peer support, and the My Journey care tool.",
+    url: 'https://www.bcna.org.au/',
+  },
+  {
+    name: 'BreastScreen Victoria',
+    domain: 'breastscreen.org.au',
+    description: 'Free breast screening and mammogram services for Victorian women aged 40+, helping detect cancer early.',
+    url: 'https://www.breastscreen.org.au/',
+  },
 ];
 
-// Favicon URL via Google's public service — no download needed
 const faviconUrl = (domain) =>
   `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
 
@@ -206,46 +229,24 @@ const SectionLabel = ({ icon, label, color }) => (
 
 const ImageSlot = ({ accent, label, ratio = '4/3' }) => (
   <Box sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', aspectRatio: ratio, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1.5, position: 'relative', overflow: 'hidden', '&::before': { content: '""', position: 'absolute', inset: 0, background: `radial-gradient(ellipse at center, ${accent}0D 0%, transparent 70%)`, pointerEvents: 'none' } }}>
-    <ImageIcon sx={{ fontSize: 28, color: `${accent}40` }} />
-    <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.7rem', textAlign: 'center', px: 3 }}>{label}</Typography>
-  </Box>
+  <ImageIcon sx={{ fontSize: 28, color: `${accent}40` }} />
+  <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.7rem', textAlign: 'center', px: 3 }}>{label}</Typography>
+</Box>
 );
 
-// ── Org logo — Google favicon with letter fallback ─────────────────────────
 function OrgLogo({ domain, name }) {
   const [failed, setFailed] = useState(false);
   const initial = name.charAt(0).toUpperCase();
-
   if (failed) {
     return (
-      <Box sx={{
-        width: 32, height: 32, borderRadius: 1.5, flexShrink: 0,
-        backgroundColor: 'rgba(232,83,122,0.12)',
-        border: '1px solid rgba(232,83,122,0.2)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        <Typography sx={{ color: A.pink, fontWeight: 800, fontSize: '0.85rem', lineHeight: 1 }}>
-          {initial}
-        </Typography>
+      <Box sx={{ width: 32, height: 32, borderRadius: 1.5, flexShrink: 0, backgroundColor: 'rgba(232,83,122,0.12)', border: '1px solid rgba(232,83,122,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Typography sx={{ color: A.pink, fontWeight: 800, fontSize: '0.85rem', lineHeight: 1 }}>{initial}</Typography>
       </Box>
     );
   }
-
   return (
-    <Box sx={{
-      width: 32, height: 32, borderRadius: 1.5, flexShrink: 0,
-      backgroundColor: 'rgba(255,255,255,0.06)',
-      border: '1px solid rgba(255,255,255,0.08)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      overflow: 'hidden',
-    }}>
-      <Box
-        component="img"
-        src={faviconUrl(domain)}
-        alt={`${name} logo`}
-        onError={() => setFailed(true)}
-        sx={{ width: 20, height: 20, objectFit: 'contain' }}
-      />
+    <Box sx={{ width: 32, height: 32, borderRadius: 1.5, flexShrink: 0, backgroundColor: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+      <Box component="img" src={faviconUrl(domain)} alt={`${name} logo`} onError={() => setFailed(true)} sx={{ width: 20, height: 20, objectFit: 'contain' }} />
     </Box>
   );
 }
@@ -268,6 +269,166 @@ const SectionArrows = ({ current, total, onUp, onDown }) => {
     </Box>
   );
 };
+
+// ── TechCard — single hoverable card ──────────────────────────────────────
+function TechCard({ accent, stepNum, icon, title, summary, delay }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, delay, ease: 'easeOut' }}
+      onHoverStart={() => setHovered(true)}
+      onHoverEnd={() => setHovered(false)}
+      style={{ flex: 1 }}
+    >
+      <Paper
+        elevation={0}
+        sx={{
+          p: 2.5,
+          borderRadius: 3,
+          border: '2px solid',
+          borderColor: hovered ? accent : `${accent}35`,
+          backgroundColor: hovered ? `${accent}12` : `${accent}07`,
+          position: 'relative',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 1,
+          transition: 'all 0.22s ease',
+          transform: hovered ? 'translateY(-4px)' : 'translateY(0)',
+          boxShadow: hovered ? `0 10px 30px rgba(0,0,0,0.35), 0 0 0 1px ${accent}30` : 'none',
+          cursor: 'default',
+          '&::before': {
+            content: '""',
+            position: 'absolute', top: 0, left: 0, right: 0, height: '3px',
+            backgroundColor: accent,
+            opacity: hovered ? 1 : 0.5,
+            transition: 'opacity 0.22s ease',
+          },
+        }}
+      >
+        <Typography sx={{ fontSize: '0.6rem', fontWeight: 800, letterSpacing: '0.14em', color: accent, opacity: hovered ? 0.9 : 0.6, transition: 'opacity 0.22s ease' }}>
+          STEP {stepNum}
+        </Typography>
+        <Box sx={{
+          width: 44, height: 44, borderRadius: 2, mb: 0.5, flexShrink: 0,
+          backgroundColor: hovered ? `${accent}22` : `${accent}14`,
+          border: `1.5px solid ${accent}${hovered ? '55' : '28'}`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: accent, transition: 'all 0.22s ease',
+        }}>
+          {icon}
+        </Box>
+        <Typography sx={{ fontWeight: 800, fontSize: '0.88rem', color: 'text.primary', lineHeight: 1.3 }}>
+          {title}
+        </Typography>
+        <Typography sx={{ fontSize: '0.75rem', color: hovered ? 'text.primary' : 'text.secondary', lineHeight: 1.55, transition: 'color 0.22s ease' }}>
+          {summary}
+        </Typography>
+      </Paper>
+    </motion.div>
+  );
+}
+
+// ── TechCards — full flowchart layout ────────────────────────────────────
+function TechCards() {
+  // Bold white arrow connector between column steps
+  const HArrow = () => (
+    <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', flexShrink: 0, alignSelf: 'center', mb: 0 }}>
+      <Box sx={{ width: 28, height: 3, backgroundColor: 'rgba(255,255,255,0.6)' }} />
+      <Box sx={{ width: 0, height: 0, borderTop: '6px solid transparent', borderBottom: '6px solid transparent', borderLeft: '10px solid rgba(255,255,255,0.6)' }} />
+    </Box>
+  );
+
+  // Thin vertical connector between CNN and QML (parallel steps)
+  const VConnector = () => (
+    <Box sx={{ display: { xs: 'none', md: 'flex' }, justifyContent: 'center' }}>
+      <Box sx={{ width: 2, height: 16, backgroundColor: 'rgba(255,255,255,0.2)' }} />
+    </Box>
+  );
+
+  return (
+    <Box sx={{
+      display: { xs: 'flex', md: 'flex' },
+      flexDirection: { xs: 'column', md: 'row' },
+      alignItems: { md: 'center' },
+      gap: 0,
+    }}>
+
+      {/* Step 01 — Choose a Mode (classification slate) */}
+      <TechCard
+        accent={TC.mode}
+        stepNum="01"
+        icon={<SchoolIcon sx={{ fontSize: 22 }} />}
+        title="Choose a Mode"
+        summary="Select your analysis type before uploading."
+        delay={0}
+      />
+
+      <HArrow />
+
+      {/* Step 02 — Upload Mammogram (amber) */}
+      <TechCard
+        accent={TC.upload}
+        stepNum="02"
+        icon={<ImageIcon sx={{ fontSize: 22 }} />}
+        title="Upload Mammogram"
+        summary="Submit a single image or sequential scans."
+        delay={0.07}
+      />
+
+      <HArrow />
+
+      {/* Steps 03 + 04 — CNN and QML stacked (run in parallel) */}
+      <motion.div
+        initial={{ opacity: 0, y: 18 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, delay: 0.14, ease: 'easeOut' }}
+        style={{ flex: 1 }}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+
+          {/* CNN — sky blue */}
+          <TechCard
+            accent={TC.cnn}
+            stepNum="03"
+            icon={<ScienceIcon sx={{ fontSize: 22 }} />}
+            title="Classical CNN"
+            summary="[Placeholder]"
+            delay={0}
+          />
+
+          <VConnector />
+
+          {/* QML — purple */}
+          <TechCard
+            accent={TC.qml}
+            stepNum="04"
+            icon={<ClassicalIcon sx={{ fontSize: 22 }} />}
+            title="Quantum ML"
+            summary="[Placeholder]"
+            delay={0}
+          />
+
+        </Box>
+      </motion.div>
+
+      <HArrow />
+
+      {/* Step 05 — Results (primary teal) */}
+      <TechCard
+        accent={TC.results}
+        stepNum="05"
+        icon={<ScienceIcon sx={{ fontSize: 22 }} />}
+        title="Side-by-Side Results"
+        summary="Compare CNN vs QML outputs directly."
+        delay={0.21}
+      />
+
+    </Box>
+  );
+}
 
 export default function Home() {
   const navigate = useNavigate();
@@ -326,6 +487,8 @@ export default function Home() {
             </Box>
           </motion.div>
         </Box>
+
+        {/* Stats strip */}
         <Box sx={{ flexShrink: 0, borderTop: '1px solid rgba(255,255,255,0.08)', backgroundColor: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(10px)', position: 'relative', zIndex: 1 }}>
           <Container maxWidth="lg">
             <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: '1fr 1fr 1fr 1fr' } }}>
@@ -339,26 +502,36 @@ export default function Home() {
                 </Box>
               ))}
             </Box>
-            <Typography variant="caption" sx={{ display: 'block', textAlign: 'center', pt: 0.5, pb: 1.5, color: 'rgba(232,238,248,0.22)', fontSize: '0.62rem', letterSpacing: '0.02em' }}>
+            <Typography variant="caption" sx={{ display: 'block', textAlign: 'center', pt: 0.5, pb: 1.5, color: 'primary.dark', fontSize: '0.62rem', letterSpacing: '0.02em' }}>
               Data sourced from the AIHW BreastScreen Australia Monitoring Report (2025) and Cancer Australia.
             </Typography>
           </Container>
         </Box>
       </Box>
 
-        {/* ── 2. ABOUT — dot grid ── */}
+      {/* ── 2. ABOUT ── */}
       <Box id="about" sx={{ height: sectionH, bgcolor: 'background.default', borderBottom: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', position: 'relative', overflow: 'hidden' }}>
         <DotGrid />
         <Container maxWidth="lg" sx={{ width: '100%', position: 'relative', zIndex: 1 }}>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '3fr 2fr' }, gap: { xs: 4, md: 8 }, alignItems: 'center' }}>
             <FadeUp isVisible={inAbout}>
               <SectionLabel icon={<SchoolIcon sx={{ fontSize: 16 }} />} label="About the project" color={A.teal} />
-              <Typography variant="h3" sx={{ mb: 2.5, lineHeight: 1.25, color: 'text.primary' }}>[What is Q-INTERVAL-Lite+?]</Typography>
-              <Typography sx={{ color: 'text.secondary', lineHeight: 1.9, fontSize: '1.05rem', mb: 2.5 }}>
-                [Placeholder — describe the project goals, scope, and the problem it aims to solve. Give first-time visitors a clear understanding of what Q-INTERVAL-Lite+ is and the context it was built in.]
+              <Typography variant="h3" sx={{ mb: 2, lineHeight: 1.25, color: 'text.primary' }}>
+                What is Q-INTERVAL-Lite+?
               </Typography>
-              <Typography sx={{ color: 'text.secondary', lineHeight: 1.9, fontSize: '1.05rem' }}>
-                [Placeholder — a second paragraph if needed. Explain how it fits into the broader landscape of medical AI research.]
+              <Typography sx={{ color: 'text.secondary', lineHeight: 1.8, fontSize: '0.95rem', mb: 2 }}>
+                Started as a Swinburne University capstone project, Q-INTERVAL-Lite+ is an interactive
+                web platform exploring how quantum-enhanced AI can detect subtle, clinically invisible
+                signs of breast cancer in mammograms. Whether classifying abnormalities, assessing
+                composite risk, or predicting future risk from sequential scans, the platform aims to
+                make complex AI diagnostics transparent, visual, and comparable.
+              </Typography>
+              <Typography sx={{ color: 'text.secondary', lineHeight: 1.8, fontSize: '0.95rem' }}>
+                Built by a multidisciplinary team of Swinburne students across Software Development,
+                Artificial Intelligence, and Cybersecurity, the platform runs every uploaded scan
+                through two entirely separate AI pipelines simultaneously — a Classical CNN and a
+                Quantum ML model — surfacing both results side by side so users can directly observe
+                how each paradigm interprets the same tissue data.
               </Typography>
             </FadeUp>
             <FadeUp isVisible={inAbout} delay={0.15}>
@@ -381,14 +554,18 @@ export default function Home() {
             <FadeUp isVisible={inWhy}>
               <Box sx={{ order: { xs: 0, md: 1 } }}>
                 <SectionLabel icon={<HeartIcon sx={{ fontSize: 16 }} />} label="Why it matters" color={A.violet} />
-                <Typography variant="h3" sx={{ mb: 2.5, lineHeight: 1.25, color: 'text.primary' }}>[Section Heading]</Typography>
-                <Box sx={{ borderLeft: `3px solid ${A.violet}`, pl: 2.5, mb: 3, py: 0.5 }}>
-                  <Typography sx={{ color: 'text.primary', lineHeight: 1.75, fontSize: '1.1rem', fontStyle: 'italic', opacity: 0.8 }}>
-                    "[Placeholder — a single impactful sentence or statistic.]"
+                <Typography variant="h3" sx={{ mb: 2, lineHeight: 1.15, color: 'text.primary', fontSize: { xs: '2rem', md: '2.2rem' } }}>
+                  The Gap in Standard Screening
+                </Typography>
+                <Box sx={{ borderLeft: `3px solid ${A.violet}`, pl: 2.5, mb: 2, py: 0.5 }}>
+                  <Typography sx={{ color: 'text.primary', lineHeight: 1.65, fontSize: '0.88rem', fontStyle: 'italic', opacity: 0.85 }}>
+                    Interval cancers are not simply missed tumors; they are biologically aggressive cancers that rapidly emerge between routine screenings.
                   </Typography>
                 </Box>
-                <Typography sx={{ color: 'text.secondary', lineHeight: 1.9, fontSize: '1.05rem' }}>
-                  [Placeholder — explain the clinical or research motivation.]
+                <Typography sx={{ color: 'text.secondary', lineHeight: 1.75, fontSize: '0.88rem' }}>
+                  Because they often mask themselves within complex, dense breast tissue, they remain virtually invisible to the human eye on a baseline mammogram until they reach an advanced, highly dangerous stage. Catching them requires more than just looking closer.
+                  <br /><br />
+                  Q-INTERVAL-Lite+ investigates whether quantum-enhanced AI can penetrate this visual noise, detecting the microscopic, structural precursors of these deadly tumors before they ever have the chance to surface.
                 </Typography>
               </Box>
             </FadeUp>
@@ -401,31 +578,17 @@ export default function Home() {
         <SparsePlus />
         <Container maxWidth="lg" sx={{ width: '100%', position: 'relative', zIndex: 1 }}>
           <FadeUp isVisible={inTech}>
-            <Box sx={{ mb: 5 }}>
+            <Box sx={{ mb: 4 }}>
               <SectionLabel icon={<ClassicalIcon sx={{ fontSize: 16 }} />} label="Technology" color={A.amber} />
-              <Typography variant="h3" sx={{ mb: 1.5, lineHeight: 1.25, maxWidth: 560, color: 'text.primary' }}>[How does it work?]</Typography>
-              <Typography sx={{ color: 'text.secondary', lineHeight: 1.85, fontSize: '1.05rem', maxWidth: 620 }}>
+              <Typography variant="h3" sx={{ mb: 1.5, lineHeight: 1.25, maxWidth: 560, color: 'text.primary' }}>
+                How does it work?
+              </Typography>
+              <Typography sx={{ color: 'text.secondary', lineHeight: 1.8, fontSize: '0.88rem', maxWidth: 560 }}>
                 [Placeholder — a short intro to the technical approach.]
               </Typography>
             </Box>
+            <TechCards />
           </FadeUp>
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '2fr 1.5fr 1.5fr' }, gap: 2.5 }}>
-            {[
-              { icon: <ScienceIcon sx={{ fontSize: 22 }} />,   accent: A.teal,   title: 'Classical CNN', body: '[Placeholder — brief description of the CNN model.]', tall: true  },
-              { icon: <ClassicalIcon sx={{ fontSize: 22 }} />, accent: A.violet, title: 'Quantum AI',    body: '[Placeholder — brief description of the quantum model.]',  tall: false },
-              { icon: <SchoolIcon sx={{ fontSize: 22 }} />,   accent: A.amber,  title: 'Tech Stack',   body: '[Placeholder — React, FastAPI, PyTorch, PennyLane.]',       tall: false },
-            ].map((card, idx) => (
-              <FadeUp key={card.title} isVisible={inTech} delay={idx * 0.1}>
-                <motion.div whileHover={{ y: -5, transition: { duration: 0.2 } }}>
-                  <Paper elevation={0} sx={{ p: 3.5, pt: card.tall ? 5 : 3.5, pb: card.tall ? 5 : 3.5, display: 'flex', flexDirection: 'column', gap: 2, position: 'relative', overflow: 'hidden', borderRadius: 3, '&::before': { content: '""', position: 'absolute', top: 0, left: 0, right: 0, height: '3px', backgroundColor: card.accent, opacity: 0.8 } }}>
-                    <Box sx={{ width: 44, height: 44, borderRadius: '10px', backgroundColor: `${card.accent}15`, border: `1px solid ${card.accent}25`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: card.accent }}>{card.icon}</Box>
-                    <Typography variant="h6" sx={{ color: 'text.primary' }}>{card.title}</Typography>
-                    <Typography sx={{ color: 'text.secondary', lineHeight: 1.75, fontSize: '0.92rem' }}>{card.body}</Typography>
-                  </Paper>
-                </motion.div>
-              </FadeUp>
-            ))}
-          </Box>
         </Container>
       </Box>
 
@@ -439,10 +602,11 @@ export default function Home() {
                 <Box sx={{ position: 'absolute', top: '-30%', left: '50%', transform: 'translateX(-50%)', width: 280, height: 280, borderRadius: '50%', background: 'radial-gradient(circle, rgba(232,83,122,0.07) 0%, transparent 70%)', pointerEvents: 'none' }} />
                 <HeartIcon sx={{ fontSize: 32, color: A.pink, mb: 1.25 }} />
                 <Typography variant="h5" sx={{ mb: 1.25, color: 'text.primary', fontWeight: 700 }}>Patient Support &amp; Resources</Typography>
-                <Typography sx={{ color: 'text.primary', maxWidth: 500, mx: 'auto', mb: 3, lineHeight: 1.75, fontSize: '0.92rem' }}>
-                  Whether you’re navigating a diagnosis, supporting a loved one, or seeking guidance, the organisations below provide trusted support, information, and screening services across Australia.
+                <Typography sx={{ color: 'text.secondary', maxWidth: 500, mx: 'auto', mb: 3, lineHeight: 1.75, fontSize: '0.88rem' }}>
+                  Whether you're navigating a diagnosis, supporting a loved one, or seeking guidance,
+                  the organisations below provide trusted support, information, and free screening
+                  services across Australia.
                 </Typography>
-
                 <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5, textAlign: 'left' }}>
                   {SUPPORT_ORGS.map((org, i) => (
                     <motion.div key={i} whileHover={{ y: -3, transition: { duration: 0.18 } }}>
@@ -459,18 +623,11 @@ export default function Home() {
                           '&:hover': { backgroundColor: 'rgba(232,83,122,0.05)', borderColor: 'rgba(232,83,122,0.3)' },
                         }}
                       >
-                        {/* Favicon logo with fallback */}
                         <OrgLogo domain={org.domain} name={org.name} />
-
                         <Box sx={{ flex: 1, minWidth: 0 }}>
-                          <Typography variant="subtitle2" sx={{ color: 'text.primary', fontWeight: 700, fontSize: '0.82rem', mb: 0.25 }}>
-                            {org.name}
-                          </Typography>
-                          <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.76rem', lineHeight: 1.5 }}>
-                            {org.description}
-                          </Typography>
+                          <Typography variant="subtitle2" sx={{ color: 'text.primary', fontWeight: 700, fontSize: '0.82rem', mb: 0.25 }}>{org.name}</Typography>
+                          <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.76rem', lineHeight: 1.5 }}>{org.description}</Typography>
                         </Box>
-
                         <LinkIcon sx={{ fontSize: 13, color: 'text.disabled', mt: '3px', flexShrink: 0 }} />
                       </Box>
                     </motion.div>
