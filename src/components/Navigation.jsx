@@ -2,10 +2,16 @@ import React, { useState } from 'react';
 import {
   AppBar, Toolbar, Typography, Button, Box,
   IconButton, Drawer, List, ListItem, ListItemButton,
-  ListItemText, Divider, useMediaQuery, useTheme,
+  ListItemText, Divider, useMediaQuery, useTheme, Tooltip,
 } from '@mui/material';
-import { Menu as MenuIcon, Close as CloseIcon } from '@mui/icons-material';
+import {
+  Menu as MenuIcon,
+  Close as CloseIcon,
+  LightMode as SunIcon,
+  DarkMode as MoonIcon,
+} from '@mui/icons-material';
 import { Link, useLocation } from 'react-router-dom';
+import { ColorModeContext } from '../App';
 
 const NAV_ITEMS = [
   { label: 'Home',     path: '/' },
@@ -22,13 +28,16 @@ const ECGIcon = () => (
 );
 
 const Navigation = () => {
-  const location = useLocation();
-  const theme    = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const location   = useLocation();
+  const theme      = useTheme();
+  const isMobile   = useMediaQuery(theme.breakpoints.down('md'));
   const [drawerOpen, setDrawerOpen] = useState(false);
 
+  // Consume the color mode context from App.js
+  const { mode, toggleColorMode } = React.useContext(ColorModeContext);
+  const isDark = mode === 'dark';
+
   const handleNavClick = (path) => {
-    // If already on home, scroll back to top
     if (path === '/' && location.pathname === '/') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -77,8 +86,7 @@ const Navigation = () => {
                       color: active ? '#2DD4BF' : 'rgba(255,255,255,0.75)',
                       fontWeight: active ? 700 : 600,
                       fontSize: '0.9rem',
-                      px: 2,
-                      py: 0.8,
+                      px: 2, py: 0.8,
                       borderRadius: '999px',
                       minWidth: 0,
                       letterSpacing: '0.01em',
@@ -94,9 +102,36 @@ const Navigation = () => {
             </Box>
           )}
 
-          {/* CTA / hamburger */}
+          {/* Right side — CTA + theme toggle, or hamburger on mobile */}
           {!isMobile ? (
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1 }}>
+
+              {/* Theme toggle — plain white, no colour tinting */}
+              <Tooltip title={isDark ? 'Switch to light mode' : 'Switch to dark mode'} arrow>
+                <IconButton
+                  onClick={toggleColorMode}
+                  size="small"
+                  sx={{
+                    width: 36, height: 36,
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    borderRadius: '999px',
+                    color: 'rgba(255,255,255,0.75)',
+                    backgroundColor: 'rgba(255,255,255,0.06)',
+                    transition: 'all 0.2s',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255,255,255,0.12)',
+                      borderColor: 'rgba(255,255,255,0.4)',
+                      color: '#FFFFFF',
+                    },
+                  }}
+                >
+                  {isDark
+                    ? <SunIcon sx={{ fontSize: 17 }} />
+                    : <MoonIcon sx={{ fontSize: 17 }} />
+                  }
+                </IconButton>
+              </Tooltip>
+
               <Button
                 component={Link}
                 to="/Analysis"
@@ -107,22 +142,41 @@ const Navigation = () => {
               </Button>
             </Box>
           ) : (
-            <IconButton onClick={() => setDrawerOpen(true)} sx={{ color: 'rgba(255,255,255,0.8)', justifySelf: 'end' }}>
-              <MenuIcon />
-            </IconButton>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, justifySelf: 'end' }}>
+              {/* Theme toggle on mobile too */}
+              <IconButton
+                onClick={toggleColorMode}
+                size="small"
+                sx={{
+                  color: 'rgba(255,255,255,0.75)',
+                  '&:hover': { backgroundColor: 'rgba(255,255,255,0.08)', color: '#FFFFFF' },
+                }}
+              >
+                {isDark ? <SunIcon sx={{ fontSize: 18 }} /> : <MoonIcon sx={{ fontSize: 18 }} />}
+              </IconButton>
+              <IconButton onClick={() => setDrawerOpen(true)} sx={{ color: 'rgba(255,255,255,0.8)' }}>
+                <MenuIcon />
+              </IconButton>
+            </Box>
           )}
         </Toolbar>
       </AppBar>
 
       {/* Mobile drawer */}
-      <Drawer anchor="right" open={drawerOpen} onClose={() => setDrawerOpen(false)}
-        PaperProps={{ sx: { width: 270, backgroundColor: '#111C2E', borderLeft: '1px solid rgba(255,255,255,0.07)' } }}>
+      <Drawer
+        anchor="right"
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        PaperProps={{ sx: { width: 270, backgroundColor: '#111C2E', borderLeft: '1px solid rgba(255,255,255,0.07)' } }}
+      >
         <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <ECGIcon />
             <Typography sx={{ color: '#E8EEF8', fontWeight: 700, fontSize: '0.95rem' }}>Q-INTERVAL</Typography>
           </Box>
-          <IconButton onClick={() => setDrawerOpen(false)} sx={{ color: 'rgba(255,255,255,0.5)' }}><CloseIcon fontSize="small" /></IconButton>
+          <IconButton onClick={() => setDrawerOpen(false)} sx={{ color: 'rgba(255,255,255,0.5)' }}>
+            <CloseIcon fontSize="small" />
+          </IconButton>
         </Box>
         <Divider sx={{ borderColor: 'rgba(255,255,255,0.07)' }} />
         <List sx={{ pt: 1 }}>
@@ -142,6 +196,20 @@ const Navigation = () => {
             );
           })}
         </List>
+        <Divider sx={{ borderColor: 'rgba(255,255,255,0.07)', mx: 2 }} />
+        {/* Theme toggle row in drawer */}
+        <Box sx={{ px: 2, pt: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.78rem' }}>
+            {isDark ? 'Dark mode' : 'Light mode'}
+          </Typography>
+          <IconButton
+            onClick={toggleColorMode}
+            size="small"
+            sx={{ color: 'rgba(255,255,255,0.75)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '999px', p: 0.75, '&:hover': { color: '#FFFFFF', backgroundColor: 'rgba(255,255,255,0.08)' } }}
+          >
+            {isDark ? <SunIcon sx={{ fontSize: 16 }} /> : <MoonIcon sx={{ fontSize: 16 }} />}
+          </IconButton>
+        </Box>
         <Box sx={{ p: 2, mt: 1 }}>
           <Button component={Link} to="/Analysis" variant="contained" fullWidth onClick={() => setDrawerOpen(false)} sx={{ py: 1.2, fontSize: '0.9rem', fontWeight: 700 }}>
             Launch Analysis Dashboard →
