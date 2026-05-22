@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from routers import images, QMLPredict, CNNPredict, MammoRisk, Sprint2CNN, Sprint2QML, QMLMammoRisk, QMLFutureRisk
 
+from routers.LLM import Explain
+
 app = FastAPI(title="Q-Interval Lite API", version="0.1.0")
 
 app.add_middleware(
@@ -28,6 +30,8 @@ app.include_router(Sprint2QML.router)
 app.include_router(QMLMammoRisk.router)
 
 app.include_router(QMLFutureRisk.router)
+
+app.include_router(Explain.router)
 
 @app.get("/health")
 def health():

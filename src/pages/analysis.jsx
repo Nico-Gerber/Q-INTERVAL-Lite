@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Box, Chip, Container, Typography, Alert } from '@mui/material';
+import { Box, Chip, Container, Typography, Alert, Button, Drawer } from '@mui/material';
 import { AnimatePresence, motion } from 'framer-motion';
+import { Sidebar, Menu, MenuItem, SubMenu } from 'react-pro-sidebar';
+
 
 import AnalysisStepper from '../components/stepper';
 import ModeSelect from '../components/AnalysisModeSelect';
@@ -65,6 +67,11 @@ export default function Analysis() {
   const [result, setResult] = useState(null);
 
 
+  const [collapsed, setCollapsed] = useState(false);
+
+
+  const [audience, setAudience] = useState("clinician")
+
 
 
   const [analysisMode, setAnalysisMode] = useState(null);
@@ -100,6 +107,8 @@ export default function Analysis() {
 
     advance(0);
   }, [loading]);
+
+
 
 
   const handleAnalyse = async () => {
@@ -187,6 +196,45 @@ export default function Analysis() {
 
   };
 
+
+  const handleExplain = async () => {
+
+
+    try {
+      const llmRes = await fetch(`${API_BASE}/explain/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },  // ← must set this manually
+        body: JSON.stringify({
+          // CNN primary
+          audience: audience,
+          overall_classification: result.resultFile.cnn.aggregated.overall_classification,
+          patient_malignant_score: result.resultFile.cnn.aggregated.patient_malignant_score,
+          malignant_detected: result.resultFile.cnn.aggregated.malignant_detected,
+          views: result.resultFile.cnn.views,
+          composite_risk_score: result.resultFile.CRcnn?.future_risk_score ?? null,
+          composite_risk_level: result.resultFile.CRcnn?.risk_level ?? null,
+          highest_density: result.resultFile.CRcnn?.highest_density_risk_score ?? null,
+          highest_birads: result.resultFile.CRcnn?.highest_birads_risk_score ?? null,
+          // QML secondary
+          qml_overall_classification: result.resultFile.qml?.aggregated?.overall_classification ?? null,
+          qml_patient_malignant_score: result.resultFile.qml?.aggregated?.patient_malignant_score ?? null,
+          qml_views: result.resultFile.qml?.views ?? null,
+        })
+      })
+
+      const data = await llmRes.json()
+
+
+
+    } catch {
+
+    } finally {
+
+    }
+
+  }
+
+
   const stepPb = {
     0: { xs: 4, md: 5 },
     1: { xs: 10, md: 14 },
@@ -194,6 +242,7 @@ export default function Analysis() {
   };
 
   return (
+
     <Box sx={{
       backgroundColor: 'background.default',
       minHeight: '100%',
@@ -203,6 +252,9 @@ export default function Analysis() {
       background: (theme) => theme.palette.background.hero,
     }}>
       <NeuralCanvas />
+
+
+
 
       {/* Radial glow */}
       <Box sx={{
@@ -259,6 +311,9 @@ export default function Analysis() {
         </Box>
       </motion.div>
 
+
+
+
       {/* ── Stepper — fades in slightly after hero ── */}
       <motion.div
         initial={{ opacity: 0 }}
@@ -295,6 +350,7 @@ export default function Analysis() {
                     setActiveStep={setActiveStep}
                     handleAnalyse={handleAnalyse}
                   />
+
                 </Container>
 
               ) : analysisMode === 'future-risk' ? (
@@ -342,6 +398,13 @@ export default function Analysis() {
                         />
                         <MammoRiskResults results={result}
                           reset={handleReset} currentModel={modelMode} />
+
+                        <Container sx={{ padding: 4, display: 'flex', justifyContent: 'center' }}>
+                          <Button variant="contained" onClick={() => handleExplain()}>Generate Explanations</Button>
+                        </Container>
+
+
+
                       </Container>
                     </>
                   )}
@@ -361,9 +424,12 @@ export default function Analysis() {
                 </>
               )
             )}
+
           </motion.div>
         </AnimatePresence>
       </Box>
+
+
     </Box>
   );
 }

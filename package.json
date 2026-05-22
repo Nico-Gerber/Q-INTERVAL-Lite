@@ -21,6 +21,7 @@
     "react-is": "^19.2.5",
     "react-loading-indicators": "^1.0.1",
     "react-native-animated-progress": "^1.0.2",
+    "react-pro-sidebar": "^1.1.0",
     "react-router-dom": "^7.13.1",
     "react-scripts": "5.0.1",
     "recharts": "^3.8.1",
