@@ -40,7 +40,7 @@ Composite Risk Index: {data.composite_risk_score} / 100
 Risk Level: {data.composite_risk_level}
 Highest Breast Density: {data.highest_density}
 Highest BI-RADS Category: {data.highest_birads}
-All views Data: {data.views}
+
 """
 
     audience_instruction = (
