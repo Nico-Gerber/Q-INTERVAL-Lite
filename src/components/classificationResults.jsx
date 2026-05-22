@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Typography, Button, Container, Slider } from '@mui/material';
 import Tooltip from '../components/Tooltip';
+import ViewSelect from './viewSelector';
 
 function AnimatedBar({ value, color, delay = 0 }) {
     const [width, setWidth] = useState(0);
@@ -42,9 +43,13 @@ export default function ClassificationResults({ analyisedImage, reset, currentMo
     const [mounted, setMounted] = useState(false);
     const [heatmapOpacity, setHeatmapOpacity] = useState(0);
 
+    const [currentView, setCurrentView] = useState("L-CC")
     const cnnResult = results?.resultFile?.cnn;
     const qmlResult = results?.resultFile?.qml;
     const activeResult = currentModel === 'Quantum' ? qmlResult : cnnResult;
+    const activeView = activeResult?.views?.[currentView]
+    const aggregated = activeResult?.aggregated
+    console.log('gradcam data:', cnnResult?.views?.[currentView]?.gradcam)
 
     useEffect(() => {
         setMounted(false);
@@ -53,32 +58,50 @@ export default function ClassificationResults({ analyisedImage, reset, currentMo
         return () => clearTimeout(t);
     }, [activeResult]);
 
-    if (!activeResult) return null;
+    if (!activeResult || !activeView) return null;
 
-    const resultColor = activeResult.result === 'Malignant'
+    const resultColor = activeView?.result === 'Malignant'
         ? '#e05252'
-        : activeResult.result === 'Benign'
+        : activeView?.result === 'Benign'
             ? '#d4a017'
             : '#3fcf8e';
 
-    const verdictColor = qmlResult.result === cnnResult.result ? '#3fcf8e' : '#e05252';
-    const verdictText = qmlResult.result === cnnResult.result ? 'Models agree' : 'Models disagree';
-
+    const verdictColor = qmlResult?.aggregated?.overall_classification === cnnResult?.aggregated?.overall_classification
+        ? '#3fcf8e' : '#e05252'
+    const verdictText = qmlResult?.aggregated?.overall_classification === cnnResult?.aggregated?.overall_classification
+        ? 'Models agree' : 'Models disagree';
     const MalignantColor = '#e05252';
     const BenignColor = '#d4a017';
     const NormalColor = '#3fcf8e';
 
+
+
     const classifications = [
-        { label: 'Malignant', value: (activeResult.class_probabilities.Malignant * 100).toFixed(2), color: MalignantColor },
-        { label: 'Benign', value: (activeResult.class_probabilities.Benign * 100).toFixed(2), color: BenignColor },
-        { label: 'Normal', value: (activeResult.class_probabilities.Normal * 100).toFixed(2), color: NormalColor },
-    ];
+        { label: 'Malignant', value: (activeView?.class_probabilities?.Malignant * 100).toFixed(2), color: MalignantColor },
+        { label: 'Benign', value: (activeView?.class_probabilities?.Benign * 100).toFixed(2), color: BenignColor },
+        { label: 'Normal', value: (activeView?.class_probabilities?.Normal * 100).toFixed(2), color: NormalColor },
+    ]
 
     const comparisonClassifications = [
-        { label: 'Malignant', cnn: (cnnResult.class_probabilities.Malignant * 100).toFixed(2), qml: (qmlResult.class_probabilities.Malignant * 100).toFixed(2), color: MalignantColor },
-        { label: 'Benign', cnn: (cnnResult.class_probabilities.Benign * 100).toFixed(2), qml: (qmlResult.class_probabilities.Benign * 100).toFixed(2), color: BenignColor },
-        { label: 'Normal', cnn: (cnnResult.class_probabilities.Normal * 100).toFixed(2), qml: (qmlResult.class_probabilities.Normal * 100).toFixed(2), color: NormalColor },
-    ];
+        {
+            label: 'Malignant',
+            cnn: ((cnnResult?.views?.[currentView]?.class_probabilities?.Malignant ?? 0) * 100).toFixed(2),
+            qml: ((qmlResult?.views?.[currentView]?.class_probabilities?.Malignant ?? 0) * 100).toFixed(2),
+            color: MalignantColor
+        },
+        {
+            label: 'Benign',
+            cnn: ((cnnResult?.views?.[currentView]?.class_probabilities?.Benign ?? 0) * 100).toFixed(2),
+            qml: ((qmlResult?.views?.[currentView]?.class_probabilities?.Benign ?? 0) * 100).toFixed(2),
+            color: BenignColor
+        },
+        {
+            label: 'Normal',
+            cnn: ((cnnResult?.views?.[currentView]?.class_probabilities?.Normal ?? 0) * 100).toFixed(2),
+            qml: ((qmlResult?.views?.[currentView]?.class_probabilities?.Normal ?? 0) * 100).toFixed(2),
+            color: NormalColor
+        },
+    ]
 
     const cardBorder = { border: '1px solid rgba(255,255,255,0.07)', borderRadius: 2 };
 
@@ -100,7 +123,7 @@ export default function ClassificationResults({ analyisedImage, reset, currentMo
                         Classification Results
                     </Typography>
                     <Typography sx={{ ...MONO, fontSize: 11, letterSpacing: '0.06em', color: 'rgba(255,255,255,0.35)' }}>
-                        {currentModel.toUpperCase()} MODEL · SINGLE IMAGE
+                        {currentModel.toUpperCase()} MODEL · {currentView}
                     </Typography>
                 </Box>
                 <Box sx={{
@@ -111,23 +134,30 @@ export default function ClassificationResults({ analyisedImage, reset, currentMo
                 }}>
                     <Box sx={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: resultColor }} />
                     <Typography sx={{ ...MONO, fontSize: 11, fontWeight: 500, color: resultColor }}>
-                        {activeResult.result}
+                        {activeView?.result}
                     </Typography>
                 </Box>
+            </Box>
+
+
+            <Box>
+                <ViewSelect selectedView={currentView} onViewSelect={setCurrentView} > </ViewSelect>
             </Box>
 
             {/* ── Metric cells ── */}
             {currentModel === 'Both' ? (
                 <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0,1fr))', ...cardBorder, overflow: 'hidden', mb: 2 }}>
-                    <MetricCell label="Classical result" value={cnnResult.result} color={cnnResult.result === 'Malignant' ? '#e05252' : cnnResult.result === 'Benign' ? '#d4a017' : '#3fcf8e'} />
-                    <MetricCell label="Classical conf." value={`${(cnnResult.score * 100).toFixed(1)}%`} />
-                    <MetricCell label="Quantum result" value={qmlResult.result} color={qmlResult.result === 'Malignant' ? '#e05252' : qmlResult.result === 'Benign' ? '#d4a017' : '#3fcf8e'} />
+                    <MetricCell label="Classical result" value={cnnResult?.views?.[currentView]?.result} color={cnnResult?.views?.[currentView]?.result === 'Malignant' ? '#e05252' :
+                        cnnResult?.views?.[currentView]?.result === 'Benign' ? '#d4a017' : '#3fcf8e'} />
+                    <MetricCell label="Classical conf." value={`${(cnnResult?.views?.[currentView]?.score * 100).toFixed(1)}%`} />
+                    <MetricCell label="Quantum result" value={qmlResult?.views?.[currentView]?.result} color={qmlResult?.views?.[currentView]?.result === 'Malignant' ? '#e05252' :
+                        qmlResult?.views?.[currentView]?.result === 'Benign' ? '#d4a017' : '#3fcf8e'} />
                     <MetricCell label="Verdict" value={verdictText} color={verdictColor} borderRight={false} />
                 </Box>
             ) : (
                 <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0,1fr))', ...cardBorder, overflow: 'hidden', mb: 2 }}>
-                    <MetricCell label="Result" value={activeResult.result} color={resultColor} />
-                    <MetricCell label="Confidence" value={`${(activeResult.score * 100).toFixed(2)}%`} />
+                    <MetricCell label="Result" value={activeView.result} color={resultColor} />
+                    <MetricCell label="Confidence" value={`${(activeView.score * 100).toFixed(2)}%`} />
                     <MetricCell label="Model" value={currentModel} borderRight={false} />
                 </Box>
             )}
@@ -150,16 +180,16 @@ export default function ClassificationResults({ analyisedImage, reset, currentMo
                         <Box sx={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <Box
                                 component="img"
-                                src={cnnResult?.gradcam?.base_image_base64
-                                    ? `data:image/png;base64,${cnnResult.gradcam.base_image_base64}`
+                                src={cnnResult?.views?.[currentView]?.gradcam?.base_image_base64
+                                    ? `data:image/png;base64,${cnnResult.views[currentView].gradcam.base_image_base64}`
                                     : analyisedImage}
                                 alt="Analysed mammogram"
                                 sx={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
                             />
-                            {currentModel === 'Classical' && cnnResult?.gradcam?.heatmap_base64 && (
+                            {currentModel === 'Classical' && cnnResult?.views?.[currentView].gradcam?.heatmap_base64 && (
                                 <Box
                                     component="img"
-                                    src={`data:image/png;base64,${cnnResult.gradcam.heatmap_base64}`}
+                                    src={`data:image/png;base64,${cnnResult?.views?.[currentView].gradcam?.heatmap_base64}`}
                                     alt="Grad-CAM heatmap"
                                     sx={{
                                         position: 'absolute', top: 0, left: 0,
@@ -185,7 +215,7 @@ export default function ClassificationResults({ analyisedImage, reset, currentMo
                     </Box>
 
                     {/* Grad-CAM slider */}
-                    {currentModel === 'Classical' && cnnResult?.gradcam?.heatmap_base64 && (
+                    {currentModel === 'Classical' && cnnResult?.views?.[currentView]?.gradcam?.heatmap_base64 && (
                         <Box sx={{ ...cardBorder, p: 2, background: 'rgba(255,255,255,0.02)' }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

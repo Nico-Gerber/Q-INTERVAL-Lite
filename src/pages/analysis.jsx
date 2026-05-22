@@ -5,13 +5,14 @@ import { AnimatePresence, motion } from 'framer-motion';
 import AnalysisStepper from '../components/stepper';
 import ModeSelect from '../components/AnalysisModeSelect';
 import ImageUpload from '../components/SingleImageUpload';
-import ImageUploadOrder from '../components/MultiImageUpload';
+
 import ModelSelect from '../components/ModelResultSelect';
 import ClassificationResults from '../components/classificationResults';
 import FutureRiskResults from '../components/futureRiskResults';
 import MammoRiskResults from '../components/mammoRiskResults';
 import NeuralCanvas from '../components/neuralCanvas';
 import MultiImageUploadDated from '../components/timeBasedMultiImage';
+import MultiViewUpload from '../components/MultiImageUpload';
 
 import { Atom } from 'react-loading-indicators';
 
@@ -30,7 +31,13 @@ export default function Analysis() {
   const [preview, setPreview] = useState(null);
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(false);
+
+
+
   const [result, setResult] = useState(null);
+
+
+
   const [analysisMode, setAnalysisMode] = useState(null);
   const [modelMode, setModelMode] = useState('Classical');
   const [activeStep, setActiveStep] = useState(0);
@@ -39,6 +46,14 @@ export default function Analysis() {
 
   const targetRef = useRef(null);
   const targetRef1 = useRef(null);
+
+
+  const [views, setViews] = useState({
+    "L-CC": null, "L-MLO": null,
+    "R-CC": null, "R-MLO": null,
+  })
+
+
 
   useEffect(() => {
     const observer = new IntersectionObserver(([e]) => setIsVisible(e.isIntersecting), { threshold: 0.1 });
@@ -52,7 +67,7 @@ export default function Analysis() {
     if (analysisMode === 'mammo-risk' && files.length === 0) return;
 
     if (analysisMode === 'future-risk' && files.length === 0) return;
-    if (analysisMode === 'classification' && !file) return;
+    if (analysisMode === 'classification' && Object.values(views).some(v => v === null)) return;
 
     setLoading(true);
     setStatus(null);
@@ -121,17 +136,21 @@ export default function Analysis() {
 
     } else {
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('l_cc', views['L-CC'].file);
+      formData.append('l_mlo', views['L-MLO'].file);
+      formData.append('r_cc', views['R-CC'].file);
+      formData.append('r_mlo', views['R-MLO'].file);
+
       try {
-        const [uploadRes, qmlRes, cnnRes] = await Promise.all([
-          fetch(`${API_BASE}/images/upload`, { method: 'POST', body: formData }),
-          fetch(`${API_BASE}/QMLPredictV2/`, { method: 'POST', body: formData }),
-          fetch(`${API_BASE}/S2CNNPredict/predict`, { method: 'POST', body: formData }),
+        const [qmlRes, cnnRes] = await Promise.all([
+          //  fetch(`${API_BASE}/images/upload`, { method: 'POST', body: formData }),
+          fetch(`${API_BASE}/QMLPredictV2/predict-four-views-QML`, { method: 'POST', body: formData }),
+          fetch(`${API_BASE}/S2CNNPredict/predict-four-views`, { method: 'POST', body: formData }),
         ]);
-        const [uploadData, qmlData, cnnData] = await Promise.all([
-          uploadRes.json(), qmlRes.json(), cnnRes.json(),
+        const [qmlData, cnnData] = await Promise.all([
+          qmlRes.json(), cnnRes.json()
         ]);
-        setResult({ filename: uploadData.filename, resultFile: { qml: qmlData, cnn: cnnData } });
+        setResult({ resultFile: { qml: qmlData, cnn: cnnData } });
       } catch {
         setStatus({ ok: false, msg: 'Cannot reach the server. Make sure the backend is running.' });
       } finally {
@@ -147,6 +166,8 @@ export default function Analysis() {
     setStatus(null);
     setResult(null);
     setActiveStep(0);
+    setViews({ "L-CC": null, "L-MLO": null, "R-CC": null, "R-MLO": null });
+
   };
 
   const stepPb = {
@@ -250,18 +271,16 @@ export default function Analysis() {
             {activeStep === 1 && (
               analysisMode === 'classification' ? (
                 <Container maxWidth="md" sx={{ mt: 1 }}>
-                  <ImageUpload
-                    file={file} setFile={setFile}
-                    preview={preview} setPreview={setPreview}
+                  <MultiViewUpload
+                    views={views} setViews={setViews}
                     setActiveStep={setActiveStep}
                     handleAnalyse={handleAnalyse}
                   />
                 </Container>
               ) : analysisMode === 'mammo-risk' ? (
                 <Container maxWidth="md" sx={{ mt: 1 }}>
-                  <ImageUploadOrder
-                    file={files} setFiles={setFiles}
-                    preview={preview} setPreview={setPreview}
+                  <MultiViewUpload
+                    views={views} setViews={setViews}
                     setActiveStep={setActiveStep}
                     handleAnalyse={handleAnalyse}
                   />

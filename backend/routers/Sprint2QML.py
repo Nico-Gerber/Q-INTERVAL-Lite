@@ -104,6 +104,35 @@ def preprocess_image(image_bytes: bytes) -> np.ndarray:
 
     return arr_scaled[0]
 
+
+
+
+def run_inference(image_bytes: bytes):
+    contents = image_bytes
+
+    features = preprocess_image(contents)
+
+
+    probs = predict_probs(features)
+    pred_id = predict_label(probs)
+    pred_name = label_names[pred_id]
+
+    return{
+        "prediction": pred_id,
+        "result": pred_name.capitalize(),
+        "score": round(float(probs[pred_id]), 4),
+        "class_probabilities": {
+            label_names[i].capitalize(): round(float(probs[i]), 4)
+            for i in range(n_classes)
+        },
+        "model_info": {
+            "best_epoch": model_data["best_epoch"],
+            "best_test_acc": round(float(model_data["best_test_acc"]), 4)
+        }
+    }
+    
+    
+
 # =========================
 # ROUTE
 # =========================
@@ -136,5 +165,59 @@ async def predict(file: UploadFile = File(...)):
         "model_info": {
             "best_epoch": model_data["best_epoch"],
             "best_test_acc": round(float(model_data["best_test_acc"]), 4)
+        }
+    })
+
+
+@router.post("/predict-four-views-QML")
+async def predict_four_views(
+    l_cc:  UploadFile = File(...),
+    l_mlo: UploadFile = File(...),
+    r_cc:  UploadFile = File(...),
+    r_mlo: UploadFile = File(...),
+):
+    uploads = {
+        "L-CC":  l_cc,
+        "L-MLO": l_mlo,
+        "R-CC":  r_cc,
+        "R-MLO": r_mlo,
+    }
+
+    for view_name, upload in uploads.items():
+        if not upload.content_type.startswith("image/"):
+            raise HTTPException(
+                status_code=400,
+                detail=f"{view_name} must be an image file."
+            )
+        
+    results = {}
+    for view_name, upload in uploads.items():
+        image_bytes = await upload.read()
+        try:
+            results[view_name] = run_inference(image_bytes)
+        except ValueError as e:
+            raise HTTPException(status_code=422, detail=f"{view_name}: {str(e)}")
+
+    left_score = (
+        results["L-CC"]["class_probabilities"]["Malignant"] +
+        results["L-MLO"]["class_probabilities"]["Malignant"]
+    ) / 2
+
+    right_score = (
+        results["R-CC"]["class_probabilities"]["Malignant"] +
+        results["R-MLO"]["class_probabilities"]["Malignant"]
+    ) / 2
+
+    patient_score = max(left_score, right_score)
+    malignant_detected = patient_score > 0.5
+
+    return JSONResponse(content={
+        "views": results,
+        "aggregated": {
+            "overall_classification": "Malignant" if malignant_detected else "Non-Malignant",
+            "left_malignant_score":    round(left_score, 4),
+            "right_malignant_score":   round(right_score, 4),
+            "patient_malignant_score": round(patient_score, 4),
+            "malignant_detected":      malignant_detected,
         }
     })
