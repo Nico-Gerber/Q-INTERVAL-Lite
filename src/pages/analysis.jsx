@@ -20,7 +20,7 @@ import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import AssistantIcon from '@mui/icons-material/Assistant';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import { Atom } from 'react-loading-indicators';
+import { Atom, ThreeDot } from 'react-loading-indicators';
 
 const API_BASE = 'http://localhost:8000';
 
@@ -65,6 +65,10 @@ export default function Analysis() {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  const [LLMloading, setLLMLoading] = useState(false);
+
+
+
   const [loadingText, setLoadingText] = useState(LOADING_MESSAGES[0].text);
   const [msgIndex, setMsgIndex] = useState(0);
 
@@ -74,7 +78,7 @@ export default function Analysis() {
   const [summary, setSummary] = useState(null);
 
 
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
 
 
   const [audience, setAudience] = useState("clinician")
@@ -200,12 +204,16 @@ export default function Analysis() {
     setResult(null);
     setActiveStep(0);
     setViews({ "L-CC": null, "L-MLO": null, "R-CC": null, "R-MLO": null });
+    setSummary("")
+    setCollapsed(true)
 
   };
 
 
   const handleExplain = async () => {
 
+    setLLMLoading(true);
+    setSummary("")
 
     try {
       const llmRes = await fetch(`${API_BASE}/explain/`, {
@@ -236,7 +244,7 @@ export default function Analysis() {
     } catch {
 
     } finally {
-
+      setLLMLoading(false);
     }
 
   }
@@ -475,8 +483,7 @@ export default function Analysis() {
           {/* Sidebar */}
           <Box
             sx={{
-              width: collapsed ? 0 : 360,
-              minWidth: collapsed ? 0 : 360,
+              width: 360,
 
               position: 'fixed',
               right: 0,
@@ -491,7 +498,9 @@ export default function Analysis() {
               background: 'rgba(10,15,25,0.72)',
               borderLeft: '1px solid rgba(255,255,255,0.06)',
 
-              transition: 'all 0.25s ease',
+              transform: collapsed ? 'translateX(100%)' : 'translateX(0)',
+              transition: 'transform 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
+
               overflow: 'hidden',
               zIndex: 20,
               px: 2,
@@ -542,62 +551,77 @@ export default function Analysis() {
                     border: '1px solid rgba(45,212,191,0.12)',
                   }}
                 >
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1,
-                      mb: 1.5,
-                    }}
-                  >
-                    <AutoAwesomeIcon sx={{ color: '#2DD4BF', fontSize: 18 }} />
 
-                    <Typography
+                  {summary ? (
+                    <Box
                       sx={{
-                        color: '#2DD4BF',
-                        fontSize: '0.75rem',
-                        fontWeight: 700,
-                        letterSpacing: '0.08em',
-                        textTransform: 'uppercase',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        mb: 1.5,
                       }}
                     >
-                      Generated Interpretation
-                    </Typography>
-                  </Box>
+                      <AutoAwesomeIcon sx={{ color: '#2DD4BF', fontSize: 18 }} />
 
-                  <Box
-                    sx={{
-                      maxHeight: 500,
-                      overflowY: 'auto',
-                      pr: 1,
+                      <Typography
+                        sx={{
+                          color: '#2DD4BF',
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          letterSpacing: '0.08em',
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        Generated Interpretation
+                      </Typography>
+                    </Box>
 
-                      '&::-webkit-scrollbar': {
-                        width: '6px',
-                      },
-                      '&::-webkit-scrollbar-track': {
-                        background: 'transparent',
-                      },
-                      '&::-webkit-scrollbar-thumb': {
-                        background: 'rgba(255,255,255,0.14)',
-                        borderRadius: '999px',
-                      },
-                      '&::-webkit-scrollbar-thumb:hover': {
-                        background: 'rgba(255,255,255,0.28)',
-                      },
-                    }}
-                  >
-                    <Typography
+                  ) : (<Container></Container>)
+
+
+
+                  }
+
+                  {LLMloading ? (
+
+                    <Container sx={{ display: 'flex', justifyContent: 'center' }}>
+
+                      <ThreeDot color='#2DD4BF' size="small" text="" textColor="" />
+
+                    </Container>) : (
+
+
+                    <Box
                       sx={{
-                        color: 'rgba(255,255,255,0.78)',
-                        fontSize: '0.92rem',
-                        lineHeight: 1.85,
+                        maxHeight: 500,
+                        overflowY: 'auto',
+                        pr: 1,
+
+                        '&::-webkit-scrollbar': {
+                          width: '6px',
+                        },
+                        '&::-webkit-scrollbar-track': {
+                          background: 'transparent',
+                        },
+                        '&::-webkit-scrollbar-thumb': {
+                          background: 'rgba(255,255,255,0.14)',
+                          borderRadius: '999px',
+                        },
+                        '&::-webkit-scrollbar-thumb:hover': {
+                          background: 'rgba(255,255,255,0.28)',
+                        },
                       }}
                     >
-                      {summary
-                        ? summary.explanation
-                        : 'Generate a structured explanation of the mammogram analysis results using the selected AI model.'}
-                    </Typography>
-                  </Box>
+                      <Typography
+                        sx={{
+                          color: 'rgba(255,255,255,0.78)',
+                          fontSize: '0.92rem',
+                          lineHeight: 1.85,
+                        }}
+                      >
+                        {summary ? summary.explanation : 'Generate a structured explanation of the mammogram analysis results using AI analysis.'}
+                      </Typography>
+                    </Box>)}
                 </Box>
 
 
