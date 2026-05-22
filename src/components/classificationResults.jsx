@@ -66,9 +66,11 @@ export default function ClassificationResults({ analyisedImage, reset, currentMo
             ? '#d4a017'
             : '#3fcf8e';
 
-    const verdictColor = qmlResult?.aggregated?.overall_classification === cnnResult?.aggregated?.overall_classification
+    const verdictColor = qmlResult?.views?.[currentView]?.result === cnnResult?.views?.[currentView]?.result
         ? '#3fcf8e' : '#e05252'
-    const verdictText = qmlResult?.aggregated?.overall_classification === cnnResult?.aggregated?.overall_classification
+
+
+    const verdictText = qmlResult?.views?.[currentView]?.result === cnnResult?.views?.[currentView]?.result
         ? 'Models agree' : 'Models disagree';
     const MalignantColor = '#e05252';
     const BenignColor = '#d4a017';
@@ -146,10 +148,9 @@ export default function ClassificationResults({ analyisedImage, reset, currentMo
 
             {/* ── Metric cells ── */}
             {currentModel === 'Both' ? (
-                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0,1fr))', ...cardBorder, overflow: 'hidden', mb: 2 }}>
+                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0,1fr))', ...cardBorder, overflow: 'hidden', mb: 2 }}>
                     <MetricCell label="Classical result" value={cnnResult?.views?.[currentView]?.result} color={cnnResult?.views?.[currentView]?.result === 'Malignant' ? '#e05252' :
                         cnnResult?.views?.[currentView]?.result === 'Benign' ? '#d4a017' : '#3fcf8e'} />
-                    <MetricCell label="Classical conf." value={`${(cnnResult?.views?.[currentView]?.score * 100).toFixed(1)}%`} />
                     <MetricCell label="Quantum result" value={qmlResult?.views?.[currentView]?.result} color={qmlResult?.views?.[currentView]?.result === 'Malignant' ? '#e05252' :
                         qmlResult?.views?.[currentView]?.result === 'Benign' ? '#d4a017' : '#3fcf8e'} />
                     <MetricCell label="Verdict" value={verdictText} color={verdictColor} borderRight={false} />
@@ -308,9 +309,7 @@ export default function ClassificationResults({ analyisedImage, reset, currentMo
                 </Box>
             </Box>
 
-            <Container sx={{ padding: 4, display: 'flex', justifyContent: 'center' }}>
-                <Button variant="contained" onClick={() => reset()}>Reset</Button>
-            </Container>
+
 
         </Box>
     );

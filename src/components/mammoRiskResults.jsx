@@ -54,7 +54,7 @@ function BothView({ cnnResult, qmlResult, mounted }) {
     const qml = extractSummary(qmlResult);
 
     const rows = [
-        { label: 'Classification', cnn: cnn.classification, qml: qml.classification },
+        { label: 'Highest Severity Classification', cnn: cnn.classification, qml: qml.classification },
         { label: 'Risk level', cnn: cnn.riskLevel, qml: qml.riskLevel },
         { label: 'Risk score', cnn: cnn.riskScore != null ? `${cnn.riskScore}` : '—', qml: qml.riskScore != null ? `${qml.riskScore}` : '—' },
         { label: 'Highest density', cnn: cnn.highestDensity, qml: qml.highestDensity },
@@ -191,8 +191,8 @@ export default function MammoRiskResults({ results, reset, currentModel }) {
     const [mounted, setMounted] = useState(false);
     const [barWidth, setBarWidth] = useState(0);
 
-    const cnnResult = results?.resultFile?.cnn;
-    const qmlResult = results?.resultFile?.qml;
+    const cnnResult = results?.resultFile?.CRcnn;
+    const qmlResult = results?.resultFile?.CRqml;
 
     const data = currentModel === 'Quantum' ? qmlResult : cnnResult;
 
@@ -259,7 +259,7 @@ export default function MammoRiskResults({ results, reset, currentModel }) {
 
     // ── Single model mode (CNN or Quantum) ──
     const metricCells = [
-        { label: 'Classification', value: classification, color: isMalignant ? '#e05252' : '#3fcf8e' },
+        { label: 'Highest Severity Classification', value: classification, color: isMalignant ? '#e05252' : '#3fcf8e' },
         { label: 'Risk level', value: riskLevel, color: isMalignant ? 'rgba(255,255,255,0.35)' : riskLvlColor },
         ...(!isMalignant
             ? [

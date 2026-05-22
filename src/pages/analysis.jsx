@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 
 import AnalysisStepper from '../components/stepper';
 import ModeSelect from '../components/AnalysisModeSelect';
-import ImageUpload from '../components/SingleImageUpload';
+
 
 import ModelSelect from '../components/ModelResultSelect';
 import ClassificationResults from '../components/classificationResults';
@@ -25,24 +25,52 @@ const stepVariants = {
   exit: { opacity: 0, y: -12, transition: { duration: 0.2, ease: 'easeIn' } },
 };
 
+const LOADING_MESSAGES = [
+  { text: "Preprocessing mammogram views...", duration: 1200 },
+  { text: "Running CNN classification — L-CC...", duration: 1000 },
+  { text: "Running CNN classification — L-MLO...", duration: 1000 },
+  { text: "Running CNN classification — R-CC...", duration: 1000 },
+  { text: "Running CNN classification — R-MLO...", duration: 1000 },
+  { text: "Generating Grad-CAM heatmaps...", duration: 1500 },
+  { text: "Applying temperature calibration...", duration: 800 },
+  { text: "Running quantum classification...", duration: 1200 },
+  { text: "Encoding PCA features into qubits...", duration: 1000 },
+  { text: "Measuring quantum circuit outputs...", duration: 1000 },
+  { text: "Running composite risk pipeline...", duration: 1200 },
+  { text: "Scoring breast density classification...", duration: 800 },
+  { text: "Calculating BI-RADS risk score...", duration: 800 },
+  { text: "Computing weighted risk index...", duration: 800 },
+  { text: "Aggregating patient-level scores...", duration: 800 },
+  { text: "Comparing classical vs quantum results...", duration: 1000 },
+  { text: "Finalising analysis results...", duration: 800 },
+  { text: "Almost there...", duration: 3000 },
+];
+
+
+
+
+
+
+
 export default function Analysis() {
-  const [file, setFile] = useState(null);
+
   const [files, setFiles] = useState([]);
   const [preview, setPreview] = useState(null);
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(false);
 
-
+  const [loadingText, setLoadingText] = useState(LOADING_MESSAGES[0].text);
+  const [msgIndex, setMsgIndex] = useState(0);
 
   const [result, setResult] = useState(null);
+
 
 
 
   const [analysisMode, setAnalysisMode] = useState(null);
   const [modelMode, setModelMode] = useState('Classical');
   const [activeStep, setActiveStep] = useState(0);
-  const [isVisible, setIsVisible] = useState(false);
-  const [isVisible1, setIsVisible1] = useState(false);
+
 
   const targetRef = useRef(null);
   const targetRef1 = useRef(null);
@@ -55,16 +83,27 @@ export default function Analysis() {
 
 
 
+
   useEffect(() => {
-    const observer = new IntersectionObserver(([e]) => setIsVisible(e.isIntersecting), { threshold: 0.1 });
-    const observer1 = new IntersectionObserver(([e]) => setIsVisible1(e.isIntersecting), { threshold: 0.1 });
-    if (targetRef.current) observer.observe(targetRef.current);
-    if (targetRef1.current) observer1.observe(targetRef1.current);
-    return () => { observer.disconnect(); observer1.disconnect(); };
-  }, [result]);
+    if (!loading) {
+      setMsgIndex(0);
+      setLoadingText(LOADING_MESSAGES[0].text);
+      return;
+    }
+
+    const advance = (index) => {
+      if (index >= LOADING_MESSAGES.length) return;
+      setLoadingText(LOADING_MESSAGES[index].text);
+      setMsgIndex(index);
+      setTimeout(() => advance(index + 1), LOADING_MESSAGES[index].duration);
+    };
+
+    advance(0);
+  }, [loading]);
+
 
   const handleAnalyse = async () => {
-    if (analysisMode === 'mammo-risk' && files.length === 0) return;
+
 
     if (analysisMode === 'future-risk' && files.length === 0) return;
     if (analysisMode === 'classification' && Object.values(views).some(v => v === null)) return;
@@ -72,40 +111,7 @@ export default function Analysis() {
     setLoading(true);
     setStatus(null);
 
-    if (analysisMode === 'mammo-risk') {
-      const isMulti = files.length > 1;
-      const endpoint = isMulti ? 'multi' : 'single';
-
-      const cnnFormData = new FormData();
-      const qmlFormData = new FormData();
-
-      if (isMulti) {
-        files.forEach(f => {
-          cnnFormData.append('files', f.file);
-          qmlFormData.append('files', f.file);
-        });
-      } else {
-        cnnFormData.append('file', files[0].file);
-        qmlFormData.append('file', files[0].file);
-      }
-
-      try {
-        const [cnnRes, qmlRes] = await Promise.all([
-          fetch(`${API_BASE}/mammo-risk/predict/${endpoint}`, { method: 'POST', body: cnnFormData }),
-          fetch(`${API_BASE}/qml-mammo-risk/predict/${endpoint}`, { method: 'POST', body: qmlFormData }),
-        ]);
-        const [cnnData, qmlData] = await Promise.all([
-          cnnRes.json(),
-          qmlRes.json(),
-        ]);
-        setResult({ resultFile: { cnn: cnnData, qml: qmlData } });
-      } catch {
-        setStatus({ ok: false, msg: 'Cannot reach the server. Make sure the backend is running.' });
-      } finally {
-        setLoading(false);
-      }
-
-    } else if (analysisMode === 'future-risk') {
+    if (analysisMode === 'future-risk') {
       const isMulti = files.length > 1;
       const endpoint = isMulti ? 'multi' : 'single';
 
@@ -141,16 +147,27 @@ export default function Analysis() {
       formData.append('r_cc', views['R-CC'].file);
       formData.append('r_mlo', views['R-MLO'].file);
 
+      const compositeRiskData = new FormData();
+      compositeRiskData.append('files', views['L-CC'].file);
+      compositeRiskData.append('files', views['L-MLO'].file);
+      compositeRiskData.append('files', views['R-CC'].file);
+      compositeRiskData.append('files', views['R-MLO'].file);
+
+
+
       try {
-        const [qmlRes, cnnRes] = await Promise.all([
+        const [qmlRes, cnnRes, CRqmlRes, CRcnnRes] = await Promise.all([
           //  fetch(`${API_BASE}/images/upload`, { method: 'POST', body: formData }),
           fetch(`${API_BASE}/QMLPredictV2/predict-four-views-QML`, { method: 'POST', body: formData }),
           fetch(`${API_BASE}/S2CNNPredict/predict-four-views`, { method: 'POST', body: formData }),
+          fetch(`${API_BASE}/qml-mammo-risk/predict/multi`, { method: 'POST', body: compositeRiskData }),
+          fetch(`${API_BASE}/mammo-risk/predict/multi`, { method: 'POST', body: compositeRiskData }),
+
         ]);
-        const [qmlData, cnnData] = await Promise.all([
-          qmlRes.json(), cnnRes.json()
+        const [qmlData, cnnData, CRqmlData, CRcnnData] = await Promise.all([
+          qmlRes.json(), cnnRes.json(), CRqmlRes.json(), CRcnnRes.json()
         ]);
-        setResult({ resultFile: { qml: qmlData, cnn: cnnData } });
+        setResult({ resultFile: { qml: qmlData, cnn: cnnData, CRqml: CRqmlData, CRcnn: CRcnnData } });
       } catch {
         setStatus({ ok: false, msg: 'Cannot reach the server. Make sure the backend is running.' });
       } finally {
@@ -160,7 +177,7 @@ export default function Analysis() {
   };
 
   const handleReset = () => {
-    setFile(null);
+
     setFiles([]);
     setPreview(null);
     setStatus(null);
@@ -181,9 +198,11 @@ export default function Analysis() {
       backgroundColor: 'background.default',
       minHeight: '100%',
       position: 'relative',
+
       overflow: 'hidden',
       background: (theme) => theme.palette.background.hero,
     }}>
+      <NeuralCanvas />
 
       {/* Radial glow */}
       <Box sx={{
@@ -203,7 +222,7 @@ export default function Analysis() {
         backgroundSize: '60px 60px',
       }} />
 
-      <NeuralCanvas />
+
 
       {/* ── Hero — fades in on mount ── */}
       <motion.div
@@ -277,14 +296,7 @@ export default function Analysis() {
                     handleAnalyse={handleAnalyse}
                   />
                 </Container>
-              ) : analysisMode === 'mammo-risk' ? (
-                <Container maxWidth="md" sx={{ mt: 1 }}>
-                  <MultiViewUpload
-                    views={views} setViews={setViews}
-                    setActiveStep={setActiveStep}
-                    handleAnalyse={handleAnalyse}
-                  />
-                </Container>
+
               ) : analysisMode === 'future-risk' ? (
                 <Container maxWidth="md" sx={{ mt: 1 }}>
                   <MultiImageUploadDated
@@ -299,8 +311,24 @@ export default function Analysis() {
 
             {activeStep === 2 && (
               loading ? (
-                <Box sx={{ mt: 8, display: 'flex', justifyContent: 'center' }}>
+                <Box sx={{
+                  mt: 8,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 2
+                }}>
                   <Atom color='#2DD4BF' />
+                  <Typography sx={{
+                    fontFamily: 'monospace',
+                    fontSize: 12,
+                    letterSpacing: '0.08em',
+                    color: 'rgba(255,255,255,0.45)',
+                    textTransform: 'uppercase',
+                  }}>
+                    {loadingText}
+                  </Typography>
                 </Box>
               ) : (
                 <>
@@ -312,15 +340,12 @@ export default function Analysis() {
                           analyisedImage={preview} reset={handleReset}
                           currentModel={modelMode} results={result}
                         />
+                        <MammoRiskResults results={result}
+                          reset={handleReset} currentModel={modelMode} />
                       </Container>
                     </>
                   )}
-                  {analysisMode === 'mammo-risk' && (
-                    <Container maxWidth="xl">
-                      <ModelSelect selectedModel={modelMode} onModelSelect={setModelMode} />
-                      <MammoRiskResults results={result} reset={handleReset} currentModel={modelMode} />
-                    </Container>
-                  )}
+
                   {analysisMode === 'future-risk' && (
                     <>
                       <ModelSelect selectedModel={modelMode} onModelSelect={setModelMode} />

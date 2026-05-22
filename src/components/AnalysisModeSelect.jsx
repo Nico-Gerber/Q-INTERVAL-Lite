@@ -14,30 +14,18 @@ import {
 const MODES = [
   {
     id: 'classification',
-    title: 'Classification Analysis',
-    description: 'Analyze a single mammogram image to detect and classify potential abnormalities including masses and calcifications.',
+    title: 'Session Analysis',
+    description: 'Upload all four standard mammogram views from a single screening session for classification and composite risk assessment.',
     icon: <ClassificationIcon sx={{ fontSize: 26 }} />,
     paletteKey: 'classification',
     features: [
-      'Single image analysis',
-      'Three-way classification',
-      'Lesion detection & localization',
-      'Confidence scoring',
+      'Standard 4-view session (L-CC, L-MLO, R-CC, R-MLO)',
+      'Per-view classification & Grad-CAM',
+      'Aggregated patient-level verdict',
+      'Composite risk index',
     ],
   },
-  {
-    id: 'mammo-risk',
-    title: 'Composite Risk Assessment',
-    description: 'Upload one or more mammogram images to assess breast cancer risk using CNN-based density, BI-RADS, and malignancy scoring.',
-    icon: <MammoRiskIcon sx={{ fontSize: 26 }} />,
-    paletteKey: 'compositeRisk',
-    features: [
-      'Single or multi-image support',
-      'Malignancy & density classification',
-      'BI-RADS scoring',
-      'Weighted risk score (0–100)',
-    ],
-  },
+
   {
     id: 'future-risk',
     title: 'Sequential Future Risk',
@@ -54,7 +42,7 @@ const MODES = [
 ];
 
 const cardVariants = {
-  hidden:  { opacity: 0, y: 20 },
+  hidden: { opacity: 0, y: 20 },
   visible: (i) => ({
     opacity: 1, y: 0,
     transition: { duration: 0.35, delay: i * 0.08, ease: 'easeOut' },
@@ -68,9 +56,11 @@ export default function ModeSelect({ selectedMode, onModeSelect, setActiveStep }
     <Container maxWidth="xl">
       <Box sx={{
         display: 'grid',
-        gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' },
+        gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
         gap: 2, pt: 1, pb: 0.5,
         alignItems: 'stretch',
+        mx: 'auto',
+        maxWidth: 'md'
       }}>
         {MODES.map((mode, i) => {
           const isSelected = selectedMode === mode.id;

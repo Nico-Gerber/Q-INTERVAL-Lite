@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 
-export default function NeuralCanvas() {
+export default React.memo(function NeuralCanvas() {
     const canvasRef = useRef(null);
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -9,8 +9,11 @@ export default function NeuralCanvas() {
         let raf;
 
         const resize = () => {
-            canvas.width = canvas.offsetWidth;
-            canvas.height = canvas.offsetHeight;
+            const w = canvas.offsetWidth;
+            const h = canvas.offsetHeight;
+            if (canvas.width === w && canvas.height === h) return;
+            canvas.width = w;
+            canvas.height = h;
         };
         resize();
         window.addEventListener('resize', resize);
@@ -72,7 +75,7 @@ export default function NeuralCanvas() {
     return (
         <canvas
             ref={canvasRef}
-            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 0 }}
+            style={{ position: 'fixed', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 0 }}
         />
     );
-}
+})
