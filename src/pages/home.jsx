@@ -17,6 +17,11 @@ import {
   VisibilityOff as EyeOffIcon,
   KeyboardArrowUp as ArrowUpIcon,
   KeyboardArrowDown as ArrowDownIcon,
+  Biotech as BiotechIcon,
+  LocalHospital as LocalHospitalIcon,
+  CastForEducation as CastForEducationIcon,
+  RadioOutlined as RadioOutlinedIcon,
+  PsychologyOutlined as PsychologyOutlinedIcon,
 } from '@mui/icons-material';
 import { motion, animate, AnimatePresence } from 'framer-motion';
 
@@ -26,6 +31,7 @@ const A = {
   amber:  '#FBBF24',
   red:    '#F87171',
   pink:   '#E8537A',
+  blue:   '#3B82F6',
 };
 
 const TC = {
@@ -37,7 +43,7 @@ const TC = {
 };
 
 const NAV_H = 70;
-const SECTION_IDS = ['hero', 'about', 'why', 'technology', 'support'];
+const SECTION_IDS = ['hero', 'about', 'why', 'who', 'technology', 'support'];
 const ICON_SX = { fontSize: 26 };
 
 const HERO_STATS = [
@@ -411,8 +417,9 @@ export default function Home() {
   const inHero    = currentSection === 0;
   const inAbout   = currentSection === 1;
   const inWhy     = currentSection === 2;
-  const inTech    = currentSection === 3;
-  const inSupport = currentSection === 4;
+  const inWho     = currentSection === 3;
+  const inTech    = currentSection === 4;
+  const inSupport = currentSection === 5;
 
   return (
     <Box sx={{ backgroundColor: 'background.default' }}>
@@ -425,7 +432,7 @@ export default function Home() {
         <NeuralCanvas />
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', px: 2, py: 2, position: 'relative', zIndex: 1 }}>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: 'easeOut' }}>
-            <Chip label="● Version 0.2 - Sprint 2" size="small" sx={{ mb: 2.5, bgcolor: (theme) => `${theme.palette.primary.main}12`, color: 'primary.main', letterSpacing: '0.06em', fontSize: '0.7rem', fontWeight: 700, border: '1px solid', borderColor: (theme) => `${theme.palette.primary.main}28`, borderRadius: '999px' }} />
+            <Chip label="● Version 0.3 - Sprint 3" size="small" sx={{ mb: 2.5, bgcolor: (theme) => `${theme.palette.primary.main}12`, color: 'primary.main', letterSpacing: '0.06em', fontSize: '0.7rem', fontWeight: 700, border: '1px solid', borderColor: (theme) => `${theme.palette.primary.main}28`, borderRadius: '999px' }} />
           </motion.div>
           <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.65, ease: 'easeOut', delay: 0.1 }}>
             <Typography variant="h1" sx={{ mb: 1, fontSize: { xs: '2.2rem', md: '3.5rem' }, maxWidth: 800, mx: 'auto', color: 'text.primary' }}>Revealing the</Typography>
@@ -547,15 +554,136 @@ export default function Home() {
         </Container>
       </Box>
 
-      {/* ── 4. TECHNOLOGY ── */}
-      <Box id="technology" sx={{ height: sectionH, bgcolor: 'background.default', borderBottom: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', position: 'relative', overflow: 'hidden' }}>
+      {/* ── 4. WHO ── */}
+      <Box id="who" sx={{ height: sectionH, bgcolor: 'background.default', borderBottom: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', position: 'relative', overflow: 'hidden' }}>
+        <DotGrid />
+        <Container maxWidth="lg" sx={{ width: '100%', position: 'relative', zIndex: 1 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '2fr 3fr' }, gap: { xs: 4, md: 10 }, alignItems: 'center' }}>
+
+            {/* Left — header text, same as About section */}
+            <FadeUp isVisible={inWho}>
+              <SectionLabel icon={<PeopleIcon sx={{ fontSize: 16 }} />} label="Who it's for" color={A.blue} />
+              <Typography variant="h3" sx={{ mb: 2, lineHeight: 1.25, color: 'text.primary', fontSize: { xs: '1.8rem', md: '2.2rem' } }}>
+                Built for the whole care chain.
+              </Typography>
+              <Typography sx={{ color: 'text.secondary', lineHeight: 1.8, fontSize: '0.95rem', mb: 2 }}>
+                [Introductory paragraph placeholder — brief overview of the intended audience and how the platform serves them.]
+              </Typography>
+              <Typography sx={{ color: 'text.secondary', lineHeight: 1.8, fontSize: '0.95rem' }}>
+                [Second paragraph placeholder — note on educational, non-clinical scope and cross-disciplinary reach.]
+              </Typography>
+            </FadeUp>
+
+            {/* Right — tiered user cards */}
+            <FadeUp isVisible={inWho} delay={0.12}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+
+                {/* ── Primary tier label ── */}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                  <Typography sx={{ fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: A.teal, whiteSpace: 'nowrap' }}>Primary Users</Typography>
+                  <Box sx={{ flex: 1, height: '1px', backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(45,212,191,0.15)' : 'rgba(13,148,136,0.25)' }} />
+                </Box>
+
+                {[
+                  { Icon: BiotechIcon,       role: 'Radiologists',                  accent: A.teal },
+                  { Icon: LocalHospitalIcon, role: 'Referring Doctors & Physicians', accent: A.blue },
+                ].map((item, i) => (
+                  <motion.div key={item.role}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={inWho ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
+                    transition={{ duration: 0.28, delay: 0.14 + i * 0.08, ease: 'easeOut' }}
+                  >
+                    <Box sx={{
+                      display: 'flex', alignItems: 'flex-start', gap: 2,
+                      px: 2.5, py: 2, mb: 1.25, borderRadius: 2,
+                      backgroundColor: (theme) => theme.palette.mode === 'dark'
+                        ? `${item.accent}12` : item.accent,
+                      border: '1px solid',
+                      borderColor: (theme) => theme.palette.mode === 'dark' ? `${item.accent}30` : `${item.accent}CC`,
+                      borderLeft: (theme) => theme.palette.mode === 'dark' ? `2px solid ${item.accent}` : `2px solid rgba(0,0,0,0.18)`,
+                      transition: 'all 0.2s',
+                      '&:hover': {
+                        backgroundColor: (theme) => theme.palette.mode === 'dark' ? `${item.accent}1C` : item.accent,
+                        boxShadow: (theme) => theme.palette.mode === 'light' ? '0 4px 16px rgba(0,0,0,0.18)' : 'none',
+                        transform: 'translateY(-1px)',
+                      },
+                    }}>
+                      <item.Icon sx={{ fontSize: 18, flexShrink: 0, mt: '3px',
+                        color: (theme) => theme.palette.mode === 'dark' ? item.accent : 'rgba(255,255,255,0.92)',
+                      }} />
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography sx={{ fontWeight: 700, fontSize: '0.87rem', mb: 0.3, lineHeight: 1.2,
+                          color: (theme) => theme.palette.mode === 'dark' ? 'text.primary' : '#FFFFFF',
+                        }}>{item.role}</Typography>
+                        <Typography sx={{ fontSize: '0.77rem', lineHeight: 1.6,
+                          color: (theme) => theme.palette.mode === 'dark' ? 'text.secondary' : 'rgba(255,255,255,0.82)',
+                        }}>[Placeholder — how {item.role.toLowerCase()} use the platform.]</Typography>
+                      </Box>
+                    </Box>
+                  </motion.div>
+                ))}
+
+                {/* ── Secondary tier label ── */}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 1.5, mb: 2 }}>
+                  <Typography sx={{ fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#9333EA', whiteSpace: 'nowrap' }}>Secondary Users</Typography>
+                  <Box sx={{ flex: 1, height: '1px', backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(147,51,234,0.18)' : 'rgba(147,51,234,0.3)' }} />
+                </Box>
+
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1.25 }}>
+                  {[
+                    { Icon: CastForEducationIcon,  role: 'Medical Students',       accent: '#9333EA' },
+                    { Icon: RadioOutlinedIcon,      role: 'Radiology Trainees',     accent: '#A855F7' },
+                    { Icon: PsychologyOutlinedIcon, role: 'Medical AI Researchers', accent: '#7C3AED' },
+                  ].map((item, i) => (
+                    <motion.div key={item.role}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={inWho ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
+                      transition={{ duration: 0.28, delay: 0.34 + i * 0.07, ease: 'easeOut' }}
+                    >
+                      <Box sx={{
+                        px: 2, py: 2, borderRadius: 2,
+                        backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'transparent' : item.accent,
+                        border: '1px solid',
+                        borderColor: (theme) => theme.palette.mode === 'dark' ? `${item.accent}30` : `${item.accent}CC`,
+                        borderTop: (theme) => theme.palette.mode === 'dark' ? `2px solid ${item.accent}70` : `2px solid rgba(0,0,0,0.15)`,
+                        transition: 'all 0.2s',
+                        '&:hover': {
+                          backgroundColor: (theme) => theme.palette.mode === 'dark' ? `${item.accent}0D` : item.accent,
+                          borderColor: (theme) => theme.palette.mode === 'dark' ? `${item.accent}50` : `${item.accent}CC`,
+                          boxShadow: (theme) => theme.palette.mode === 'light' ? '0 4px 16px rgba(0,0,0,0.18)' : 'none',
+                          transform: 'translateY(-1px)',
+                        },
+                      }}>
+                        <item.Icon sx={{ fontSize: 17, mb: 0.75,
+                          color: (theme) => theme.palette.mode === 'dark' ? item.accent : 'rgba(255,255,255,0.92)',
+                        }} />
+                        <Typography sx={{ fontWeight: 700, fontSize: '0.76rem', mb: 0.35, lineHeight: 1.25,
+                          color: (theme) => theme.palette.mode === 'dark' ? 'text.primary' : '#FFFFFF',
+                        }}>{item.role}</Typography>
+                        <Typography sx={{ fontSize: '0.69rem', lineHeight: 1.55,
+                          color: (theme) => theme.palette.mode === 'dark' ? 'text.secondary' : 'rgba(255,255,255,0.82)',
+                        }}>[Placeholder — how {item.role.toLowerCase()} engage.]</Typography>
+                      </Box>
+                    </motion.div>
+                  ))}
+                </Box>
+
+              </Box>
+            </FadeUp>
+
+          </Box>
+        </Container>
+      </Box>
+
+      {/* ── 5. TECHNOLOGY ── */}
+      <Box id="technology" sx={{ height: sectionH, bgcolor: 'background.paper', borderBottom: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', position: 'relative', overflow: 'hidden' }}>
         <SparsePlus />
         <Container maxWidth="lg" sx={{ width: '100%', position: 'relative', zIndex: 1 }}>
           <FadeUp isVisible={inTech}>
             <Box sx={{ mb: 4 }}>
-              <SectionLabel icon={<ClassicalIcon sx={{ fontSize: 16 }} />} label="Technology" color={A.amber} />
-              <Typography variant="h3" sx={{ mb: 1.5, lineHeight: 1.25, maxWidth: 560, color: 'text.primary' }}>
-                How does it work?
+              <SectionLabel icon={<ClassicalIcon sx={{ fontSize: 16 }} />} label="How it works" color={A.amber} />
+              <Typography variant="h3" sx={{ mb: 1.5, lineHeight: 1.25, maxWidth: 560, color: 'text.primary', fontSize: { xs: '1.8rem', md: '2.2rem' } }}>
+                Two pipelines. One scan.
               </Typography>
               <Typography sx={{ color: 'text.secondary', lineHeight: 1.8, fontSize: '0.88rem', maxWidth: 560 }}>
                 [Placeholder — a short intro to the technical approach.]
@@ -566,7 +694,7 @@ export default function Home() {
         </Container>
       </Box>
 
-      {/* ── 5. SUPPORT ── */}
+      {/* ── 6. SUPPORT ── */}
       <Box id="support" sx={{ height: sectionH, bgcolor: 'background.paper', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
         <HorizontalLines />
         <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', overflow: 'hidden', position: 'relative', zIndex: 1 }}>
