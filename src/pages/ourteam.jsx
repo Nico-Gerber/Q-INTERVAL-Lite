@@ -19,7 +19,7 @@ const OurTeam = () => (
     <Box
       sx={{
         position: 'relative', overflow: 'hidden',
-        background: (theme) => theme.palette.background.hero,
+        background: (theme) => theme.palette.background.heroGradient,
         color: 'text.primary',
         py: { xs: 6, md: 10 }, px: 2, textAlign: 'center',
         '&::before': { content: '""', position: 'absolute', top: '-40%', left: '50%', transform: 'translateX(-50%)', width: '500px', height: '500px', borderRadius: '50%', background: (theme) => `radial-gradient(circle, ${theme.palette.primary.main}0F 0%, transparent 70%)`, pointerEvents: 'none' },

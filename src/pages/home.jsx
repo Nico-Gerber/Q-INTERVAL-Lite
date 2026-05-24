@@ -28,38 +28,36 @@ const A = {
   pink:   '#E8537A',
 };
 
-// ── Colours matching App.js palette ───────────────────────────────────────
 const TC = {
-  mode:    '#94A3B8', // classification slate
-  upload:  '#2DD4BF', // primary teal
-  cnn:     '#38BDF8', // cnn sky blue
-  qml:     '#9333EA', // qml purple
-  results: '#F59E0B', // results amber
+  mode:    '#94A3B8',
+  upload:  '#2DD4BF',
+  cnn:     '#38BDF8',
+  qml:     '#9333EA',
+  results: '#F59E0B',
 };
 
-const P = 'rgba(45,212,191,0.07)';
 const NAV_H = 70;
 const SECTION_IDS = ['hero', 'about', 'why', 'technology', 'support'];
-const ICON_SX = { fontSize: 26, color: '#2DD4BF' };
+const ICON_SX = { fontSize: 26 };
 
 const HERO_STATS = [
   {
-    icon: <PeopleIcon   sx={ICON_SX} />,
+    Icon: PeopleIcon,
     value: '1 in 7', numericEnd: 7, prefix: '1 in ', suffix: '',
     label: 'Australian women will be diagnosed with breast cancer in their lifetime.',
   },
   {
-    icon: <CalendarIcon sx={ICON_SX} />,
+    Icon: CalendarIcon,
     value: '1.9 Million', numericEnd: 1.9, prefix: '', suffix: 'M',
     label: 'Australian women rely on routine screening cycles biennially.',
   },
   {
-    icon: <WarningIcon  sx={ICON_SX} />,
+    Icon: WarningIcon,
     value: '22%', numericEnd: 22, prefix: '', suffix: '%',
     label: "Of invasive cancers emerge as 'interval cancers' between routine clear screenings.",
   },
   {
-    icon: <EyeOffIcon   sx={ICON_SX} />,
+    Icon: EyeOffIcon,
     value: '80%+', numericEnd: 80, prefix: '', suffix: '%+',
     label: 'Of interval cancers are deemed clinically invisible to the human eye on prior scans.',
   },
@@ -98,54 +96,58 @@ const faviconUrl = (domain) =>
 // ── Section patterns ───────────────────────────────────────────────────────
 const DotGrid = () => (
   <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
-    <svg width="100%" height="100%" style={{ position: 'absolute', inset: 0 }}>
+    <Box component="svg" width="100%" height="100%" style={{ position: 'absolute', inset: 0 }}
+      sx={{ '& circle': { fill: (theme) => theme.palette.mode === 'dark' ? 'rgba(45,212,191,0.10)' : 'rgba(13,148,136,0.13)' } }}>
       <defs>
         <pattern id="pg-dots" x="0" y="0" width="28" height="28" patternUnits="userSpaceOnUse">
-          <circle cx="2" cy="2" r="1.5" fill={P} />
+          <circle cx="2" cy="2" r="1.5" />
         </pattern>
       </defs>
       <rect width="100%" height="100%" fill="url(#pg-dots)" />
-    </svg>
+    </Box>
   </Box>
 );
 
 const HorizontalLines = () => (
   <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
-    <svg width="100%" height="100%" style={{ position: 'absolute', inset: 0 }}>
+    <Box component="svg" width="100%" height="100%" style={{ position: 'absolute', inset: 0 }}
+      sx={{ '& line': { stroke: (theme) => theme.palette.mode === 'dark' ? 'rgba(45,212,191,0.08)' : 'rgba(13,148,136,0.12)' } }}>
       <defs>
         <pattern id="pg-hlines" x="0" y="0" width="1" height="32" patternUnits="userSpaceOnUse">
-          <line x1="0" y1="0" x2="9999" y2="0" stroke={P} strokeWidth="1" />
+          <line x1="0" y1="0" x2="9999" y2="0" strokeWidth="1" />
         </pattern>
       </defs>
       <rect width="100%" height="100%" fill="url(#pg-hlines)" />
-    </svg>
+    </Box>
   </Box>
 );
 
 const SparsePlus = () => (
   <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
-    <svg width="100%" height="100%" style={{ position: 'absolute', inset: 0 }}>
+    <Box component="svg" width="100%" height="100%" style={{ position: 'absolute', inset: 0 }}
+      sx={{ '& line': { stroke: (theme) => theme.palette.mode === 'dark' ? 'rgba(45,212,191,0.08)' : 'rgba(13,148,136,0.12)' } }}>
       <defs>
         <pattern id="pg-plus" x="0" y="0" width="64" height="64" patternUnits="userSpaceOnUse">
-          <line x1="32" y1="22" x2="32" y2="42" stroke={P} strokeWidth="1.5" strokeLinecap="round" />
-          <line x1="22" y1="32" x2="42" y2="32" stroke={P} strokeWidth="1.5" strokeLinecap="round" />
+          <line x1="32" y1="22" x2="32" y2="42" strokeWidth="1.5" strokeLinecap="round" />
+          <line x1="22" y1="32" x2="42" y2="32" strokeWidth="1.5" strokeLinecap="round" />
         </pattern>
       </defs>
       <rect width="100%" height="100%" fill="url(#pg-plus)" />
-    </svg>
+    </Box>
   </Box>
 );
 
 const DiagonalLines = () => (
   <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
-    <svg width="100%" height="100%" style={{ position: 'absolute', inset: 0 }}>
+    <Box component="svg" width="100%" height="100%" style={{ position: 'absolute', inset: 0 }}
+      sx={{ '& line': { stroke: (theme) => theme.palette.mode === 'dark' ? 'rgba(45,212,191,0.08)' : 'rgba(13,148,136,0.12)' } }}>
       <defs>
         <pattern id="pg-diag" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-          <line x1="0" y1="0" x2="0" y2="20" stroke={P} strokeWidth="1" />
+          <line x1="0" y1="0" x2="0" y2="20" strokeWidth="1" />
         </pattern>
       </defs>
       <rect width="100%" height="100%" fill="url(#pg-diag)" />
-    </svg>
+    </Box>
   </Box>
 );
 
@@ -221,9 +223,16 @@ function FadeUp({ children, delay = 0, isVisible }) {
 }
 
 const SectionLabel = ({ icon, label, color }) => (
-  <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1, mb: 2.5, px: 1.5, py: 0.6, borderRadius: '999px', backgroundColor: `${color}12`, border: `1px solid ${color}28` }}>
-    <Box sx={{ color, display: 'flex', alignItems: 'center' }}>{icon}</Box>
-    <Typography variant="caption" sx={{ color, fontWeight: 700, fontSize: '0.72rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>{label}</Typography>
+  <Box sx={{
+    display: 'inline-flex', alignItems: 'center', gap: 1, mb: 2.5, px: 1.5, py: 0.6,
+    borderRadius: '999px',
+    backgroundColor: (theme) => theme.palette.mode === 'dark' ? `${color}1A` : color,
+    border: (theme) => theme.palette.mode === 'dark'
+      ? `1px solid ${color}40`
+      : '1.5px solid rgba(255,255,255,0.35)',
+  }}>
+    <Box sx={{ color: (theme) => theme.palette.mode === 'dark' ? color : '#FFFFFF', display: 'flex', alignItems: 'center' }}>{icon}</Box>
+    <Typography variant="caption" sx={{ color: (theme) => theme.palette.mode === 'dark' ? color : '#FFFFFF', fontWeight: 700, fontSize: '0.72rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>{label}</Typography>
   </Box>
 );
 
@@ -245,7 +254,7 @@ function OrgLogo({ domain, name }) {
     );
   }
   return (
-    <Box sx={{ width: 32, height: 32, borderRadius: 1.5, flexShrink: 0, backgroundColor: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+    <Box sx={{ width: 32, height: 32, borderRadius: 1.5, flexShrink: 0, backgroundColor: 'background.paper', border: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
       <Box component="img" src={faviconUrl(domain)} alt={`${name} logo`} onError={() => setFailed(true)} sx={{ width: 20, height: 20, objectFit: 'contain' }} />
     </Box>
   );
@@ -258,19 +267,30 @@ const scrollToId = (id) => {
 };
 
 const SectionArrows = ({ current, total, onUp, onDown }) => {
-  const btnSx = { width: 34, height: 34, border: '1px solid rgba(255,255,255,0.15)', backgroundColor: 'rgba(11,17,32,0.7)', backdropFilter: 'blur(8px)', color: '#2DD4BF', transition: 'all 0.2s', '&:hover': { backgroundColor: 'rgba(45,212,191,0.15)', borderColor: '#2DD4BF' } };
+  const btnSx = {
+    width: 36, height: 36,
+    border: 'none',
+    backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#0B1120' : '#0F766E',
+    color: (theme) => theme.palette.mode === 'dark' ? '#2DD4BF' : '#FFFFFF',
+    transition: 'all 0.2s',
+    '&:hover': {
+      backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#111C2E' : '#0D9488',
+      transform: 'scale(1.08)',
+    },
+  };
+  const dotActiveSx = { width: 8, height: 8, borderRadius: '50%', backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#2DD4BF' : '#0F766E', transition: 'all 0.2s', cursor: 'pointer' };
+  const dotInactiveSx = { width: 5, height: 5, borderRadius: '50%', backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.28)' : 'rgba(15,118,110,0.28)', transition: 'all 0.2s', cursor: 'pointer', '&:hover': { backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(45,212,191,0.6)' : 'rgba(15,118,110,0.55)' } };
   return (
     <Box sx={{ position: 'fixed', right: { xs: 10, md: 20 }, top: '50%', transform: 'translateY(-50%)', zIndex: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.75 }}>
-      {current > 0 ? <IconButton onClick={onUp} size="small" sx={btnSx}><ArrowUpIcon sx={{ fontSize: 18 }} /></IconButton> : <Box sx={{ width: 34, height: 34 }} />}
+      {current > 0 ? <IconButton onClick={onUp} size="small" sx={btnSx}><ArrowUpIcon sx={{ fontSize: 18 }} /></IconButton> : <Box sx={{ width: 36, height: 36 }} />}
       {Array.from({ length: total }).map((_, i) => (
-        <Box key={i} onClick={() => scrollToId(SECTION_IDS[i])} sx={{ width: i === current ? 8 : 5, height: i === current ? 8 : 5, borderRadius: '50%', backgroundColor: i === current ? '#2DD4BF' : 'rgba(255,255,255,0.22)', transition: 'all 0.2s', cursor: 'pointer', '&:hover': { backgroundColor: 'rgba(45,212,191,0.6)' } }} />
+        <Box key={i} onClick={() => scrollToId(SECTION_IDS[i])} sx={i === current ? dotActiveSx : dotInactiveSx} />
       ))}
-      {current < total - 1 ? <IconButton onClick={onDown} size="small" sx={btnSx}><ArrowDownIcon sx={{ fontSize: 18 }} /></IconButton> : <Box sx={{ width: 34, height: 34 }} />}
+      {current < total - 1 ? <IconButton onClick={onDown} size="small" sx={btnSx}><ArrowDownIcon sx={{ fontSize: 18 }} /></IconButton> : <Box sx={{ width: 36, height: 36 }} />}
     </Box>
   );
 };
 
-// ── TechCard — single hoverable card ──────────────────────────────────────
 function TechCard({ accent, stepNum, icon, title, summary, delay }) {
   const [hovered, setHovered] = useState(false);
   return (
@@ -287,9 +307,10 @@ function TechCard({ accent, stepNum, icon, title, summary, delay }) {
         sx={{
           p: 2.5,
           borderRadius: 3,
-          border: '2px solid',
-          borderColor: hovered ? accent : `${accent}35`,
-          backgroundColor: hovered ? `${accent}12` : `${accent}07`,
+          border: '2px solid rgba(0,0,0,0.18)',
+          backgroundColor: accent,
+          outline: '1.5px solid rgba(255,255,255,0.28)',
+          outlineOffset: '-4px',
           position: 'relative',
           overflow: 'hidden',
           display: 'flex',
@@ -297,33 +318,34 @@ function TechCard({ accent, stepNum, icon, title, summary, delay }) {
           gap: 1,
           transition: 'all 0.22s ease',
           transform: hovered ? 'translateY(-4px)' : 'translateY(0)',
-          boxShadow: hovered ? `0 10px 30px rgba(0,0,0,0.35), 0 0 0 1px ${accent}30` : 'none',
+          boxShadow: hovered ? `0 10px 30px rgba(0,0,0,0.25), 0 0 0 2px ${accent}` : 'none',
           cursor: 'default',
           '&::before': {
             content: '""',
             position: 'absolute', top: 0, left: 0, right: 0, height: '3px',
-            backgroundColor: accent,
-            opacity: hovered ? 1 : 0.5,
+            backgroundColor: 'rgba(255,255,255,0.4)',
+            opacity: hovered ? 1 : 0.7,
             transition: 'opacity 0.22s ease',
           },
         }}
       >
-        <Typography sx={{ fontSize: '0.6rem', fontWeight: 800, letterSpacing: '0.14em', color: accent, opacity: hovered ? 0.9 : 0.6, transition: 'opacity 0.22s ease' }}>
+        <Typography sx={{ fontSize: '0.6rem', fontWeight: 800, letterSpacing: '0.14em', color: 'rgba(255,255,255,0.85)' }}>
           STEP {stepNum}
         </Typography>
         <Box sx={{
           width: 44, height: 44, borderRadius: 2, mb: 0.5, flexShrink: 0,
-          backgroundColor: hovered ? `${accent}22` : `${accent}14`,
-          border: `1.5px solid ${accent}${hovered ? '55' : '28'}`,
+          backgroundColor: 'rgba(255,255,255,0.18)',
+          border: '1.5px solid rgba(255,255,255,0.35)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: accent, transition: 'all 0.22s ease',
+          color: '#FFFFFF',
+          transition: 'all 0.22s ease',
         }}>
           {icon}
         </Box>
-        <Typography sx={{ fontWeight: 800, fontSize: '0.88rem', color: 'text.primary', lineHeight: 1.3 }}>
+        <Typography sx={{ fontWeight: 800, fontSize: '0.88rem', lineHeight: 1.3, color: '#FFFFFF' }}>
           {title}
         </Typography>
-        <Typography sx={{ fontSize: '0.75rem', color: hovered ? 'text.primary' : 'text.secondary', lineHeight: 1.55, transition: 'color 0.22s ease' }}>
+        <Typography sx={{ fontSize: '0.75rem', lineHeight: 1.55, color: 'rgba(255,255,255,0.82)', transition: 'color 0.22s ease' }}>
           {summary}
         </Typography>
       </Paper>
@@ -331,101 +353,35 @@ function TechCard({ accent, stepNum, icon, title, summary, delay }) {
   );
 }
 
-// ── TechCards — full flowchart layout ────────────────────────────────────
 function TechCards() {
-  // Bold white arrow connector between column steps
   const HArrow = () => (
-    <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', flexShrink: 0, alignSelf: 'center', mb: 0 }}>
-      <Box sx={{ width: 28, height: 3, backgroundColor: 'rgba(255,255,255,0.6)' }} />
-      <Box sx={{ width: 0, height: 0, borderTop: '6px solid transparent', borderBottom: '6px solid transparent', borderLeft: '10px solid rgba(255,255,255,0.6)' }} />
+    <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', flexShrink: 0, alignSelf: 'center' }}>
+      <Box sx={{ width: 28, height: 3, backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.5)' : 'rgba(13,118,110,0.45)' }} />
+      <Box sx={{ width: 0, height: 0, borderTop: '6px solid transparent', borderBottom: '6px solid transparent', borderLeft: (theme) => `10px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.5)' : 'rgba(13,118,110,0.45)'}` }} />
     </Box>
   );
 
-  // Thin vertical connector between CNN and QML (parallel steps)
   const VConnector = () => (
     <Box sx={{ display: { xs: 'none', md: 'flex' }, justifyContent: 'center' }}>
-      <Box sx={{ width: 2, height: 16, backgroundColor: 'rgba(255,255,255,0.2)' }} />
+      <Box sx={{ width: 2, height: 16, backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.18)' : 'rgba(13,118,110,0.3)' }} />
     </Box>
   );
 
   return (
-    <Box sx={{
-      display: { xs: 'flex', md: 'flex' },
-      flexDirection: { xs: 'column', md: 'row' },
-      alignItems: { md: 'center' },
-      gap: 0,
-    }}>
-
-      {/* Step 01 — Choose a Mode (classification slate) */}
-      <TechCard
-        accent={TC.mode}
-        stepNum="01"
-        icon={<SchoolIcon sx={{ fontSize: 22 }} />}
-        title="Choose a Mode"
-        summary="Select your analysis type before uploading."
-        delay={0}
-      />
-
+    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: { md: 'center' }, gap: 0 }}>
+      <TechCard accent={TC.mode}    stepNum="01" icon={<SchoolIcon    sx={{ fontSize: 22 }} />} title="Choose a Mode"       summary="Select your analysis type before uploading."      delay={0} />
       <HArrow />
-
-      {/* Step 02 — Upload Mammogram (amber) */}
-      <TechCard
-        accent={TC.upload}
-        stepNum="02"
-        icon={<ImageIcon sx={{ fontSize: 22 }} />}
-        title="Upload Mammogram"
-        summary="Submit a single image or sequential scans."
-        delay={0.07}
-      />
-
+      <TechCard accent={TC.upload}  stepNum="02" icon={<ImageIcon     sx={{ fontSize: 22 }} />} title="Upload Mammogram"    summary="Submit a single image or sequential scans."       delay={0.07} />
       <HArrow />
-
-      {/* Steps 03 + 04 — CNN and QML stacked (run in parallel) */}
-      <motion.div
-        initial={{ opacity: 0, y: 18 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35, delay: 0.14, ease: 'easeOut' }}
-        style={{ flex: 1 }}
-      >
+      <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.14, ease: 'easeOut' }} style={{ flex: 1 }}>
         <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-
-          {/* CNN — sky blue */}
-          <TechCard
-            accent={TC.cnn}
-            stepNum="03"
-            icon={<ScienceIcon sx={{ fontSize: 22 }} />}
-            title="Classical CNN"
-            summary="[Placeholder]"
-            delay={0}
-          />
-
+          <TechCard accent={TC.cnn} stepNum="03" icon={<ScienceIcon   sx={{ fontSize: 22 }} />} title="Classical CNN"       summary="[Placeholder]"                                   delay={0} />
           <VConnector />
-
-          {/* QML — purple */}
-          <TechCard
-            accent={TC.qml}
-            stepNum="04"
-            icon={<ClassicalIcon sx={{ fontSize: 22 }} />}
-            title="Quantum ML"
-            summary="[Placeholder]"
-            delay={0}
-          />
-
+          <TechCard accent={TC.qml} stepNum="04" icon={<ClassicalIcon sx={{ fontSize: 22 }} />} title="Quantum ML"          summary="[Placeholder]"                                   delay={0} />
         </Box>
       </motion.div>
-
       <HArrow />
-
-      {/* Step 05 — Results (primary teal) */}
-      <TechCard
-        accent={TC.results}
-        stepNum="05"
-        icon={<ScienceIcon sx={{ fontSize: 22 }} />}
-        title="Side-by-Side Results"
-        summary="Compare CNN vs QML outputs directly."
-        delay={0.21}
-      />
-
+      <TechCard accent={TC.results} stepNum="05" icon={<ScienceIcon   sx={{ fontSize: 22 }} />} title="Side-by-Side Results" summary="Compare CNN vs QML outputs directly."            delay={0.21} />
     </Box>
   );
 }
@@ -464,8 +420,8 @@ export default function Home() {
       <SectionArrows current={currentSection} total={SECTION_IDS.length} onUp={goUp} onDown={goDown} />
 
       {/* ── 1. HERO ── */}
-      <Box id="hero" sx={{ height: sectionH, position: 'relative', overflow: 'hidden', background: (theme) => theme.palette.background.hero, display: 'flex', flexDirection: 'column', '&::before': { content: '""', position: 'absolute', top: '-30%', left: '50%', transform: 'translateX(-50%)', width: '800px', height: '800px', borderRadius: '50%', background: (theme) => `radial-gradient(circle, ${theme.palette.primary.main}12 0%, transparent 70%)`, pointerEvents: 'none', zIndex: 0 } }}>
-        <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0, backgroundImage: (theme) => `linear-gradient(${theme.palette.primary.main}06 1px, transparent 1px), linear-gradient(90deg, ${theme.palette.primary.main}06 1px, transparent 1px)`, backgroundSize: '60px 60px' }} />
+      <Box id="hero" sx={{ height: sectionH, position: 'relative', background: (theme) => theme.palette.background.hero, display: 'flex', flexDirection: 'column', '&::before': { content: '""', position: 'absolute', top: '-30%', left: '50%', transform: 'translateX(-50%)', width: '800px', height: '800px', borderRadius: '50%', background: (theme) => `radial-gradient(circle, ${theme.palette.primary.main}12 0%, transparent 70%)`, pointerEvents: 'none', zIndex: 0 } }}>
+        <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0, overflow: 'hidden', backgroundImage: (theme) => `linear-gradient(${theme.palette.primary.main}06 1px, transparent 1px), linear-gradient(90deg, ${theme.palette.primary.main}06 1px, transparent 1px)`, backgroundSize: '60px 60px' }} />
         <NeuralCanvas />
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', px: 2, py: 2, position: 'relative', zIndex: 1 }}>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: 'easeOut' }}>
@@ -473,7 +429,7 @@ export default function Home() {
           </motion.div>
           <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.65, ease: 'easeOut', delay: 0.1 }}>
             <Typography variant="h1" sx={{ mb: 1, fontSize: { xs: '2.2rem', md: '3.5rem' }, maxWidth: 800, mx: 'auto', color: 'text.primary' }}>Revealing the</Typography>
-            <Typography variant="h1" sx={{ mb: 3, fontSize: { xs: '2.2rem', md: '3.5rem' }, maxWidth: 800, mx: 'auto', fontStyle: 'italic', background: (theme) => `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.primary.light})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Invisible.</Typography>
+            <Typography variant="h1" sx={{ mb: 3, fontSize: { xs: '2.2rem', md: '3.5rem' }, maxWidth: 800, mx: 'auto', fontStyle: 'italic', background: (theme) => theme.palette.mode === 'dark' ? `linear-gradient(90deg, #2DD4BF, #5EEAD4)` : `linear-gradient(90deg, #0D9488, #14B8A6)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Invisible.</Typography>
           </motion.div>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: 'easeOut', delay: 0.25 }}>
             <Typography sx={{ color: 'text.secondary', maxWidth: 500, mx: 'auto', lineHeight: 1.8, mb: 4, fontSize: '1rem', fontStyle: 'italic' }}>
@@ -482,27 +438,45 @@ export default function Home() {
           </motion.div>
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: 'easeOut', delay: 0.4 }}>
             <Box sx={{ display: 'flex', gap: 1.5, justifyContent: 'center', flexWrap: 'wrap' }}>
-              <Button variant="contained" onClick={() => navigate('/Analysis')} sx={{ px: 3, py: 1.1, fontSize: '0.88rem' }}>Launch Analysis Dashboard →</Button>
-              <Button onClick={() => navigate('/Models')} sx={{ px: 3, py: 1.1, fontSize: '0.88rem', color: 'rgba(232,238,248,0.75)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '999px', '&:hover': { backgroundColor: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.3)', color: '#E8EEF8' } }}>Our Models</Button>
+              <Button variant="contained" onClick={() => navigate('/Analysis')} sx={{ px: 3, py: 1.1, fontSize: '0.88rem', color: '#FFFFFF !important' }}>Launch Analysis Dashboard →</Button>
+              <Button onClick={() => navigate('/Models')} variant="outlined" sx={{ px: 3, py: 1.1, fontSize: '0.88rem', borderRadius: '999px', borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(13,118,110,0.6)', color: (theme) => theme.palette.mode === 'dark' ? '#E8EEF8' : '#0F766E', '&:hover': { backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(13,148,136,0.08)', borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.55)' : '#0D9488', color: (theme) => theme.palette.mode === 'dark' ? '#FFFFFF' : '#0D9488' } }}>Our Models</Button>
             </Box>
           </motion.div>
         </Box>
 
         {/* Stats strip */}
-        <Box sx={{ flexShrink: 0, borderTop: '1px solid rgba(255,255,255,0.08)', backgroundColor: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(10px)', position: 'relative', zIndex: 1 }}>
+        <Box sx={(theme) => ({
+          flexShrink: 0,
+          borderTop: `2px solid ${theme.palette.background.heroStatsBorder}`,
+          backgroundColor: theme.palette.background.heroStatsBg,
+          position: 'relative',
+          zIndex: 1,
+        })}>
           <Container maxWidth="lg">
             <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: '1fr 1fr 1fr 1fr' } }}>
               {HERO_STATS.map((stat, i, arr) => (
-                <Box key={stat.value} sx={{ textAlign: 'center', py: { xs: 2.5, md: 3 }, px: { xs: 1.5, md: 2.5 }, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', borderRight: { xs: i % 2 === 0 ? '1px solid rgba(255,255,255,0.08)' : 'none', md: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.08)' : 'none' }, borderBottom: { xs: i < 2 ? '1px solid rgba(255,255,255,0.08)' : 'none', md: 'none' } }}>
-                  <Box sx={{ height: 36, display: 'flex', alignItems: 'center', mb: 1 }}>{stat.icon}</Box>
-                  <Typography sx={{ fontWeight: 700, fontSize: { xs: '1.25rem', md: '1.5rem' }, color: 'primary.main', lineHeight: 1.1, mb: 0.75 }}>
+                <Box key={stat.value} sx={(theme) => {
+                  const b = `2px solid ${theme.palette.background.heroStatsBorder}`;
+                  return {
+                    textAlign: 'center',
+                    py: { xs: 2.5, md: 3 },
+                    px: { xs: 1.5, md: 2.5 },
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start',
+                    borderRight:  { xs: i % 2 === 0        ? b : 'none', md: i < arr.length - 1 ? b : 'none' },
+                    borderBottom: { xs: i < 2              ? b : 'none', md: 'none' },
+                  };
+                }}>
+                  <Box sx={{ height: 36, display: 'flex', alignItems: 'center', mb: 1, color: (theme) => theme.palette.mode === 'dark' ? '#2DD4BF' : 'rgba(255,255,255,0.95)' }}>
+                    <stat.Icon sx={ICON_SX} />
+                  </Box>
+                  <Typography sx={{ fontWeight: 700, fontSize: { xs: '1.25rem', md: '1.5rem' }, color: (theme) => theme.palette.mode === 'dark' ? '#2DD4BF' : '#FFFFFF', lineHeight: 1.1, mb: 0.75 }}>
                     <AnimatedCounter end={stat.numericEnd} prefix={stat.prefix} suffix={stat.suffix} isDecimal={stat.value.includes('.')} isVisible={inHero} />
                   </Typography>
-                  <Typography variant="caption" sx={{ color: '#E8EEF8', fontSize: '0.67rem', lineHeight: 1.45, display: 'block', maxWidth: 160, fontStyle: 'italic' }}>{stat.label}</Typography>
+                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.82)', fontSize: '0.67rem', lineHeight: 1.45, display: 'block', maxWidth: 160, fontStyle: 'italic' }}>{stat.label}</Typography>
                 </Box>
               ))}
             </Box>
-            <Typography variant="caption" sx={{ display: 'block', textAlign: 'center', pt: 0.5, pb: 1.5, color: 'primary.dark', fontSize: '0.62rem', letterSpacing: '0.02em' }}>
+            <Typography variant="caption" sx={{ display: 'block', textAlign: 'center', pt: 0.5, pb: 1.5, color: 'rgba(255,255,255,0.45)', fontSize: '0.62rem', letterSpacing: '0.02em' }}>
               Data sourced from the AIHW BreastScreen Australia Monitoring Report (2025) and Cancer Australia.
             </Typography>
           </Container>
@@ -639,14 +613,14 @@ export default function Home() {
         </Box>
 
         {/* Disclaimer */}
-        <Box sx={{ flexShrink: 0, borderTop: '1px solid', borderColor: 'divider', py: 3, backgroundColor: 'background.default', position: 'relative', zIndex: 1 }}>
+        <Box sx={{ flexShrink: 0, borderTop: '1px solid', borderColor: 'divider', py: 3, backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'background.default' : '#1E3048', position: 'relative', zIndex: 1 }}>
           <Container maxWidth="md">
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap', justifyContent: { xs: 'center', md: 'flex-start' } }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
                 <ShieldIcon sx={{ fontSize: 20, color: A.red, opacity: 0.85 }} />
                 <Typography sx={{ color: A.red, fontWeight: 700, fontSize: '0.95rem', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Disclaimer</Typography>
               </Box>
-              <Typography sx={{ color: 'text.secondary', fontSize: '0.95rem', lineHeight: 1.6, fontWeight: 500 }}>
+              <Typography sx={{ color: (theme) => theme.palette.mode === 'dark' ? 'text.secondary' : 'rgba(255,255,255,0.7)', fontSize: '0.95rem', lineHeight: 1.6, fontWeight: 500 }}>
                 Research prototype only. Not validated for clinical use. Must not be used to inform medical decisions.
               </Typography>
             </Box>

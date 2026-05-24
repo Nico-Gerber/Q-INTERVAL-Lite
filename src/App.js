@@ -167,10 +167,11 @@ const darkTheme = createTheme({
       paper:   '#111C2E',
       // Hero tokens — used directly in home.jsx
       heroGradient: 'linear-gradient(160deg, #0B1120 0%, #0F1A2E 55%, #0B1120 100%)',
+      hero:         'linear-gradient(160deg, #0B1120 0%, #0F1A2E 55%, #0B1120 100%)',
       heroGlow:     'radial-gradient(circle, rgba(45,212,191,0.10) 0%, transparent 70%)',
       heroGrid:     'rgba(45,212,191,0.06)',
-      heroStatsBg:  'rgba(0,0,0,0.35)',
-      heroStatsBorder: 'rgba(255,255,255,0.08)',
+      heroStatsBg:  '#0A1628',
+      heroStatsBorder: 'rgba(255,255,255,0.22)',
     },
     text: {
       primary:   '#E8EEF8',
@@ -193,22 +194,22 @@ const lightTheme = createTheme({
     primary: { main: '#0D9488', light: '#2DD4BF', dark: '#0F766E', contrastText: '#FFFFFF' },
     success: { main: '#0D9488' },
     background: {
-      default: '#D8DEF0',
-      paper:   '#E4E9F5',
-      // Hero is now fully light in light mode
-      heroGradient: 'linear-gradient(160deg, #E8F4F2 0%, #F0FBF9 50%, #E4EEF8 100%)',
+      default: '#E2EBE9',
+      paper:   '#D0DDD9',
+      heroGradient: 'linear-gradient(160deg, #E2EBE9 0%, #EAF4F2 50%, #E2EBE9 100%)',
+      hero:         'linear-gradient(160deg, #E2EBE9 0%, #EAF4F2 50%, #E2EBE9 100%)',
       heroGlow:     'radial-gradient(circle, rgba(13,148,136,0.18) 0%, transparent 70%)',
       heroGrid:     'rgba(13,148,136,0.08)',
-      heroStatsBg:  'rgba(0,0,0,0.45)',
-      heroStatsBorder: 'rgba(0,0,0,0.18)',
+      // Stats strip — solid dark teal, fully opaque so the border reads clearly
+      heroStatsBg:     '#0F766E',
+      heroStatsBorder: 'rgba(255,255,255,0.22)',
     },
     text: {
       primary:   '#0F1923',
-      // Bumped from #2A3A50 — darker, clearly readable body text
       secondary: '#1E3048',
-      disabled:  '#7A8FA8',
+      disabled:  '#5A7A78',
     },
-    divider: 'rgba(15,25,35,0.12)',
+    divider: 'rgba(13,118,110,0.15)',
   },
   typography: sharedTypography,
   shape: sharedShape,

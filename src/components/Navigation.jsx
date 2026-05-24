@@ -136,7 +136,7 @@ const Navigation = () => {
                 component={Link}
                 to="/Analysis"
                 variant="contained"
-                sx={{ px: 2.5, py: 1, fontSize: '0.88rem', fontWeight: 700 }}
+                sx={{ px: 2.5, py: 1, fontSize: '0.88rem', fontWeight: 700, color: '#FFFFFF' }}
               >
                 Launch Analysis Dashboard →
               </Button>
@@ -211,7 +211,7 @@ const Navigation = () => {
           </IconButton>
         </Box>
         <Box sx={{ p: 2, mt: 1 }}>
-          <Button component={Link} to="/Analysis" variant="contained" fullWidth onClick={() => setDrawerOpen(false)} sx={{ py: 1.2, fontSize: '0.9rem', fontWeight: 700 }}>
+          <Button component={Link} to="/Analysis" variant="contained" fullWidth onClick={() => setDrawerOpen(false)} sx={{ py: 1.2, fontSize: '0.9rem', fontWeight: 700, color: '#FFFFFF' }}>
             Launch Analysis Dashboard →
           </Button>
         </Box>
