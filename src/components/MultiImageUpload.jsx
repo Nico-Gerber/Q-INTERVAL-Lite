@@ -28,18 +28,18 @@ const VIEW_CONFIG = [
     formKey: 'l_cc',
   },
   {
-    key: 'L-MLO',
-    label: 'L-MLO',
-    fullLabel: 'Left Mediolateral Oblique',
-    description: 'Left breast — angled view',
-    formKey: 'l_mlo',
-  },
-  {
     key: 'R-CC',
     label: 'R-CC',
     fullLabel: 'Right Craniocaudal',
     description: 'Right breast — top-down view',
     formKey: 'r_cc',
+  },
+  {
+    key: 'L-MLO',
+    label: 'L-MLO',
+    fullLabel: 'Left Mediolateral Oblique',
+    description: 'Left breast — angled view',
+    formKey: 'l_mlo',
   },
   {
     key: 'R-MLO',
