@@ -3,8 +3,8 @@ import { Routes, Route, useLocation } from 'react-router-dom';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import './App.css';
 
-import Navigation from './components/Navigation';
-import Footer from './components/Footer';
+import Navigation from './Components/Navigation/Navbar';
+import Footer from './Components/Navigation/Footer';
 import Home from './pages/home';
 import Models from './pages/models';
 import OurTeam from './pages/ourteam';

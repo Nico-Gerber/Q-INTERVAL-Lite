@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Typography, Chip, Container, Button } from '@mui/material';
-import AnimatedRiskGauge from './animatedRiskGauge';
+import AnimatedRiskGauge from './AnimatedRiskGauge';
 
 // ─── helpers ────────────────────────────────────────────────
 const getRiskColor = s => s >= 67 ? 'rgba(178,34,34,1)' : s >= 34 ? 'rgba(210,140,0,1)' : 'rgba(34,170,100,1)';

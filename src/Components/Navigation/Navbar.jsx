@@ -11,7 +11,7 @@ import {
   DarkMode as MoonIcon,
 } from '@mui/icons-material';
 import { Link, useLocation } from 'react-router-dom';
-import { ColorModeContext } from '../App';
+import { ColorModeContext } from '../../App';
 
 const NAV_ITEMS = [
   { label: 'Home',     path: '/' },

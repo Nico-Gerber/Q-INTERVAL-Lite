@@ -2,11 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { Box, Typography, Button, Container } from '@mui/material';
 import { animate } from 'framer-motion';
 
-import AnimatedRiskGauge from './animatedRiskGauge';
-import RiskChart from './riskChart';
-import ExamTimeline from './timeLine';
+import AnimatedRiskGauge from './AnimatedRiskGauge';
+import RiskChart from './RiskChart';
+import ExamTimeline from './Timeline';
 import ExamContribution from './ContributionPanel';
-import ComparisonRiskChart from './comparisonRiskChart';
+import ComparisonRiskChart from './ComparisonRiskChart';
 
 
 function findThresholdCrossing(data, threshold) {

@@ -4,17 +4,17 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Sidebar, Menu, MenuItem, SubMenu } from 'react-pro-sidebar';
 
 
-import AnalysisStepper from '../components/stepper';
-import ModeSelect from '../components/AnalysisModeSelect';
+import AnalysisStepper from '../Components/AnalysisTool/AnalysisStepper';
+import ModeSelect from '../Components/AnalysisTool/AnalysisModeSelect';
 
 
-import ModelSelect from '../components/ModelResultSelect';
-import ClassificationResults from '../components/classificationResults';
-import FutureRiskResults from '../components/futureRiskResults';
-import MammoRiskResults from '../components/mammoRiskResults';
-import NeuralCanvas from '../components/neuralCanvas';
-import MultiImageUploadDated from '../components/timeBasedMultiImage';
-import MultiViewUpload from '../components/MultiImageUpload';
+import ModelSelect from '../Components/Results/ModelResultSelect';
+import ClassificationResults from '../Components/Results/ClassificationResults';
+import FutureRiskResults from '../Components/Results/FutureRiskResults';
+import MammoRiskResults from '../Components/Results/MammoRiskResults';
+import NeuralCanvas from '../Components/Results/NeuralCanvas';
+import MultiImageUploadDated from '../Components/ImageUpload/timeBasedMultiImage';
+import MultiViewUpload from '../Components/ImageUpload/MultiImageUpload';
 
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Typography, Button, Container, Slider } from '@mui/material';
-import Tooltip from '../components/Tooltip';
-import ViewSelect from './viewSelector';
+import Tooltip from './Tooltip';
+import ViewSelect from './ViewSelector';
 
 function AnimatedBar({ value, color, delay = 0 }) {
     const [width, setWidth] = useState(0);
