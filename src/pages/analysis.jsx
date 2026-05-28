@@ -13,8 +13,8 @@ import ClassificationResults from '../Components/Results/ClassificationResults';
 import FutureRiskResults from '../Components/Results/FutureRiskResults';
 import MammoRiskResults from '../Components/Results/MammoRiskResults';
 import NeuralCanvas from '../Components/Results/NeuralCanvas';
-import MultiImageUploadDated from '../Components/ImageUpload/timeBasedMultiImage';
-import MultiViewUpload from '../Components/ImageUpload/MultiImageUpload';
+import MultiImageUploadDated from '../Components/ImageUpload/SessionAnalysisUpload';
+import MultiViewUpload from '../Components/ImageUpload/FutureRiskUpload';
 
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
