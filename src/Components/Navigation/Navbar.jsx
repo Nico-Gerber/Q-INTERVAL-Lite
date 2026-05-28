@@ -12,6 +12,7 @@ import {
 } from '@mui/icons-material';
 import { Link, useLocation } from 'react-router-dom';
 import { ColorModeContext } from '../../App';
+import logoDark from '../../assets/logo-dark.svg';
 
 const NAV_ITEMS = [
   { label: 'Home',     path: '/' },
@@ -19,21 +20,20 @@ const NAV_ITEMS = [
   { label: 'Our Team', path: '/OurTeam' },
 ];
 
-const ECGIcon = () => (
-  <Box sx={{ width: 34, height: 34, borderRadius: '9px', background: 'linear-gradient(135deg, #2DD4BF, #14B8A6)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 14px rgba(45,212,191,0.35)', flexShrink: 0 }}>
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-      <polyline points="2,12 6,12 8,5 10,19 13,9 15,14 17,12 22,12" stroke="#0B1120" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  </Box>
+const LogoMark = ({ size = 44 }) => (
+  <Box
+    component="img"
+    src={logoDark}
+    alt="Q-INTERVAL-LITE+ logo mark"
+    sx={{ width: size, height: size, flexShrink: 0, display: 'block', verticalAlign: 'middle' }}
+  />
 );
 
 const Navigation = () => {
-  const location   = useLocation();
-  const theme      = useTheme();
-  const isMobile   = useMediaQuery(theme.breakpoints.down('md'));
+  const location  = useLocation();
+  const theme     = useTheme();
+  const isMobile  = useMediaQuery(theme.breakpoints.down('md'));
   const [drawerOpen, setDrawerOpen] = useState(false);
-
-  // Consume the color mode context from App.js
   const { mode, toggleColorMode } = React.useContext(ColorModeContext);
   const isDark = mode === 'dark';
 
@@ -63,11 +63,10 @@ const Navigation = () => {
             onClick={() => handleNavClick('/')}
             sx={{ display: 'flex', alignItems: 'center', gap: 1.25, textDecoration: 'none' }}
           >
-            <ECGIcon />
-            <Box>
-              <Typography sx={{ color: '#E8EEF8', fontWeight: 800, fontSize: '1rem', lineHeight: 1.1 }}>Q-INTERVAL</Typography>
-              <Typography sx={{ color: '#2DD4BF', fontSize: '0.58rem', fontWeight: 700, letterSpacing: '0.12em' }}>LITE+ EDITION</Typography>
-            </Box>
+            <LogoMark />
+            <Typography sx={{ color: '#F0F9FF', fontWeight: 800, fontSize: '1.05rem', lineHeight: 1, letterSpacing: '0.02em', fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
+              Q-INTERVAL-<span style={{ color: '#22D3EE' }}>LITE+</span>
+            </Typography>
           </Box>
 
           {/* Centre nav pill */}
@@ -83,16 +82,16 @@ const Navigation = () => {
                     onClick={() => handleNavClick(item.path)}
                     size="small"
                     sx={{
-                      color: active ? '#2DD4BF' : 'rgba(255,255,255,0.75)',
+                      color: active ? '#22D3EE' : 'rgba(255,255,255,0.75)',
                       fontWeight: active ? 700 : 600,
                       fontSize: '0.9rem',
                       px: 2, py: 0.8,
                       borderRadius: '999px',
                       minWidth: 0,
                       letterSpacing: '0.01em',
-                      backgroundColor: active ? 'rgba(45,212,191,0.12)' : 'transparent',
+                      backgroundColor: active ? 'rgba(34,211,238,0.12)' : 'transparent',
                       transition: 'all 0.18s',
-                      '&:hover': { color: '#E8EEF8', backgroundColor: 'rgba(255,255,255,0.08)' },
+                      '&:hover': { color: '#F0F9FF', backgroundColor: 'rgba(255,255,255,0.08)' },
                     }}
                   >
                     {item.label}
@@ -102,11 +101,9 @@ const Navigation = () => {
             </Box>
           )}
 
-          {/* Right side — CTA + theme toggle, or hamburger on mobile */}
+          {/* Right side */}
           {!isMobile ? (
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1 }}>
-
-              {/* Theme toggle — plain white, no colour tinting */}
               <Tooltip title={isDark ? 'Switch to light mode' : 'Switch to dark mode'} arrow>
                 <IconButton
                   onClick={toggleColorMode}
@@ -118,20 +115,12 @@ const Navigation = () => {
                     color: 'rgba(255,255,255,0.75)',
                     backgroundColor: 'rgba(255,255,255,0.06)',
                     transition: 'all 0.2s',
-                    '&:hover': {
-                      backgroundColor: 'rgba(255,255,255,0.12)',
-                      borderColor: 'rgba(255,255,255,0.4)',
-                      color: '#FFFFFF',
-                    },
+                    '&:hover': { backgroundColor: 'rgba(255,255,255,0.12)', borderColor: 'rgba(255,255,255,0.4)', color: '#FFFFFF' },
                   }}
                 >
-                  {isDark
-                    ? <SunIcon sx={{ fontSize: 17 }} />
-                    : <MoonIcon sx={{ fontSize: 17 }} />
-                  }
+                  {isDark ? <SunIcon sx={{ fontSize: 17 }} /> : <MoonIcon sx={{ fontSize: 17 }} />}
                 </IconButton>
               </Tooltip>
-
               <Button
                 component={Link}
                 to="/Analysis"
@@ -143,15 +132,7 @@ const Navigation = () => {
             </Box>
           ) : (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, justifySelf: 'end' }}>
-              {/* Theme toggle on mobile too */}
-              <IconButton
-                onClick={toggleColorMode}
-                size="small"
-                sx={{
-                  color: 'rgba(255,255,255,0.75)',
-                  '&:hover': { backgroundColor: 'rgba(255,255,255,0.08)', color: '#FFFFFF' },
-                }}
-              >
+              <IconButton onClick={toggleColorMode} size="small" sx={{ color: 'rgba(255,255,255,0.75)', '&:hover': { backgroundColor: 'rgba(255,255,255,0.08)', color: '#FFFFFF' } }}>
                 {isDark ? <SunIcon sx={{ fontSize: 18 }} /> : <MoonIcon sx={{ fontSize: 18 }} />}
               </IconButton>
               <IconButton onClick={() => setDrawerOpen(true)} sx={{ color: 'rgba(255,255,255,0.8)' }}>
@@ -167,12 +148,14 @@ const Navigation = () => {
         anchor="right"
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        PaperProps={{ sx: { width: 270, backgroundColor: '#111C2E', borderLeft: '1px solid rgba(255,255,255,0.07)' } }}
+        PaperProps={{ sx: { width: 270, backgroundColor: '#071020', borderLeft: '1px solid rgba(255,255,255,0.07)' } }}
       >
         <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <ECGIcon />
-            <Typography sx={{ color: '#E8EEF8', fontWeight: 700, fontSize: '0.95rem' }}>Q-INTERVAL</Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+            <LogoMark size={30} />
+            <Typography sx={{ color: '#F0F9FF', fontWeight: 800, fontSize: '0.95rem', letterSpacing: '0.02em', fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
+              Q-INTERVAL-<span style={{ color: '#22D3EE' }}>LITE+</span>
+            </Typography>
           </Box>
           <IconButton onClick={() => setDrawerOpen(false)} sx={{ color: 'rgba(255,255,255,0.5)' }}>
             <CloseIcon fontSize="small" />
@@ -188,7 +171,7 @@ const Navigation = () => {
                   component={Link}
                   to={item.path}
                   onClick={() => { handleNavClick(item.path); setDrawerOpen(false); }}
-                  sx={{ mx: 1, borderRadius: '8px', mb: 0.5, color: active ? '#2DD4BF' : 'rgba(255,255,255,0.75)', backgroundColor: active ? 'rgba(45,212,191,0.08)' : 'transparent', '&:hover': { backgroundColor: 'rgba(255,255,255,0.05)', color: '#E8EEF8' } }}
+                  sx={{ mx: 1, borderRadius: '8px', mb: 0.5, color: active ? '#22D3EE' : 'rgba(255,255,255,0.75)', backgroundColor: active ? 'rgba(34,211,238,0.08)' : 'transparent', '&:hover': { backgroundColor: 'rgba(255,255,255,0.05)', color: '#F0F9FF' } }}
                 >
                   <ListItemText primary={item.label} primaryTypographyProps={{ fontWeight: active ? 700 : 600, fontSize: '0.95rem' }} />
                 </ListItemButton>
@@ -197,16 +180,11 @@ const Navigation = () => {
           })}
         </List>
         <Divider sx={{ borderColor: 'rgba(255,255,255,0.07)', mx: 2 }} />
-        {/* Theme toggle row in drawer */}
         <Box sx={{ px: 2, pt: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.78rem' }}>
             {isDark ? 'Dark mode' : 'Light mode'}
           </Typography>
-          <IconButton
-            onClick={toggleColorMode}
-            size="small"
-            sx={{ color: 'rgba(255,255,255,0.75)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '999px', p: 0.75, '&:hover': { color: '#FFFFFF', backgroundColor: 'rgba(255,255,255,0.08)' } }}
-          >
+          <IconButton onClick={toggleColorMode} size="small" sx={{ color: 'rgba(255,255,255,0.75)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '999px', p: 0.75, '&:hover': { color: '#FFFFFF', backgroundColor: 'rgba(255,255,255,0.08)' } }}>
             {isDark ? <SunIcon sx={{ fontSize: 16 }} /> : <MoonIcon sx={{ fontSize: 16 }} />}
           </IconButton>
         </Box>

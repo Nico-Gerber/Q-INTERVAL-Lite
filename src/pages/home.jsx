@@ -26,20 +26,20 @@ import {
 import { motion, animate, AnimatePresence } from 'framer-motion';
 
 const A = {
-  teal:   '#2DD4BF',
-  violet: '#7C3AED',
-  amber:  '#FBBF24',
-  red:    '#F87171',
-  pink:   '#E8537A',
-  blue:   '#3B82F6',
+  teal:   '#22D3EE',
+  violet: '#A78BFA',
+  amber:  '#FCD34D',
+  red:    '#FB923C',
+  pink:   '#F472B6',
+  blue:   '#67E8F9',
 };
 
 const TC = {
   mode:    '#94A3B8',
-  upload:  '#2DD4BF',
-  cnn:     '#38BDF8',
-  qml:     '#9333EA',
-  results: '#F59E0B',
+  upload:  '#22D3EE',
+  cnn:     '#67E8F9',
+  qml:     '#A78BFA',
+  results: '#FCD34D',
 };
 
 const NAV_H = 70;
@@ -276,16 +276,16 @@ const SectionArrows = ({ current, total, onUp, onDown }) => {
   const btnSx = {
     width: 36, height: 36,
     border: 'none',
-    backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#0B1120' : '#0F766E',
-    color: (theme) => theme.palette.mode === 'dark' ? '#2DD4BF' : '#FFFFFF',
+    backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#071020' : '#0E7490',
+    color: (theme) => theme.palette.mode === 'dark' ? '#22D3EE' : '#FFFFFF',
     transition: 'all 0.2s',
     '&:hover': {
-      backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#111C2E' : '#0D9488',
+      backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#0D1B2E' : '#0891B2',
       transform: 'scale(1.08)',
     },
   };
-  const dotActiveSx = { width: 8, height: 8, borderRadius: '50%', backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#2DD4BF' : '#0F766E', transition: 'all 0.2s', cursor: 'pointer' };
-  const dotInactiveSx = { width: 5, height: 5, borderRadius: '50%', backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.28)' : 'rgba(15,118,110,0.28)', transition: 'all 0.2s', cursor: 'pointer', '&:hover': { backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(45,212,191,0.6)' : 'rgba(15,118,110,0.55)' } };
+  const dotActiveSx = { width: 8, height: 8, borderRadius: '50%', backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#22D3EE' : '#0E7490', transition: 'all 0.2s', cursor: 'pointer' };
+  const dotInactiveSx = { width: 5, height: 5, borderRadius: '50%', backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.28)' : 'rgba(14,116,144,0.28)', transition: 'all 0.2s', cursor: 'pointer', '&:hover': { backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(34,211,238,0.6)' : 'rgba(14,116,144,0.55)' } };
   return (
     <Box sx={{ position: 'fixed', right: { xs: 10, md: 20 }, top: '50%', transform: 'translateY(-50%)', zIndex: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.75 }}>
       {current > 0 ? <IconButton onClick={onUp} size="small" sx={btnSx}><ArrowUpIcon sx={{ fontSize: 18 }} /></IconButton> : <Box sx={{ width: 36, height: 36 }} />}
@@ -436,7 +436,7 @@ export default function Home() {
           </motion.div>
           <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.65, ease: 'easeOut', delay: 0.1 }}>
             <Typography variant="h1" sx={{ mb: 1, fontSize: { xs: '2.2rem', md: '3.5rem' }, maxWidth: 800, mx: 'auto', color: 'text.primary' }}>Revealing the</Typography>
-            <Typography variant="h1" sx={{ mb: 3, fontSize: { xs: '2.2rem', md: '3.5rem' }, maxWidth: 800, mx: 'auto', fontStyle: 'italic', background: (theme) => theme.palette.mode === 'dark' ? `linear-gradient(90deg, #2DD4BF, #5EEAD4)` : `linear-gradient(90deg, #0D9488, #14B8A6)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Invisible.</Typography>
+            <Typography variant="h1" sx={{ mb: 3, fontSize: { xs: '2.2rem', md: '3.5rem' }, maxWidth: 800, mx: 'auto', fontStyle: 'italic', background: (theme) => theme.palette.mode === 'dark' ? 'linear-gradient(90deg, #67E8F9, #22D3EE)' : 'linear-gradient(90deg, #0891B2, #0E7490)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Invisible.</Typography>
           </motion.div>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: 'easeOut', delay: 0.25 }}>
             <Typography sx={{ color: 'text.secondary', maxWidth: 500, mx: 'auto', lineHeight: 1.8, mb: 4, fontSize: '1rem', fontStyle: 'italic' }}>
@@ -473,10 +473,10 @@ export default function Home() {
                     borderBottom: { xs: i < 2              ? b : 'none', md: 'none' },
                   };
                 }}>
-                  <Box sx={{ height: 36, display: 'flex', alignItems: 'center', mb: 1, color: (theme) => theme.palette.mode === 'dark' ? '#2DD4BF' : 'rgba(255,255,255,0.95)' }}>
+                  <Box sx={{ height: 36, display: 'flex', alignItems: 'center', mb: 1, color: (theme) => theme.palette.mode === 'dark' ? '#22D3EE' : 'rgba(255,255,255,0.95)' }}>
                     <stat.Icon sx={ICON_SX} />
                   </Box>
-                  <Typography sx={{ fontWeight: 700, fontSize: { xs: '1.25rem', md: '1.5rem' }, color: (theme) => theme.palette.mode === 'dark' ? '#2DD4BF' : '#FFFFFF', lineHeight: 1.1, mb: 0.75 }}>
+                  <Typography sx={{ fontWeight: 700, fontSize: { xs: '1.25rem', md: '1.5rem' }, color: (theme) => theme.palette.mode === 'dark' ? '#22D3EE' : '#FFFFFF', lineHeight: 1.1, mb: 0.75 }}>
                     <AnimatedCounter end={stat.numericEnd} prefix={stat.prefix} suffix={stat.suffix} isDecimal={stat.value.includes('.')} isVisible={inHero} />
                   </Typography>
                   <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.82)', fontSize: '0.67rem', lineHeight: 1.45, display: 'block', maxWidth: 160, fontStyle: 'italic' }}>{stat.label}</Typography>
@@ -581,7 +581,7 @@ export default function Home() {
                 {/* ── Primary tier label ── */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
                   <Typography sx={{ fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: A.teal, whiteSpace: 'nowrap' }}>Primary Users</Typography>
-                  <Box sx={{ flex: 1, height: '1px', backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(45,212,191,0.15)' : 'rgba(13,148,136,0.25)' }} />
+                  <Box sx={{ flex: 1, height: '1px', backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(34,211,238,0.18)' : 'rgba(8,145,178,0.3)' }} />
                 </Box>
 
                 {[
@@ -625,15 +625,15 @@ export default function Home() {
 
                 {/* ── Secondary tier label ── */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 1.5, mb: 2 }}>
-                  <Typography sx={{ fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#9333EA', whiteSpace: 'nowrap' }}>Secondary Users</Typography>
-                  <Box sx={{ flex: 1, height: '1px', backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(147,51,234,0.18)' : 'rgba(147,51,234,0.3)' }} />
+                  <Typography sx={{ fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: A.violet, whiteSpace: 'nowrap' }}>Secondary Users</Typography>
+                  <Box sx={{ flex: 1, height: '1px', backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(167,139,250,0.18)' : 'rgba(167,139,250,0.35)' }} />
                 </Box>
 
                 <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1.25 }}>
                   {[
-                    { Icon: CastForEducationIcon,  role: 'Medical Students',       accent: '#9333EA' },
-                    { Icon: RadioOutlinedIcon,      role: 'Radiology Trainees',     accent: '#A855F7' },
-                    { Icon: PsychologyOutlinedIcon, role: 'Medical AI Researchers', accent: '#7C3AED' },
+                    { Icon: CastForEducationIcon,  role: 'Medical Students',       accent: A.violet },
+                    { Icon: RadioOutlinedIcon,      role: 'Radiology Trainees',     accent: '#C4B5FD' },
+                    { Icon: PsychologyOutlinedIcon, role: 'Medical AI Researchers', accent: '#818CF8' },
                   ].map((item, i) => (
                     <motion.div key={item.role}
                       initial={{ opacity: 0, y: 10 }}
@@ -741,7 +741,7 @@ export default function Home() {
         </Box>
 
         {/* Disclaimer */}
-        <Box sx={{ flexShrink: 0, borderTop: '1px solid', borderColor: 'divider', py: 3, backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'background.default' : '#1E3048', position: 'relative', zIndex: 1 }}>
+        <Box sx={{ flexShrink: 0, borderTop: '1px solid', borderColor: 'divider', py: 3, backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#071020' : '#0C3040', position: 'relative', zIndex: 1 }}>
           <Container maxWidth="md">
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap', justifyContent: { xs: 'center', md: 'flex-start' } }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>

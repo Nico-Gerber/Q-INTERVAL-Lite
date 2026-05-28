@@ -51,16 +51,16 @@ const sharedComponents = (isDark) => ({
   MuiCssBaseline: {
     styleOverrides: {
       body: {
-        backgroundColor: isDark ? '#0B1120' : '#D8DEF0',
-        color: isDark ? '#E8EEF8' : '#0F1923',
+        backgroundColor: isDark ? '#0D1B2E' : '#E8F6FA',
+        color: isDark ? '#F0F9FF' : '#0C1E2A',
         fontFamily: '"Plus Jakarta Sans", sans-serif',
         overflowX: 'hidden',
       },
       '*': { fontFamily: '"Plus Jakarta Sans", sans-serif' },
       '*::-webkit-scrollbar': { width: '6px' },
       '*::-webkit-scrollbar-track': { background: 'transparent' },
-      '*::-webkit-scrollbar-thumb': { background: isDark ? 'rgba(45,212,191,0.2)' : 'rgba(13,148,136,0.35)', borderRadius: '3px' },
-      '*::-webkit-scrollbar-thumb:hover': { background: isDark ? 'rgba(45,212,191,0.35)' : 'rgba(13,148,136,0.55)' },
+      '*::-webkit-scrollbar-thumb': { background: isDark ? 'rgba(34,211,238,0.2)' : 'rgba(14,116,144,0.3)', borderRadius: '3px' },
+      '*::-webkit-scrollbar-thumb:hover': { background: isDark ? 'rgba(34,211,238,0.35)' : 'rgba(14,116,144,0.5)' },
     },
   },
   MuiButton: {
@@ -68,25 +68,25 @@ const sharedComponents = (isDark) => ({
       root: { textTransform: 'none', fontWeight: 600, borderRadius: '999px', fontFamily: '"Plus Jakarta Sans", sans-serif' },
       containedPrimary: {
         background: isDark
-          ? 'linear-gradient(135deg, #2DD4BF, #14B8A6)'
-          : 'linear-gradient(135deg, #0D9488, #0F766E)',
-        color: isDark ? '#0B1120' : '#FFFFFF',
-        boxShadow: isDark ? '0 0 20px rgba(45,212,191,0.22)' : '0 0 20px rgba(13,148,136,0.3)',
+          ? 'linear-gradient(135deg, #22D3EE, #0891B2)'
+          : 'linear-gradient(135deg, #0891B2, #0E7490)',
+        color: '#FFFFFF',
+        boxShadow: isDark ? '0 0 20px rgba(34,211,238,0.22)' : '0 0 20px rgba(8,145,178,0.28)',
         '&:hover': {
           background: isDark
-            ? 'linear-gradient(135deg, #5EEAD4, #2DD4BF)'
-            : 'linear-gradient(135deg, #14B8A6, #0D9488)',
-          boxShadow: isDark ? '0 0 28px rgba(45,212,191,0.32)' : '0 0 28px rgba(13,148,136,0.45)',
+            ? 'linear-gradient(135deg, #67E8F9, #22D3EE)'
+            : 'linear-gradient(135deg, #22D3EE, #0891B2)',
+          boxShadow: isDark ? '0 0 28px rgba(34,211,238,0.32)' : '0 0 28px rgba(8,145,178,0.4)',
         },
       },
       outlined: {
-        borderColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(15,25,35,0.2)',
-        color: isDark ? '#E8EEF8' : '#0F1923',
-        '&:hover': { borderColor: isDark ? '#2DD4BF' : '#0D9488', backgroundColor: isDark ? 'rgba(45,212,191,0.06)' : 'rgba(13,148,136,0.06)' },
+        borderColor: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(8,145,178,0.35)',
+        color: isDark ? '#F0F9FF' : '#0C1E2A',
+        '&:hover': { borderColor: isDark ? '#22D3EE' : '#0891B2', backgroundColor: isDark ? 'rgba(34,211,238,0.06)' : 'rgba(8,145,178,0.06)' },
       },
       text: {
-        color: isDark ? '#8A96B0' : '#2A3A50',
-        '&:hover': { color: isDark ? '#2DD4BF' : '#0D9488', backgroundColor: isDark ? 'rgba(45,212,191,0.06)' : 'rgba(13,148,136,0.06)' },
+        color: isDark ? '#8BAFC4' : '#2C5A6E',
+        '&:hover': { color: isDark ? '#22D3EE' : '#0891B2', backgroundColor: isDark ? 'rgba(34,211,238,0.06)' : 'rgba(8,145,178,0.06)' },
       },
     },
   },
@@ -94,9 +94,9 @@ const sharedComponents = (isDark) => ({
     styleOverrides: {
       root: {
         backgroundImage: 'none',
-        backgroundColor: isDark ? '#111C2E' : '#E4E9F5',
-        border: `1px solid ${isDark ? 'rgba(255,255,255,0.07)' : 'rgba(15,25,35,0.1)'}`,
-        boxShadow: isDark ? 'none' : '0 1px 4px rgba(15,25,35,0.08)',
+        backgroundColor: isDark ? '#112038' : '#DAF0F7',
+        border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(8,145,178,0.12)'}`,
+        boxShadow: isDark ? 'none' : '0 1px 4px rgba(8,145,178,0.06)',
       },
     },
   },
@@ -104,18 +104,18 @@ const sharedComponents = (isDark) => ({
     styleOverrides: {
       root: {
         backgroundImage: 'none',
-        backgroundColor: 'rgba(11,17,32,0.95)', // always dark nav
+        backgroundColor: 'rgba(5,14,24,0.96)',
         backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
         borderBottom: '1px solid rgba(255,255,255,0.07)', boxShadow: 'none',
       },
     },
   },
   MuiChip: { styleOverrides: { root: { borderRadius: '999px', fontFamily: '"Plus Jakarta Sans", sans-serif' } } },
-  MuiDivider: { styleOverrides: { root: { borderColor: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(15,25,35,0.12)' } } },
+  MuiDivider: { styleOverrides: { root: { borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(8,145,178,0.14)' } } },
   MuiAlert: {
     styleOverrides: {
       root: { borderRadius: 10 },
-      standardSuccess: { backgroundColor: isDark ? 'rgba(45,212,191,0.08)' : 'rgba(13,148,136,0.1)', color: isDark ? '#2DD4BF' : '#0D9488' },
+      standardSuccess: { backgroundColor: isDark ? 'rgba(34,211,238,0.08)' : 'rgba(8,145,178,0.1)', color: isDark ? '#22D3EE' : '#0891B2' },
       standardError:   { backgroundColor: isDark ? 'rgba(239,68,68,0.1)'   : 'rgba(239,68,68,0.08)',  color: isDark ? '#EF4444' : '#DC2626' },
       standardWarning: { backgroundColor: isDark ? 'rgba(251,191,36,0.08)' : 'rgba(251,191,36,0.1)',  color: isDark ? '#FBBF24' : '#D97706' },
     },
@@ -124,12 +124,12 @@ const sharedComponents = (isDark) => ({
     styleOverrides: {
       root: {
         backgroundImage: 'none',
-        backgroundColor: isDark ? '#111C2E' : '#E4E9F5',
-        border: `1px solid ${isDark ? 'rgba(255,255,255,0.07)' : 'rgba(15,25,35,0.1)'}`,
+        backgroundColor: isDark ? '#112038' : '#DAF0F7',
+        border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(8,145,178,0.12)'}`,
         transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
         '&:hover': {
-          borderColor: isDark ? 'rgba(45,212,191,0.25)' : 'rgba(13,148,136,0.4)',
-          boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.35)' : '0 6px 24px rgba(15,25,35,0.12)',
+          borderColor: isDark ? 'rgba(34,211,238,0.3)' : 'rgba(8,145,178,0.4)',
+          boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.35)' : '0 6px 24px rgba(8,145,178,0.1)',
         },
       },
     },
@@ -138,78 +138,75 @@ const sharedComponents = (isDark) => ({
     styleOverrides: {
       root: {
         borderRadius: '10px',
-        backgroundColor: isDark ? '#111C2E' : '#E4E9F5',
-        '& .MuiOutlinedInput-notchedOutline': { borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(15,25,35,0.15)' },
-        '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(15,25,35,0.3)' },
-        '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: isDark ? '#2DD4BF' : '#0D9488', boxShadow: `0 0 0 3px ${isDark ? 'rgba(45,212,191,0.12)' : 'rgba(13,148,136,0.12)'}` },
+        backgroundColor: isDark ? '#112038' : '#DAF0F7',
+        '& .MuiOutlinedInput-notchedOutline': { borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(8,145,178,0.18)' },
+        '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(8,145,178,0.35)' },
+        '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: isDark ? '#22D3EE' : '#0891B2', boxShadow: `0 0 0 3px ${isDark ? 'rgba(34,211,238,0.12)' : 'rgba(8,145,178,0.12)'}` },
       },
     },
   },
   MuiStepper: {
     styleOverrides: {
       root: {
-        '& .MuiStepIcon-root.Mui-active':    { color: isDark ? '#2DD4BF' : '#0D9488' },
-        '& .MuiStepIcon-root.Mui-completed': { color: isDark ? '#2DD4BF' : '#0D9488' },
+        '& .MuiStepIcon-root.Mui-active':    { color: isDark ? '#22D3EE' : '#0891B2' },
+        '& .MuiStepIcon-root.Mui-completed': { color: isDark ? '#22D3EE' : '#0891B2' },
       },
     },
   },
 });
 
-// ── Dark theme ─────────────────────────────────────────────────────────────
+// ── Dark theme — Deep Ocean ────────────────────────────────────────────────
 const darkTheme = createTheme({
   palette: {
     mode: 'dark',
     ...sharedPalette,
-    primary: { main: '#2DD4BF', light: '#5EEAD4', dark: '#14B8A6', contrastText: '#0B1120' },
-    success: { main: '#2DD4BF' },
+    primary: { main: '#22D3EE', light: '#67E8F9', dark: '#0891B2', contrastText: '#050E18' },
+    success: { main: '#22D3EE' },
     background: {
-      default: '#0B1120',
-      paper:   '#111C2E',
-      // Hero tokens — used directly in home.jsx
-      heroGradient: 'linear-gradient(160deg, #0B1120 0%, #0F1A2E 55%, #0B1120 100%)',
-      hero:         'linear-gradient(160deg, #0B1120 0%, #0F1A2E 55%, #0B1120 100%)',
-      heroGlow:     'radial-gradient(circle, rgba(45,212,191,0.10) 0%, transparent 70%)',
-      heroGrid:     'rgba(45,212,191,0.06)',
-      heroStatsBg:  '#0A1628',
+      default: '#0D1B2E',
+      paper:   '#112038',
+      heroGradient: 'linear-gradient(160deg, #0D1B2E 0%, #112038 55%, #0D1B2E 100%)',
+      hero:         'linear-gradient(160deg, #0D1B2E 0%, #112038 55%, #0D1B2E 100%)',
+      heroGlow:     'radial-gradient(circle, rgba(34,211,238,0.10) 0%, transparent 70%)',
+      heroGrid:     'rgba(34,211,238,0.05)',
+      heroStatsBg:  '#071020',
       heroStatsBorder: 'rgba(255,255,255,0.22)',
     },
     text: {
-      primary:   '#E8EEF8',
-      // Bumped from #8A96B0 — was too faint, now clearly legible
-      secondary: '#A0AABE',
-      disabled:  '#4A5568',
+      primary:   '#F0F9FF',
+      secondary: '#8BAFC4',
+      disabled:  '#4A6A80',
     },
-    divider: 'rgba(255,255,255,0.07)',
+    divider: 'rgba(255,255,255,0.08)',
   },
   typography: sharedTypography,
   shape: sharedShape,
   components: sharedComponents(true),
 });
 
-// ── Light theme ────────────────────────────────────────────────────────────
+// ── Light theme — Deep Ocean ───────────────────────────────────────────────
 const lightTheme = createTheme({
   palette: {
     mode: 'light',
     ...sharedPalette,
-    primary: { main: '#0D9488', light: '#2DD4BF', dark: '#0F766E', contrastText: '#FFFFFF' },
-    success: { main: '#0D9488' },
+    primary: { main: '#0891B2', light: '#22D3EE', dark: '#0E7490', contrastText: '#FFFFFF' },
+    success: { main: '#0891B2' },
     background: {
-      default: '#E2EBE9',
-      paper:   '#D0DDD9',
-      heroGradient: 'linear-gradient(160deg, #E2EBE9 0%, #EAF4F2 50%, #E2EBE9 100%)',
-      hero:         'linear-gradient(160deg, #E2EBE9 0%, #EAF4F2 50%, #E2EBE9 100%)',
-      heroGlow:     'radial-gradient(circle, rgba(13,148,136,0.18) 0%, transparent 70%)',
-      heroGrid:     'rgba(13,148,136,0.08)',
-      // Stats strip — solid dark teal, fully opaque so the border reads clearly
-      heroStatsBg:     '#0F766E',
+      default: '#E8F6FA',
+      paper:   '#DAF0F7',
+      heroGradient: 'linear-gradient(160deg, #E8F6FA 0%, #F0FBFF 50%, #E8F6FA 100%)',
+      hero:         'linear-gradient(160deg, #E8F6FA 0%, #F0FBFF 50%, #E8F6FA 100%)',
+      heroGlow:     'radial-gradient(circle, rgba(8,145,178,0.14) 0%, transparent 70%)',
+      heroGrid:     'rgba(8,145,178,0.07)',
+      heroStatsBg:  '#0E7490',
       heroStatsBorder: 'rgba(255,255,255,0.22)',
     },
     text: {
-      primary:   '#0F1923',
-      secondary: '#1E3048',
-      disabled:  '#5A7A78',
+      primary:   '#0C1E2A',
+      secondary: '#2C5A6E',
+      disabled:  '#5A8A9E',
     },
-    divider: 'rgba(13,118,110,0.15)',
+    divider: 'rgba(8,145,178,0.14)',
   },
   typography: sharedTypography,
   shape: sharedShape,
