@@ -4,10 +4,12 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Optional
 
+
+
 router = APIRouter(prefix="/explain", tags=["explain"])
 
-OLLAMA_URL = "http://localhost:11434/api/generate"
-MODEL = "llama3.2"
+MODEL_URL = "http://localhost:11434/api/generate"
+MODEL = "llama3.2:latest"
 
 # ── Request shape ──────────────────────────────────────────────────────────────
 class ExplainRequest(BaseModel):
@@ -92,11 +94,12 @@ async def explain(data: ExplainRequest):
     prompt = build_prompt(data)
 
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(OLLAMA_URL, json={
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            response = await client.post(MODEL_URL, json={
                 "model": MODEL,
                 "prompt": prompt,
                 "stream": False,
+                "think": False, 
             })
         result = response.json()
         explanation = result.get("response", "").strip()
@@ -104,7 +107,7 @@ async def explain(data: ExplainRequest):
     except Exception as e:
         return JSONResponse(
             status_code=503,
-            content={"error": f"Ollama unavailable: {str(e)}"}
+            content={"error": f"Model unavailable: {str(e)}", "type": type(e).__name__}
         )
 
     return JSONResponse(content={
