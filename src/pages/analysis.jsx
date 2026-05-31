@@ -67,6 +67,7 @@ export default function Analysis() {
 
   const [LLMloading, setLLMLoading] = useState(false);
 
+  const [sessions, setSessions] = useState([]);
 
 
   const [loadingText, setLoadingText] = useState(LOADING_MESSAGES[0].text);
@@ -373,8 +374,8 @@ export default function Analysis() {
                 ) : analysisMode === 'future-risk' ? (
                   <Container maxWidth="md" sx={{ mt: 1 }}>
                     <MultiImageUploadDated
-                      file={files} setFiles={setFiles}
-                      preview={preview} setPreview={setPreview}
+                      sessions={sessions}
+                      setSessions={setSessions}
                       setActiveStep={setActiveStep}
                       handleAnalyse={handleAnalyse}
                     />
@@ -518,21 +519,21 @@ export default function Analysis() {
 
                 <Box>
                   <Typography sx={{
-                      fontSize: '0.72rem',
-                      letterSpacing: '0.12em',
-                      textTransform: 'uppercase',
-                      color: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.45)' : 'rgba(8,145,178,0.7)',
-                      fontWeight: 700,
-                    }}>
+                    fontSize: '0.72rem',
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                    color: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.45)' : 'rgba(8,145,178,0.7)',
+                    fontWeight: 700,
+                  }}>
                     AI Explanation
                   </Typography>
 
                   <Typography sx={{
-                      color: (theme) => theme.palette.mode === 'dark' ? '#FFFFFF' : theme.palette.text.primary,
-                      fontWeight: 700,
-                      fontSize: '1.1rem',
-                      mt: 0.5,
-                    }}>
+                    color: (theme) => theme.palette.mode === 'dark' ? '#FFFFFF' : theme.palette.text.primary,
+                    fontWeight: 700,
+                    fontSize: '1.1rem',
+                    mt: 0.5,
+                  }}>
                     Clinical Summary
                   </Typography>
                 </Box>
@@ -562,12 +563,12 @@ export default function Analysis() {
                     >
                       <AutoAwesomeIcon sx={{ color: 'primary.main', fontSize: 18 }} />
                       <Typography sx={{
-                          color: 'primary.main',
-                          fontSize: '0.75rem',
-                          fontWeight: 700,
-                          letterSpacing: '0.08em',
-                          textTransform: 'uppercase',
-                        }}>
+                        color: 'primary.main',
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        letterSpacing: '0.08em',
+                        textTransform: 'uppercase',
+                      }}>
                         Generated Interpretation
                       </Typography>
                     </Box>
@@ -609,10 +610,10 @@ export default function Analysis() {
                       }}
                     >
                       <Typography sx={{
-                          color: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.78)' : theme.palette.text.secondary,
-                          fontSize: '0.92rem',
-                          lineHeight: 1.85,
-                        }}>
+                        color: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.78)' : theme.palette.text.secondary,
+                        fontSize: '0.92rem',
+                        lineHeight: 1.85,
+                      }}>
                         {summary ? summary.explanation : 'Generate a structured explanation of the mammogram analysis results using AI analysis.'}
                       </Typography>
                     </Box>)}

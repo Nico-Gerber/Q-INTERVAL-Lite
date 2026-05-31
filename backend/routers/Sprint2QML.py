@@ -1,4 +1,6 @@
 import io
+import base64
+import cv2
 import numpy as np
 import joblib
 import pennylane as qml
@@ -16,7 +18,13 @@ PCA_PATH = BASE_DIR / "dataset/pcaObj.joblib"
 SCALER_PATH = BASE_DIR / "dataset/scalerObj.joblib"
 MODEL_PATH = BASE_DIR / "dataset/vqc_4500_pca8_multiclass_v1.joblib"
 
-RESIZE_TO = (16, 16)
+RESIZE_TO = (16, 16)        # model input resolution
+DISPLAY_SIZE = 224          # output heatmap resolution sent to the frontend
+
+# Occlusion defaults (on the 16x16 model input)
+OCC_PATCH = 4               # size of the occluding square
+OCC_STRIDE = 2              # step between positions
+OCC_FILL = 0.0             # value written into the occluded patch (0.0 = black)
 
 # =========================
 # LOAD MODELS (once at startup)
@@ -31,6 +39,13 @@ n_qubits = model_data["n_qubits"]
 n_layers = model_data["n_layers"]
 n_classes = model_data["n_classes"]
 label_names = {int(k): v for k, v in model_data["label_names"].items()}
+
+# Index of the malignant class (used if you'd rather attribute to malignant
+# than to the predicted class — see run_inference).
+MALIGNANT_IDX = next(
+    (i for i, name in label_names.items() if name.lower() == "malignant"),
+    None,
+)
 
 print(f"Loaded model | n_qubits: {n_qubits} | n_layers: {n_layers} | n_classes: {n_classes}")
 print(f"Best epoch: {model_data['best_epoch']} | Best test acc: {model_data['best_test_acc']:.4f}")
@@ -88,36 +103,113 @@ def predict_label(probs):
 # =========================
 # IMAGE PREPROCESSING
 # =========================
-def preprocess_image(image_bytes: bytes) -> np.ndarray:
-    img = Image.open(io.BytesIO(image_bytes)).convert("L")
-
+def image_to_arr16(pil_gray: Image.Image) -> np.ndarray:
+    """Full-res grayscale PIL image -> normalized 16x16 float array."""
     try:
-        img = img.resize(RESIZE_TO, Image.Resampling.LANCZOS)
+        img = pil_gray.resize(RESIZE_TO, Image.Resampling.LANCZOS)
     except AttributeError:
-        img = img.resize(RESIZE_TO)
+        img = pil_gray.resize(RESIZE_TO)
+    return np.array(img, dtype=np.float32) / 255.0   # shape (16, 16)
 
-    arr = np.array(img, dtype=np.float32) / 255.0
-    arr = arr.flatten().reshape(1, -1)
+def arr16_to_features(arr16: np.ndarray) -> np.ndarray:
+    """16x16 float array -> PCA + scaled feature vector for the circuit.
 
-    arr_pca = pca.transform(arr)
+    This is the reusable tail of the pipeline. The occlusion loop calls it
+    hundreds of times on perturbed copies of the same 16x16 image, so keeping
+    it separate from the (expensive, one-off) image decode matters.
+    """
+    flat = arr16.flatten().reshape(1, -1)
+    arr_pca = pca.transform(flat)
     arr_scaled = scaler.transform(arr_pca)
-
     return arr_scaled[0]
 
+def preprocess_image(image_bytes: bytes) -> np.ndarray:
+    """Bytes -> feature vector (kept for backwards compatibility)."""
+    pil = Image.open(io.BytesIO(image_bytes)).convert("L")
+    return arr16_to_features(image_to_arr16(pil))
 
+# =========================
+# OCCLUSION SENSITIVITY
+# =========================
+def occlusion_map(arr16: np.ndarray, target_idx: int,
+                  patch: int = OCC_PATCH, stride: int = OCC_STRIDE,
+                  fill: float = OCC_FILL) -> np.ndarray:
+    """
+    Slide an occluding patch across the 16x16 input. For each position, blank
+    the patch, re-run the full PCA -> scaler -> VQC pipeline, and record how
+    much the target class probability drops. A larger drop => that region
+    mattered more to the model's decision.
 
+    Returns a 16x16 importance map (positive = supported the target class).
+    """
+    H, W = arr16.shape
+    heat = np.zeros((H, W), dtype=np.float32)
+    counts = np.zeros((H, W), dtype=np.float32)
 
-def run_inference(image_bytes: bytes):
-    contents = image_bytes
+    # baseline probability for the class we're attributing
+    s0 = predict_probs(arr16_to_features(arr16))[target_idx]
 
-    features = preprocess_image(contents)
+    for y in range(0, H - patch + 1, stride):
+        for x in range(0, W - patch + 1, stride):
+            occ = arr16.copy()
+            occ[y:y + patch, x:x + patch] = fill
+            s = predict_probs(arr16_to_features(occ))[target_idx]
+            heat[y:y + patch, x:x + patch] += (s0 - s)   # drop = importance
+            counts[y:y + patch, x:x + patch] += 1.0
 
+    # average overlapping contributions
+    heat /= np.maximum(counts, 1.0)
+    return heat
+
+# =========================
+# RENDERING (mirrors the CNN grad-cam output format)
+# =========================
+def _to_b64(arr: np.ndarray) -> str:
+    buf = io.BytesIO()
+    Image.fromarray(arr).save(buf, format="PNG")
+    return base64.b64encode(buf.getvalue()).decode("utf-8")
+
+def render_occlusion(pil_gray: Image.Image, heat16: np.ndarray,
+                     size: int = DISPLAY_SIZE, alpha: float = 0.5):
+    """Turn a coarse 16x16 importance map into grad-cam-style images."""
+    # Base image at display resolution, as RGB
+    base_gray = np.array(pil_gray.resize((size, size), Image.Resampling.LANCZOS))
+    base_rgb = cv2.cvtColor(base_gray, cv2.COLOR_GRAY2RGB)
+
+    # Keep only regions that supported the class, normalize to [0, 1]
+    heat = np.clip(heat16, 0, None)
+    if heat.max() > 0:
+        heat = heat / heat.max()
+
+    # Upsample + blur so the coarse grid takes on the smooth grad-cam look
+    heat_big = cv2.resize(heat, (size, size), interpolation=cv2.INTER_CUBIC)
+    heat_big = cv2.GaussianBlur(heat_big, (0, 0), sigmaX=size / 32.0)
+    heat_big = np.clip(heat_big, 0, 1)
+
+    # Colormap — same JET as the CNN path so the two views match
+    heat_uint8 = np.uint8(255 * heat_big)
+    heat_color = cv2.cvtColor(cv2.applyColorMap(heat_uint8, cv2.COLORMAP_JET),
+                              cv2.COLOR_BGR2RGB)
+
+    # Real blended overlay (the CNN currently ships the bare heatmap here)
+    overlay = cv2.addWeighted(base_rgb, 1 - alpha, heat_color, alpha, 0)
+
+    return base_rgb, heat_color, overlay
+
+# =========================
+# INFERENCE
+# =========================
+def run_inference(image_bytes: bytes, with_occlusion: bool = True,
+                  attribute_to_malignant: bool = False):
+    pil = Image.open(io.BytesIO(image_bytes)).convert("L")
+    arr16 = image_to_arr16(pil)
+    features = arr16_to_features(arr16)
 
     probs = predict_probs(features)
     pred_id = predict_label(probs)
     pred_name = label_names[pred_id]
 
-    return{
+    result = {
         "prediction": pred_id,
         "result": pred_name.capitalize(),
         "score": round(float(probs[pred_id]), 4),
@@ -127,46 +219,45 @@ def run_inference(image_bytes: bytes):
         },
         "model_info": {
             "best_epoch": model_data["best_epoch"],
-            "best_test_acc": round(float(model_data["best_test_acc"]), 4)
-        }
+            "best_test_acc": round(float(model_data["best_test_acc"]), 4),
+        },
     }
-    
-    
+
+    if with_occlusion:
+        # Mirror the CNN, which attributes to the predicted class. Flip
+        # attribute_to_malignant=True to always explain the malignant score.
+        target_idx = (MALIGNANT_IDX if attribute_to_malignant and MALIGNANT_IDX is not None
+                      else pred_id)
+        heat16 = occlusion_map(arr16, target_idx)
+        base_rgb, heat_rgb, overlay_rgb = render_occlusion(pil, heat16)
+        result["gradcam"] = {
+            "heatmap_base64": _to_b64(heat_rgb),
+            "base_image_base64": _to_b64(base_rgb),
+            "overlay_base64": _to_b64(overlay_rgb),
+            "width": DISPLAY_SIZE,
+            "height": DISPLAY_SIZE,
+            "target_class": label_names[target_idx].capitalize(),
+        }
+
+    return result
 
 # =========================
-# ROUTE
+# ROUTES
 # =========================
 router = APIRouter(prefix="/QMLPredictV2", tags=["predict_v2"])
 
 @router.post("/")
-async def predict(file: UploadFile = File(...)):
+async def predict(file: UploadFile = File(...), occlusion: bool = True):
     if file.content_type not in {"image/jpeg", "image/png", "image/webp"}:
         raise HTTPException(status_code=415, detail="Unsupported file type")
 
     contents = await file.read()
-
     try:
-        features = preprocess_image(contents)
+        result = run_inference(contents, with_occlusion=occlusion)
     except Exception as e:
         raise HTTPException(status_code=422, detail=f"Image processing failed: {str(e)}")
 
-    probs = predict_probs(features)
-    pred_id = predict_label(probs)
-    pred_name = label_names[pred_id]
-
-    return JSONResponse(content={
-        "prediction": pred_id,
-        "result": pred_name.capitalize(),
-        "score": round(float(probs[pred_id]), 4),
-        "class_probabilities": {
-            label_names[i].capitalize(): round(float(probs[i]), 4)
-            for i in range(n_classes)
-        },
-        "model_info": {
-            "best_epoch": model_data["best_epoch"],
-            "best_test_acc": round(float(model_data["best_test_acc"]), 4)
-        }
-    })
+    return JSONResponse(content=result)
 
 
 @router.post("/predict-four-views-QML")
@@ -175,6 +266,7 @@ async def predict_four_views(
     l_mlo: UploadFile = File(...),
     r_cc:  UploadFile = File(...),
     r_mlo: UploadFile = File(...),
+    occlusion: bool = True,
 ):
     uploads = {
         "L-CC":  l_cc,
@@ -189,12 +281,12 @@ async def predict_four_views(
                 status_code=400,
                 detail=f"{view_name} must be an image file."
             )
-        
+
     results = {}
     for view_name, upload in uploads.items():
         image_bytes = await upload.read()
         try:
-            results[view_name] = run_inference(image_bytes)
+            results[view_name] = run_inference(image_bytes, with_occlusion=occlusion)
         except ValueError as e:
             raise HTTPException(status_code=422, detail=f"{view_name}: {str(e)}")
 

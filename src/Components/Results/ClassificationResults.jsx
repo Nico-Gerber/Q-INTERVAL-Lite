@@ -187,10 +187,10 @@ export default function ClassificationResults({ analyisedImage, reset, currentMo
                                 alt="Analysed mammogram"
                                 sx={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
                             />
-                            {currentModel === 'Classical' && cnnResult?.views?.[currentView].gradcam?.heatmap_base64 && (
+                            {(
                                 <Box
                                     component="img"
-                                    src={`data:image/png;base64,${cnnResult?.views?.[currentView].gradcam?.heatmap_base64}`}
+                                    src={`data:image/png;base64,${activeResult?.views?.[currentView].gradcam?.heatmap_base64}`}
                                     alt="Grad-CAM heatmap"
                                     sx={{
                                         position: 'absolute', top: 0, left: 0,
@@ -216,7 +216,7 @@ export default function ClassificationResults({ analyisedImage, reset, currentMo
                     </Box>
 
                     {/* Grad-CAM slider */}
-                    {currentModel === 'Classical' && cnnResult?.views?.[currentView]?.gradcam?.heatmap_base64 && (
+                    {(
                         <Box sx={{ ...cardBorder, p: 2, background: 'rgba(255,255,255,0.02)' }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
