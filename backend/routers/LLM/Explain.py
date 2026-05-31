@@ -4,12 +4,17 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Optional
 
-
+VIEW_NAMES = {
+    "L-CC":  "Left Craniocaudal (L-CC)",
+    "R-CC":  "Right Craniocaudal (R-CC)",
+    "L-MLO": "Left Mediolateral Oblique (L-MLO)",
+    "R-MLO": "Right Mediolateral Oblique (R-MLO)",
+}
 
 router = APIRouter(prefix="/explain", tags=["explain"])
 
 MODEL_URL = "http://localhost:11434/api/generate"
-MODEL = "llama3.2:latest"
+MODEL = "qwen3.5:4b"
 
 # ── Request shape ──────────────────────────────────────────────────────────────
 class ExplainRequest(BaseModel):
@@ -30,20 +35,32 @@ class ExplainRequest(BaseModel):
 
 # ── Prompt builder ─────────────────────────────────────────────────────────────
 def build_prompt(data: ExplainRequest) -> str:
-    view_summary = "\n".join([
-        f"  - {view}: {info.get('result', 'N/A')} ({round(info.get('score', 0) * 100, 1)}% confidence)"
-        for view, info in data.views.items()
-    ])
 
-    composite_section = ""
+    # ── Per-view summary — this is now the centrepiece ──
+    def view_line(view, info):
+        probs = info.get("class_probabilities", {}) or {}
+        breakdown = " / ".join(
+            f"{cls} {round(probs.get(cls, 0) * 100, 1)}%"
+            for cls in ("Malignant", "Benign", "Normal") if cls in probs
+        )
+        label = VIEW_NAMES.get(view, view)
+        line = f"  - {label}: {info.get('result', 'N/A')} ({round(info.get('score', 0) * 100, 1)}% confidence)"       
+        return line + (f"  [{breakdown}]" if breakdown else "")
+
+    view_summary = "\n".join(view_line(v, info) for v, info in data.views.items())
+
+    qml_view_summary = "(not provided)"
+    if data.qml_views:
+        qml_view_summary = "\n".join(view_line(v, info) for v, info in data.qml_views.items())
+
+    # ── Composite risk = background context ONLY, single line, omitted when malignant ──
+    composite_context = ""
     if not data.malignant_detected and data.composite_risk_score is not None:
-        composite_section = f"""
-Composite Risk Index: {data.composite_risk_score} / 100
-Risk Level: {data.composite_risk_level}
-Highest Breast Density: {data.highest_density}
-Highest BI-RADS Category: {data.highest_birads}
-
-"""
+        composite_context = (
+            f"\nBackground context only (do NOT build the explanation around this): "
+            f"composite future-risk score {data.composite_risk_score}/100 "
+            f"({data.composite_risk_level})."
+        )
 
     audience_instruction = (
         "You are explaining results to a General Practitioner. "
@@ -59,34 +76,42 @@ Highest BI-RADS Category: {data.highest_birads}
 
 STRICT RULES:
 - Do NOT diagnose the patient
-- Do NOT recommend specific treatments  
+- Do NOT recommend specific treatments
 - Do NOT go beyond what the results show
 - Keep your response to 3-4 sentences maximum
-- Base your primary explanation on the Classical CNN results
-- Reference Quantum results only as a secondary comparison note
-- If models disagree, note this but defer to the Classical result
-- End with a reminder to consult a qualified clinician
+- Centre your explanation on the INDIVIDUAL per-view classifications. Describe what the relevant views show and call out any left-vs-right (L / R) asymmetry or disagreement between views.
+- Determine malignancy from the CLASSIFICATION results (the per-view results and the overall classification) — NOT from the composite risk score.
+- Treat the composite future-risk score, if present, as minor background context only. Mention it in at most a brief clause, never as the main point.
+- Base your primary explanation on the Classical CNN results. Reference the Quantum model only as a secondary comparison note; if they disagree, defer to the Classical result.
+- End with a reminder to consult a qualified clinician.
 
 MODEL CONTEXT:
 - Classical CNN (ResNet50): Primary model, 70% test accuracy, clinically calibrated
-- Quantum ML (VQC/QRF): Experimental model, ~47-51% accuracy, research prototype only
+- Quantum ML (VQC): Experimental model, ~47-51% accuracy, research prototype only
 
-CLASSICAL CNN RESULTS (Primary):
-Overall Classification: {data.overall_classification}
-Patient Malignant Score: {round(data.patient_malignant_score * 100, 1)}%
-Malignant Detected: {data.malignant_detected}
+- Use the view names exactly as given. Do NOT expand, reinterpret, or invent meanings for any abbreviation or term.
 
-Per-View Classifications:
+- Describe what the model CLASSIFIED each view as. Do NOT assert that lesions, masses, or abnormalities are actually present — the model outputs classifications, not findings.
+
+
+- Asymmetry between left and right is expected and is not a contradiction. Only flag disagreement when two views of the SAME breast diverge, or when confidence is low (e.g. a "Malignant" label below ~50%).
+
+CLASSICAL CNN — PER-VIEW CLASSIFICATIONS (primary focus):
 {view_summary}
-{composite_section}
 
-QUANTUM ML RESULTS (Experimental — treat as secondary reference only):
-Overall Classification: {data.qml_overall_classification}
-Patient Malignant Score: {round(data.qml_patient_malignant_score * 100, 1)}%
+Overall (aggregated from the per-view results above):
+  Classification: {data.overall_classification}
+  Patient malignant score: {round(data.patient_malignant_score * 100, 1)}%
+  Malignant detected: {data.malignant_detected}
+{composite_context}
 
-Models {'agree' if data.overall_classification == data.qml_overall_classification else 'disagree'}.
+QUANTUM ML — PER-VIEW (secondary reference only):
+{qml_view_summary}
+  Overall: {data.qml_overall_classification} ({round((data.qml_patient_malignant_score or 0) * 100, 1)}% malignant)
 
-Explain these findings for a {data.audience}. Lead with classical results."""
+Models {'agree' if data.overall_classification == data.qml_overall_classification else 'disagree'} at the patient level.
+
+Write the explanation for a {data.audience}, leading with the per-view classical findings."""
 
 # ── Endpoint ───────────────────────────────────────────────────────────────────
 @router.post("/")
