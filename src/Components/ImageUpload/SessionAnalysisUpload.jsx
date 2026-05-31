@@ -330,7 +330,7 @@ export default function MultiViewUpload({ views, setViews, setActiveStep, handle
                 color: 'text.disabled', letterSpacing: '0.07em',
                 fontSize: '0.65rem', textTransform: 'uppercase',
               }}>
-                Sequential Scan Mode · All 4 views required
+                Session Scan Mode · All 4 views required
               </Typography>
             </Box>
           </Box>

@@ -170,13 +170,19 @@ export default function MultiImageUploadDated({ file: fileProp, setFiles, previe
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
 
       {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-          <CalendarIcon sx={{ fontSize: 14, color: 'primary.main' }} />
-          <Typography sx={{ color: 'text.secondary', fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.04em' }}>
-            Sequential Future Risk · Scan dates required
-          </Typography>
-        </Box>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{
+                    px: 1.25, py: 0.3, borderRadius: '999px',
+                    border: '1px solid', borderColor: 'divider',
+                    display: 'inline-flex', alignItems: 'center',
+                  }}>
+                    <Typography variant="caption" sx={{
+                      color: 'text.disabled', letterSpacing: '0.07em',
+                      fontSize: '0.65rem', textTransform: 'uppercase',
+                    }}>
+                      Future Risk Mode · Date each scan for temporal analysis
+                    </Typography>
+                  </Box>
         {file.length > 0 && (
           <Typography sx={{ fontWeight: 700, fontSize: '0.72rem', transition: 'color 0.25s', color: allDated ? 'primary.main' : 'text.secondary' }}>
             {file.length} scan{file.length !== 1 ? 's' : ''} · {datedCount}/{file.length} dated
