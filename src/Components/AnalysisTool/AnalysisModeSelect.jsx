@@ -83,18 +83,26 @@ export default function ModeSelect({ selectedMode, onModeSelect, setActiveStep }
                   border: '2px solid',
                   borderColor: isSelected
                     ? (theme) => theme.palette[pk].main
-                    : 'rgba(255,255,255,0.12)',
+                    : (theme) => theme.palette.mode === 'dark'
+                      ? 'rgba(255,255,255,0.14)'
+                      : 'rgba(8,145,178,0.30)',
                   backgroundColor: isSelected
-                    ? (theme) => `${theme.palette[pk].main}12`
-                    : 'background.paper',
+                    ? (theme) => theme.palette.mode === 'dark'
+                      ? `${theme.palette[pk].main}18`
+                      : `${theme.palette[pk].main}16`
+                    : (theme) => theme.palette.mode === 'dark'
+                      ? 'background.paper'
+                      : `${theme.palette[pk].main}07`,
                   transition: 'all 0.22s ease',
                   display: 'flex', flexDirection: 'column', width: '100%',
                   '&:hover': {
                     borderColor: (theme) => theme.palette[pk].main,
-                    backgroundColor: (theme) => `${theme.palette[pk].main}0C`,
+                    backgroundColor: (theme) => theme.palette.mode === 'dark'
+                      ? `${theme.palette[pk].main}10`
+                      : `${theme.palette[pk].main}12`,
                     transform: 'translateY(-3px)',
                     boxShadow: (theme) =>
-                      `0 8px 28px rgba(0,0,0,0.35), 0 0 0 1px ${theme.palette[pk].main}25`,
+                      `0 8px 28px ${theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.35)' : 'rgba(8,145,178,0.15)'}, 0 0 0 1px ${theme.palette[pk].main}30`,
                   },
                 }}
               >
@@ -103,11 +111,11 @@ export default function ModeSelect({ selectedMode, onModeSelect, setActiveStep }
                   width: 48, height: 48, borderRadius: 2, flexShrink: 0,
                   backgroundColor: isSelected
                     ? (theme) => `${theme.palette[pk].main}22`
-                    : 'rgba(255,255,255,0.07)',
+                    : (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(8,145,178,0.08)',
                   border: '1.5px solid',
                   borderColor: isSelected
                     ? (theme) => `${theme.palette[pk].main}55`
-                    : 'rgba(255,255,255,0.08)',
+                    : (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.10)' : 'rgba(8,145,178,0.25)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   color: isSelected ? (theme) => theme.palette[pk].main : 'text.secondary',
                   mb: 1.5, transition: 'all 0.22s ease',
@@ -138,13 +146,17 @@ export default function ModeSelect({ selectedMode, onModeSelect, setActiveStep }
                       <Box sx={{
                         width: 4, height: 4, borderRadius: '50%', flexShrink: 0,
                         backgroundColor: isSelected
-                          ? (theme) => theme.palette[pk].main
+                          ? (theme) => theme.palette.mode === 'dark'
+                            ? theme.palette[pk].main
+                            : theme.palette[pk].dark
                           : 'text.disabled',
                         transition: 'background-color 0.22s ease',
                       }} />
                       <Typography variant="caption" sx={{
                         color: isSelected
-                          ? (theme) => theme.palette[pk].light
+                          ? (theme) => theme.palette.mode === 'dark'
+                            ? theme.palette[pk].light
+                            : theme.palette[pk].dark
                           : 'text.primary',
                         fontSize: '0.75rem', transition: 'color 0.22s ease',
                       }}>
@@ -159,14 +171,16 @@ export default function ModeSelect({ selectedMode, onModeSelect, setActiveStep }
                   mt: 1.5, pt: 1.25, flexShrink: 0,
                   borderTop: '1px solid',
                   borderColor: isSelected
-                    ? (theme) => `${theme.palette[pk].main}30`
+                    ? (theme) => theme.palette.mode === 'dark'
+                      ? `${theme.palette[pk].main}30`
+                      : `${theme.palette[pk].dark}30`
                     : 'divider',
                   display: 'flex', alignItems: 'center', gap: 0.75,
                   visibility: isSelected ? 'visible' : 'hidden',
                 }}>
-                  <Box sx={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: (theme) => theme.palette[pk].main }} />
+                  <Box sx={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: (theme) => theme.palette.mode === 'dark' ? theme.palette[pk].main : theme.palette[pk].dark }} />
                   <Typography variant="caption" sx={{
-                    color: (theme) => theme.palette[pk].main,
+                    color: (theme) => theme.palette.mode === 'dark' ? theme.palette[pk].main : theme.palette[pk].dark,
                     fontWeight: 600, fontSize: '0.72rem',
                   }}>
                     Selected

@@ -92,7 +92,9 @@ const ViewSlot = ({ viewKey, label, fullLabel, description, item, onDrop, onRemo
         {/* Status dot */}
         <Box sx={{
           width: 8, height: 8, borderRadius: '50%',
-          backgroundColor: isFilled ? 'primary.main' : 'rgba(255,255,255,0.15)',
+          backgroundColor: isFilled
+            ? 'primary.main'
+            : (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(8,145,178,0.25)',
           transition: 'background-color 0.3s ease',
           flexShrink: 0,
         }} />
@@ -125,19 +127,19 @@ const ViewSlot = ({ viewKey, label, fullLabel, description, item, onDrop, onRemo
               {...getRootProps()}
               elevation={0}
               sx={{
-                height: 160,
+                height: 120,
                 border: '2px dashed',
                 borderColor: isDragActive
                   ? 'primary.main'
                   : slotError
                     ? 'error.main'
-                    : 'rgba(255,255,255,0.10)',
+                    : (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.10)' : 'rgba(8,145,178,0.22)',
                 borderRadius: 2,
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: 0.75,
+                gap: 0.5,
                 cursor: 'pointer',
                 backgroundColor: isDragActive
                   ? (theme) => `${theme.palette.primary.main}0A`
@@ -153,11 +155,11 @@ const ViewSlot = ({ viewKey, label, fullLabel, description, item, onDrop, onRemo
             >
               <input {...getInputProps()} />
               <Box sx={{
-                width: 40, height: 40, borderRadius: 1.5,
-                backgroundColor: 'rgba(255,255,255,0.05)',
+                width: 32, height: 32, borderRadius: 1.5,
+                backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(8,145,178,0.07)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
-                <GalleryIcon sx={{ fontSize: 20, color: 'text.disabled' }} />
+                <GalleryIcon sx={{ fontSize: 16, color: 'text.disabled' }} />
               </Box>
               <Typography variant="caption" sx={{
                 color: isDragActive ? 'primary.main' : 'text.secondary',
@@ -209,7 +211,7 @@ const ViewSlot = ({ viewKey, label, fullLabel, description, item, onDrop, onRemo
             <Paper
               elevation={0}
               sx={{
-                height: 160,
+                height: 120,
                 border: '2px solid',
                 borderColor: (theme) => `${theme.palette.primary.main}40`,
                 borderRadius: 2,
@@ -316,7 +318,7 @@ export default function MultiViewUpload({ views, setViews, setActiveStep, handle
       >
         <Box sx={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          mb: 2,
+          mb: 1.25,
         }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Box sx={{
@@ -346,7 +348,7 @@ export default function MultiViewUpload({ views, setViews, setActiveStep, handle
       <Box sx={{
         display: 'grid',
         gridTemplateColumns: '1fr 1fr',
-        gap: 2,
+        gap: 1.5,
       }}>
         {VIEW_CONFIG.map(({ key, label, fullLabel, description }, i) => (
           <motion.div

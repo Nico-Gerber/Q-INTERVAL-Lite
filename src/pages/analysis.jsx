@@ -13,8 +13,8 @@ import ClassificationResults from '../Components/Results/ClassificationResults';
 import FutureRiskResults from '../Components/Results/FutureRiskResults';
 import MammoRiskResults from '../Components/Results/MammoRiskResults';
 import NeuralCanvas from '../Components/Results/NeuralCanvas';
-import MultiImageUploadDated from '../Components/ImageUpload/SessionAnalysisUpload';
-import MultiViewUpload from '../Components/ImageUpload/FutureRiskUpload';
+import MultiImageUploadDated from '../Components/ImageUpload/FutureRiskUpload';
+import MultiViewUpload from '../Components/ImageUpload/SessionAnalysisUpload';
 
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
@@ -252,7 +252,7 @@ export default function Analysis() {
 
   const stepPb = {
     0: { xs: 4, md: 5 },
-    1: { xs: 10, md: 14 },
+    1: { xs: 4, md: 5 },
     2: { xs: 4, md: 5 },
   };
 
@@ -392,12 +392,12 @@ export default function Analysis() {
                     justifyContent: 'center',
                     gap: 2
                   }}>
-                    <Atom color='#2DD4BF' />
+                    <Atom color='#22D3EE' />
                     <Typography sx={{
                       fontFamily: 'monospace',
                       fontSize: 12,
                       letterSpacing: '0.08em',
-                      color: 'rgba(255,255,255,0.45)',
+                      color: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.45)' : 'rgba(8,145,178,0.7)',
                       textTransform: 'uppercase',
                     }}>
                       {loadingText}
@@ -466,12 +466,12 @@ export default function Analysis() {
                 height: 52,
                 borderRadius: '18px',
                 backdropFilter: 'blur(14px)',
-                background: 'rgba(15,23,42,0.85)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                color: '#2DD4BF',
-                boxShadow: '0 8px 30px rgba(0,0,0,0.35)',
+                background: (theme) => theme.palette.mode === 'dark' ? 'rgba(15,23,42,0.85)' : 'rgba(8,145,178,0.90)',
+                border: (theme) => theme.palette.mode === 'dark' ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(8,145,178,0.3)',
+                color: '#FFFFFF',
+                boxShadow: '0 8px 30px rgba(0,0,0,0.25)',
                 '&:hover': {
-                  background: 'rgba(25,35,55,0.95)',
+                  background: (theme) => theme.palette.mode === 'dark' ? 'rgba(25,35,55,0.95)' : 'rgba(14,116,144,0.95)',
                   transform: 'scale(1.05)',
                 },
               }}
@@ -495,8 +495,8 @@ export default function Analysis() {
               justifyContent: 'center',
 
               backdropFilter: 'blur(18px)',
-              background: 'rgba(10,15,25,0.72)',
-              borderLeft: '1px solid rgba(255,255,255,0.06)',
+              background: (theme) => theme.palette.mode === 'dark' ? 'rgba(10,15,25,0.72)' : 'rgba(232,246,250,0.92)',
+              borderLeft: (theme) => theme.palette.mode === 'dark' ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(8,145,178,0.18)',
 
               transform: collapsed ? 'translateX(100%)' : 'translateX(0)',
               transition: 'transform 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -517,26 +517,22 @@ export default function Analysis() {
               >
 
                 <Box>
-                  <Typography
-                    sx={{
+                  <Typography sx={{
                       fontSize: '0.72rem',
                       letterSpacing: '0.12em',
                       textTransform: 'uppercase',
-                      color: 'rgba(255,255,255,0.45)',
+                      color: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.45)' : 'rgba(8,145,178,0.7)',
                       fontWeight: 700,
-                    }}
-                  >
+                    }}>
                     AI Explanation
                   </Typography>
 
-                  <Typography
-                    sx={{
-                      color: '#fff',
+                  <Typography sx={{
+                      color: (theme) => theme.palette.mode === 'dark' ? '#FFFFFF' : theme.palette.text.primary,
                       fontWeight: 700,
                       fontSize: '1.1rem',
                       mt: 0.5,
-                    }}
-                  >
+                    }}>
                     Clinical Summary
                   </Typography>
                 </Box>
@@ -546,9 +542,12 @@ export default function Analysis() {
                   sx={{
                     p: 2.2,
                     borderRadius: '22px',
-                    background:
-                      'linear-gradient(180deg, rgba(45,212,191,0.08), rgba(45,212,191,0.03))',
-                    border: '1px solid rgba(45,212,191,0.12)',
+                    background: (theme) => theme.palette.mode === 'dark'
+                      ? 'linear-gradient(180deg, rgba(34,211,238,0.08), rgba(34,211,238,0.03))'
+                      : 'linear-gradient(180deg, rgba(8,145,178,0.06), rgba(8,145,178,0.02))',
+                    border: (theme) => theme.palette.mode === 'dark'
+                      ? '1px solid rgba(34,211,238,0.12)'
+                      : '1px solid rgba(8,145,178,0.20)',
                   }}
                 >
 
@@ -561,17 +560,14 @@ export default function Analysis() {
                         mb: 1.5,
                       }}
                     >
-                      <AutoAwesomeIcon sx={{ color: '#2DD4BF', fontSize: 18 }} />
-
-                      <Typography
-                        sx={{
-                          color: '#2DD4BF',
+                      <AutoAwesomeIcon sx={{ color: 'primary.main', fontSize: 18 }} />
+                      <Typography sx={{
+                          color: 'primary.main',
                           fontSize: '0.75rem',
                           fontWeight: 700,
                           letterSpacing: '0.08em',
                           textTransform: 'uppercase',
-                        }}
-                      >
+                        }}>
                         Generated Interpretation
                       </Typography>
                     </Box>
@@ -586,7 +582,7 @@ export default function Analysis() {
 
                     <Container sx={{ display: 'flex', justifyContent: 'center' }}>
 
-                      <ThreeDot color='#2DD4BF' size="small" text="" textColor="" />
+                      <ThreeDot color='#22D3EE' size="small" text="" textColor="" />
 
                     </Container>) : (
 
@@ -604,21 +600,19 @@ export default function Analysis() {
                           background: 'transparent',
                         },
                         '&::-webkit-scrollbar-thumb': {
-                          background: 'rgba(255,255,255,0.14)',
+                          background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.14)' : 'rgba(8,145,178,0.25)',
                           borderRadius: '999px',
                         },
                         '&::-webkit-scrollbar-thumb:hover': {
-                          background: 'rgba(255,255,255,0.28)',
+                          background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.28)' : 'rgba(8,145,178,0.45)',
                         },
                       }}
                     >
-                      <Typography
-                        sx={{
-                          color: 'rgba(255,255,255,0.78)',
+                      <Typography sx={{
+                          color: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.78)' : theme.palette.text.secondary,
                           fontSize: '0.92rem',
                           lineHeight: 1.85,
-                        }}
-                      >
+                        }}>
                         {summary ? summary.explanation : 'Generate a structured explanation of the mammogram analysis results using AI analysis.'}
                       </Typography>
                     </Box>)}
@@ -635,9 +629,11 @@ export default function Analysis() {
                     textTransform: 'none',
                     fontWeight: 700,
                     fontSize: '0.95rem',
-                    background:
-                      'linear-gradient(135deg, #14B8A6 0%, #0EA5E9 100%)',
-                    boxShadow: '0 10px 30px rgba(20,184,166,0.25)',
+                    background: (theme) => theme.palette.mode === 'dark'
+                      ? 'linear-gradient(135deg, #0891B2 0%, #22D3EE 100%)'
+                      : 'linear-gradient(135deg, #0E7490 0%, #0891B2 100%)',
+                    color: '#FFFFFF',
+                    boxShadow: '0 10px 30px rgba(8,145,178,0.30)',
                   }}
                 >
                   Generate Explanation
