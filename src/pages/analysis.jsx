@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Box, Chip, Container, Typography, Alert, Button, Drawer } from '@mui/material';
+import React, { useState, useRef, useEffect, } from 'react';
+import { Box, Chip, Container, Typography, Alert, Button, Drawer, TextField } from '@mui/material';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Sidebar, Menu, MenuItem, SubMenu } from 'react-pro-sidebar';
 
@@ -67,7 +67,14 @@ export default function Analysis() {
 
   const [LLMloading, setLLMLoading] = useState(false);
 
-  const [sessions, setSessions] = useState([]);
+  const emptySession = () => ({
+    id: crypto.randomUUID(),
+    scanDate: '',
+    views: { 'L-CC': null, 'R-CC': null, 'L-MLO': null, 'R-MLO': null },
+  });
+
+
+  const [sessions, setSessions] = useState([emptySession(), emptySession()]);
 
 
   const [loadingText, setLoadingText] = useState(LOADING_MESSAGES[0].text);
@@ -83,6 +90,8 @@ export default function Analysis() {
 
 
   const [audience, setAudience] = useState("clinician")
+
+  const [patientAge, setPatientAge] = useState('');
 
 
 
@@ -207,6 +216,7 @@ export default function Analysis() {
     setViews({ "L-CC": null, "L-MLO": null, "R-CC": null, "R-MLO": null });
     setSummary("")
     setCollapsed(true)
+    setSessions([emptySession(), emptySession()]);
 
   };
 
@@ -373,11 +383,16 @@ export default function Analysis() {
 
                 ) : analysisMode === 'future-risk' ? (
                   <Container maxWidth="md" sx={{ mt: 1 }}>
+
+
+
                     <MultiImageUploadDated
                       sessions={sessions}
                       setSessions={setSessions}
                       setActiveStep={setActiveStep}
                       handleAnalyse={handleAnalyse}
+                      patientAge={patientAge}
+                      setPatientAge={setPatientAge}
                     />
                   </Container>
                 ) : null

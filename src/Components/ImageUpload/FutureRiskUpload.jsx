@@ -72,7 +72,11 @@ const ViewSlot = ({ viewKey, label, fullLabel, description, item, onDrop, onRemo
   const isFilled = item !== null;
 
   return (
+
+
+
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+
 
       {/* Slot header */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -192,6 +196,7 @@ const SessionCard = ({ session, index, total, onDropView, onRemoveView, onUpdate
   const complete = allViews && hasDate;
 
   return (
+
     <Paper
       elevation={0}
       sx={{
@@ -203,7 +208,11 @@ const SessionCard = ({ session, index, total, onDropView, onRemoveView, onUpdate
           : (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.015)' : 'rgba(8,145,178,0.015)',
         transition: 'border-color 0.3s ease, background-color 0.3s ease',
       }}
+
+
     >
+
+
       {/* Session header */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mb: 1.5 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -300,11 +309,10 @@ const SessionCard = ({ session, index, total, onDropView, onRemoveView, onUpdate
 };
 
 // ── FutureRiskUpload — main export ────────────────────────────────────────────
-export default function FutureRiskUpload({ sessions, setSessions, setActiveStep, handleAnalyse }) {
+export default function FutureRiskUpload({ sessions, setSessions, setActiveStep, handleAnalyse, patientAge, setPatientAge }) {
   // Ensure we always start with the minimum number of sessions
-  const list = (sessions && sessions.length >= MIN_SESSIONS)
-    ? sessions
-    : [emptySession(), emptySession()];
+  const list = sessions;
+
 
   const addSession = () => {
     if (list.length >= MAX_SESSIONS) return;
@@ -339,6 +347,41 @@ export default function FutureRiskUpload({ sessions, setSessions, setActiveStep,
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+
+      {/* Patient Age */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <Typography variant="caption" sx={{
+          fontWeight: 700, fontSize: '0.72rem', letterSpacing: '0.06em',
+          textTransform: 'uppercase', color: 'text.secondary', whiteSpace: 'nowrap',
+        }}>
+          Patient Age
+        </Typography>
+        <TextField
+          type="number"
+          size="small"
+          value={patientAge}
+          onChange={(e) => setPatientAge(e.target.value)}
+
+          inputProps={{ min: 18, max: 100 }}
+          sx={{
+            width: 110,
+            '& .MuiInputBase-root': {
+              fontSize: '0.78rem', height: 30,
+              backgroundColor: patientAge
+                ? (t) => `${t.palette.primary.main}10`
+                : (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(8,145,178,0.04)',
+              borderRadius: 1,
+            },
+            '& .MuiOutlinedInput-notchedOutline': {
+              borderColor: patientAge
+                ? (t) => `${t.palette.primary.main}60`
+                : (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(8,145,178,0.25)',
+            },
+            '& input': { color: 'text.primary', px: 1, py: 0 },
+          }}
+        />
+
+      </Box>
 
       {/* Header */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>

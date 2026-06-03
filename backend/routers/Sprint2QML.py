@@ -104,7 +104,7 @@ def predict_label(probs):
 # IMAGE PREPROCESSING
 # =========================
 def image_to_arr16(pil_gray: Image.Image) -> np.ndarray:
-    """Full-res grayscale PIL image -> normalized 16x16 float array."""
+
     try:
         img = pil_gray.resize(RESIZE_TO, Image.Resampling.LANCZOS)
     except AttributeError:
@@ -112,36 +112,22 @@ def image_to_arr16(pil_gray: Image.Image) -> np.ndarray:
     return np.array(img, dtype=np.float32) / 255.0   # shape (16, 16)
 
 def arr16_to_features(arr16: np.ndarray) -> np.ndarray:
-    """16x16 float array -> PCA + scaled feature vector for the circuit.
-
-    This is the reusable tail of the pipeline. The occlusion loop calls it
-    hundreds of times on perturbed copies of the same 16x16 image, so keeping
-    it separate from the (expensive, one-off) image decode matters.
-    """
+  
     flat = arr16.flatten().reshape(1, -1)
     arr_pca = pca.transform(flat)
     arr_scaled = scaler.transform(arr_pca)
     return arr_scaled[0]
 
 def preprocess_image(image_bytes: bytes) -> np.ndarray:
-    """Bytes -> feature vector (kept for backwards compatibility)."""
+   
     pil = Image.open(io.BytesIO(image_bytes)).convert("L")
     return arr16_to_features(image_to_arr16(pil))
 
-# =========================
-# OCCLUSION SENSITIVITY
-# =========================
+
 def occlusion_map(arr16: np.ndarray, target_idx: int,
                   patch: int = OCC_PATCH, stride: int = OCC_STRIDE,
                   fill: float = OCC_FILL) -> np.ndarray:
-    """
-    Slide an occluding patch across the 16x16 input. For each position, blank
-    the patch, re-run the full PCA -> scaler -> VQC pipeline, and record how
-    much the target class probability drops. A larger drop => that region
-    mattered more to the model's decision.
 
-    Returns a 16x16 importance map (positive = supported the target class).
-    """
     H, W = arr16.shape
     heat = np.zeros((H, W), dtype=np.float32)
     counts = np.zeros((H, W), dtype=np.float32)
@@ -171,7 +157,7 @@ def _to_b64(arr: np.ndarray) -> str:
 
 def render_occlusion(pil_gray: Image.Image, heat16: np.ndarray,
                      size: int = DISPLAY_SIZE, alpha: float = 0.5):
-    """Turn a coarse 16x16 importance map into grad-cam-style images."""
+
     # Base image at display resolution, as RGB
     base_gray = np.array(pil_gray.resize((size, size), Image.Resampling.LANCZOS))
     base_rgb = cv2.cvtColor(base_gray, cv2.COLOR_GRAY2RGB)

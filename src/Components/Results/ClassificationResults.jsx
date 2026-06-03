@@ -221,7 +221,7 @@ export default function ClassificationResults({ analyisedImage, reset, currentMo
                             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                     <Typography sx={{ ...MONO, fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)' }}>
-                                        Grad-CAM opacity
+                                        {currentModel === 'Classical' ? ('Grad-CAM Opacity') : ('Occlusion Sensitivity Opacity')}
                                     </Typography>
                                     <Tooltip text="Grad-CAM highlights which regions most influenced the model's prediction." />
                                 </Box>
