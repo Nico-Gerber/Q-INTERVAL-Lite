@@ -7,8 +7,7 @@ This branch contains the Sprint 2 final classification model for the Q-INTERVAL-
 | File | Description |
 |---|---|
 | `Memmo_Final_v2.ipynb` | Full training and inference notebook (22 sections, all steps documented) |
-| `final_model_bundle.pth` | Recommended file for inference. Bundle containing model weights, calibration temperature, normalization stats, input size, and class names |
-| `best_restnet50_5_mammobench.pth` | Raw model state dict only (alternative — use the bundle above instead) |
+| `best_restnet50_5_mammobench.pth` | Recommended file for inference. Bundle containing model weights, calibration temperature, normalization stats, input size, and class names |
 
 ## Final test metrics
 
@@ -155,7 +154,7 @@ grad-cam       # only if heatmap output is required
 
 ## Notes
 
-- The `final_model_bundle.pth` file is approximately 94 MB. Make sure Git LFS is enabled on the repository, otherwise it will bloat the git history.
+- The `best_restnet50_5_mammobench.pth` file is approximately 94 MB. Make sure Git LFS is enabled on the repository, otherwise it will bloat the git history.
 - The model was trained on ImageNet-pretrained ResNet-50 with progressive unfreezing of the head, then layer4, then layer3. Layers 1, 2, and the conv stem remain frozen.
 - The temperature value is fitted on the validation set using L-BFGS to minimise NLL, following Guo et al. (ICML 2017).
 - The model expects 3-channel RGB input even though mammograms are grayscale; OpenCV read + RGB conversion replicates the grayscale value across all 3 channels automatically.
