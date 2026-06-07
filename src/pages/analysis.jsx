@@ -170,6 +170,9 @@ export default function Analysis() {
         setLoading(false);
       }
         */
+    const datedSessions = sessions.filter(s => s.scanDate);
+
+
     if (analysisMode === 'future-risk') {
       // TEMP mock until AI team's endpoint is ready
       const mockYearly = {
@@ -182,8 +185,8 @@ export default function Analysis() {
           final_patient_yearly_future_risk: mockYearly,
           final_patient_5_year_risk_score: 9.2,
         },
-        image_level_results: files.map((f, i) => ({
-          filename: f.file.name,
+        image_level_results: datedSessions.map((s, i) => ({
+          filename: `exam_${i + 1}`,
           image_contribution_percent: [58, 26, 16][i] ?? 10,
         })),
       };
@@ -196,7 +199,10 @@ export default function Analysis() {
           },
           final_patient_5_year_risk_score: 7.6,
         },
-        image_level_results: [],
+        image_level_results: datedSessions.map((s, i) => ({
+          filename: `exam_${i + 1}`,
+          image_contribution_percent: [55, 30, 15][i] ?? 10,
+        })),
       };
 
       setResult({ resultFile: { qml: qmlData, cnn: cnnData } });
@@ -296,17 +302,22 @@ export default function Analysis() {
     setLLMLoading(true);
     setSummary("");
     try {
-      const pickSummary = (src) => src?.patient_summary ?? src;
-      const cnn = pickSummary(result.resultFile.cnn);
-      const qml = pickSummary(result.resultFile.qml);
+      const cnnRaw = result.resultFile.cnn;
+      const qmlRaw = result.resultFile.qml;
+      const cnn = cnnRaw?.patient_summary ?? cnnRaw;
+      const qml = qmlRaw?.patient_summary ?? qmlRaw;
 
-      const trendOf = (yearly) => {
-        if (!yearly) return null;
-        const v = Object.values(yearly);
-        return v[v.length - 1] > v[0] ? "rising"
-          : v[v.length - 1] < v[0] ? "declining" : "stable";
-      };
+      const datedSessions = sessions
+        .filter(s => s.scanDate)
+        .sort((a, b) => new Date(a.scanDate) - new Date(b.scanDate));
 
+      const contribsOf = (raw) =>
+        (raw?.image_level_results ?? []).map((r, i) => ({
+          label: datedSessions[i]
+            ? new Date(datedSessions[i].scanDate).getFullYear().toString()
+            : r.filename,
+          percent: r.image_contribution_percent,
+        }));
       const llmRes = await fetch(`${API_BASE}/explain-future-risk/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -317,11 +328,11 @@ export default function Analysis() {
           // Classical — primary
           cnn_yearly_risk: cnn?.final_patient_yearly_future_risk ?? null,
           cnn_five_year_risk: cnn?.final_patient_5_year_risk_score ?? null,
-          cnn_trend: trendOf(cnn?.final_patient_yearly_future_risk),
+          cnn_exam_contributions: contribsOf(cnnRaw),
           // Quantum — secondary
           qml_yearly_risk: qml?.final_patient_yearly_future_risk ?? null,
           qml_five_year_risk: qml?.final_patient_5_year_risk_score ?? null,
-          qml_trend: trendOf(qml?.final_patient_yearly_future_risk),
+          qml_exam_contributions: contribsOf(qmlRaw),
         }),
       });
       const data = await llmRes.json();

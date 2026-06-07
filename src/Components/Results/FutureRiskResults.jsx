@@ -80,7 +80,9 @@ export default function FutureRiskResults({ analyisedImage, reset, currentModel,
     const qmlRisk5y = qmlSource?.final_patient_5_year_risk_score ?? qmlSource?.final_5_year_risk_score ?? qmlSource?.["5_year_risk_score"] ?? 0;
     const cnnRisk5y = cnnSource?.final_patient_5_year_risk_score ?? cnnSource?.final_5_year_risk_score ?? cnnSource?.["5_year_risk_score"] ?? 0;
 
-    const imageResults = qmlData?.image_level_results ?? [];
+    const imageResults = currentModel === 'Classical'
+        ? (cnnData?.image_level_results ?? [])
+        : (qmlData?.image_level_results ?? []);
 
 
     const activeRisk = currentModel === 'Classical' ? cnnRisk5y : qmlRisk5y;

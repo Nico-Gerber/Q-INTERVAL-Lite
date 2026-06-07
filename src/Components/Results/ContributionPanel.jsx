@@ -8,9 +8,8 @@ export default function ExamContribution({ exams = [] }) {
   const sorted = [...exams].sort((a, b) => b.year - a.year);
 
 
-  const priors = exams.filter(e => !e.isCurrent);
-  const mostInfluential = priors.length
-    ? priors.reduce((max, e) => (e.weight > max.weight ? e : max))
+  const mostInfluential = exams.length
+    ? exams.reduce((max, e) => (e.weight > max.weight ? e : max))
     : null;
 
   const getBarColor = (exam) => {
@@ -89,7 +88,10 @@ export default function ExamContribution({ exams = [] }) {
           justifyContent: 'space-between',
         }}>
           <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>Most weight on</Typography>
-          <Typography sx={{ color: '#854F0B', fontSize: 11, fontWeight: 500 }}>
+          <Typography sx={{
+            color: mostInfluential.isCurrent ? '#A32D2D' : '#854F0B',
+            fontSize: 11, fontWeight: 500,
+          }}>
             {mostInfluential.year} exam
           </Typography>
         </Box>

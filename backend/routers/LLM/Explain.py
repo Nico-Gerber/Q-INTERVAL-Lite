@@ -153,11 +153,12 @@ class FutureRiskExplainRequest(BaseModel):
     # Classical — primary
     cnn_yearly_risk: Optional[dict] = None
     cnn_five_year_risk: Optional[float] = None
-    cnn_trend: Optional[str] = None
+    cnn_exam_contributions: Optional[list] = None 
     # Quantum — secondary
     qml_yearly_risk: Optional[dict] = None
     qml_five_year_risk: Optional[float] = None
-    qml_trend: Optional[str] = None
+    qml_exam_contributions: Optional[list] = None
+   
 
 
 def build_future_risk_prompt(data: FutureRiskExplainRequest) -> str:
@@ -190,6 +191,14 @@ def build_future_risk_prompt(data: FutureRiskExplainRequest) -> str:
             else "disagree"
         )
 
+    def contrib_lines(contribs):
+        if not contribs:
+            return "  (not provided)"
+        return "\n".join(
+            f"  - {c.get('label', 'exam')}: {c.get('percent', 0)}%"
+            for c in contribs
+        )    
+
     return f"""You are a clinical decision support assistant explaining an AI longitudinal breast cancer risk projection.
 {audience_instruction}
 
@@ -198,15 +207,13 @@ STRICT RULES:
 - Do NOT recommend specific treatments
 - Do NOT estimate, recompute, or invent any numbers — use ONLY the values given below
 - Keep your response to 3-4 sentences maximum
-- Base your PRIMARY explanation on the Classical model. Lead with its 5-year figure and the shape of its trajectory.
-- Reference the Quantum model only as a secondary comparison. State whether the two models {agreement}; if they disagree, defer to the Classical result.
-- Treat the trend as a basis for monitoring cadence only — neutral and non-prescriptive
+- Lead with the classical model 5-year figure and exam contributions
+- Reference the Quantum model only as a secondary comparison. State whether the two models {agreement}; 
 - End with a reminder to consult a qualified clinician
 
 MODEL CONTEXT:
 - Classical CNN 
 - Quantum ML 
-- Predictions are recency-weighted (recent exams influence the projection more) and age-group adjusted
 
 PATIENT:
   Age: {data.patient_age if data.patient_age is not None else "not provided"}
@@ -214,15 +221,17 @@ PATIENT:
 
 CLASSICAL MODEL (primary):
   5-year cumulative risk: {round(cnn5, 1) if cnn5 is not None else "not provided"}%
-  Trend: {data.cnn_trend or "not provided"}
   Year-by-year:
 {yearly_lines(data.cnn_yearly_risk)}
+  Exam contributions:
+{contrib_lines(data.cnn_exam_contributions)}
 
 QUANTUM MODEL (secondary reference):
   5-year cumulative risk: {round(qml5, 1) if qml5 is not None else "not provided"}%
-  Trend: {data.qml_trend or "not provided"}
   Year-by-year:
 {yearly_lines(data.qml_yearly_risk)}
+  Exam contributions :
+{contrib_lines(data.qml_exam_contributions)}
 
 The two models {agreement} at the 5-year horizon.
 
