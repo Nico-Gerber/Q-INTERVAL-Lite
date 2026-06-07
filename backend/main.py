@@ -33,6 +33,8 @@ app.include_router(QMLFutureRisk.router)
 
 app.include_router(Explain.router)
 
+app.include_router(Explain.future_risk_router) 
+
 @app.get("/health")
 def health():
     return {"status": "ok"}

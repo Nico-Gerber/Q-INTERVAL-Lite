@@ -135,12 +135,12 @@ export default function Analysis() {
   const handleAnalyse = async () => {
 
 
-    if (analysisMode === 'future-risk' && files.length === 0) return;
+    // UNCOMMENT WHEN END POINTS COME if (analysisMode === 'future-risk' && files.length === 0) return;
     if (analysisMode === 'classification' && Object.values(views).some(v => v === null)) return;
 
     setLoading(true);
     setStatus(null);
-
+    /*
     if (analysisMode === 'future-risk') {
       const isMulti = files.length > 1;
       const endpoint = isMulti ? 'multi' : 'single';
@@ -169,7 +169,39 @@ export default function Analysis() {
       } finally {
         setLoading(false);
       }
+        */
+    if (analysisMode === 'future-risk') {
+      // TEMP mock until AI team's endpoint is ready
+      const mockYearly = {
+        "1_year": 2.1, "2_year": 3.4, "3_year": 5.0,
+        "4_year": 6.8, "5_year": 9.2,
+      };
 
+      const qmlData = {
+        patient_summary: {
+          final_patient_yearly_future_risk: mockYearly,
+          final_patient_5_year_risk_score: 9.2,
+        },
+        image_level_results: files.map((f, i) => ({
+          filename: f.file.name,
+          image_contribution_percent: [58, 26, 16][i] ?? 10,
+        })),
+      };
+
+      const cnnData = {
+        patient_summary: {
+          final_patient_yearly_future_risk: {
+            "1_year": 1.8, "2_year": 3.0, "3_year": 4.4,
+            "4_year": 5.9, "5_year": 7.6,
+          },
+          final_patient_5_year_risk_score: 7.6,
+        },
+        image_level_results: [],
+      };
+
+      setResult({ resultFile: { qml: qmlData, cnn: cnnData } });
+      setLoading(false);
+      return;
     } else {
       const formData = new FormData();
       formData.append('l_cc', views['L-CC'].file);
@@ -260,12 +292,67 @@ export default function Analysis() {
 
   }
 
+  const handleExplainFutureRisk = async () => {
+    setLLMLoading(true);
+    setSummary("");
+    try {
+      const pickSummary = (src) => src?.patient_summary ?? src;
+      const cnn = pickSummary(result.resultFile.cnn);
+      const qml = pickSummary(result.resultFile.qml);
+
+      const trendOf = (yearly) => {
+        if (!yearly) return null;
+        const v = Object.values(yearly);
+        return v[v.length - 1] > v[0] ? "rising"
+          : v[v.length - 1] < v[0] ? "declining" : "stable";
+      };
+
+      const llmRes = await fetch(`${API_BASE}/explain-future-risk/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          audience: audience,
+          patient_age: patientAge ? Number(patientAge) : null,
+          num_exams: sessions.filter(s => s.scanDate).length,
+          // Classical — primary
+          cnn_yearly_risk: cnn?.final_patient_yearly_future_risk ?? null,
+          cnn_five_year_risk: cnn?.final_patient_5_year_risk_score ?? null,
+          cnn_trend: trendOf(cnn?.final_patient_yearly_future_risk),
+          // Quantum — secondary
+          qml_yearly_risk: qml?.final_patient_yearly_future_risk ?? null,
+          qml_five_year_risk: qml?.final_patient_5_year_risk_score ?? null,
+          qml_trend: trendOf(qml?.final_patient_yearly_future_risk),
+        }),
+      });
+      const data = await llmRes.json();
+      setSummary(data);
+    } catch (err) {
+      console.error("Future-risk explain failed:", err);
+      setStatus({ ok: false, msg: 'Explanation failed. Is Ollama running?' });
+    } finally {
+      setLLMLoading(false);
+    }
+  };
+
+
+
+
 
   const stepPb = {
     0: { xs: 4, md: 5 },
     1: { xs: 4, md: 5 },
     2: { xs: 4, md: 5 },
   };
+
+
+  //mock data
+
+  const dated = sessions.filter(s => s.scanDate);
+  const examFiles = (dated.length ? dated : [
+    { scanDate: '2024-01-01' },
+    { scanDate: '2025-01-01' },
+    { scanDate: '2026-01-01' },
+  ]).map((s, i) => ({ scanDate: s.scanDate, file: { name: `exam_${i + 1}` } }));
 
   return (
 
@@ -276,7 +363,7 @@ export default function Analysis() {
         minHeight: '100vh',
         flex: 1,
         position: 'relative',
-        overflow: 'clip',   // ← 'clip' allows sticky children unlike 'hidden'
+        overflow: 'clip',
         background: (theme) => theme.palette.background.hero,
       }}>
         <NeuralCanvas />
@@ -448,7 +535,7 @@ export default function Analysis() {
                           <FutureRiskResults
                             analyisedImage={preview} reset={handleReset}
                             currentModel={modelMode} results={result}
-                            uploadedFiles={files}
+                            uploadedFiles={examFiles}
                           />
                         </Container>
                       </>
@@ -461,204 +548,205 @@ export default function Analysis() {
           </AnimatePresence>
         </Box>
       </Box>
-      {activeStep === 2 && !loading && analysisMode === 'classification' && result && (
-        <>
-          {/* Floating Toggle */}
-          <Box
-            sx={{
-              position: 'fixed',
-              right: collapsed ? 12 : 348,
-              top: '50%',
-              transform: 'translateY(-50%)',
-              zIndex: 30,
-              transition: 'right 0.25s ease',
-            }}
-          >
-            <Button
-              onClick={() => setCollapsed(!collapsed)}
+      {activeStep === 2 && !loading && result &&
+        (analysisMode === 'classification' || analysisMode === 'future-risk') && (
+          <>
+            {/* Floating Toggle */}
+            <Box
               sx={{
-                minWidth: 0,
-                width: 52,
-                height: 52,
-                borderRadius: '18px',
-                backdropFilter: 'blur(14px)',
-                background: (theme) => theme.palette.mode === 'dark' ? 'rgba(15,23,42,0.85)' : 'rgba(8,145,178,0.90)',
-                border: (theme) => theme.palette.mode === 'dark' ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(8,145,178,0.3)',
-                color: '#FFFFFF',
-                boxShadow: '0 8px 30px rgba(0,0,0,0.25)',
-                '&:hover': {
-                  background: (theme) => theme.palette.mode === 'dark' ? 'rgba(25,35,55,0.95)' : 'rgba(14,116,144,0.95)',
-                  transform: 'scale(1.05)',
-                },
+                position: 'fixed',
+                right: collapsed ? 12 : 348,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                zIndex: 30,
+                transition: 'right 0.25s ease',
               }}
             >
-              {collapsed ? <AssistantIcon /> : <ChevronRightIcon />}
-            </Button>
-          </Box>
-
-          {/* Sidebar */}
-          <Box
-            sx={{
-              width: 360,
-
-              position: 'fixed',
-              right: 0,
-              top: 0,
-              height: '100vh',
-
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-
-              backdropFilter: 'blur(18px)',
-              background: (theme) => theme.palette.mode === 'dark' ? 'rgba(10,15,25,0.72)' : 'rgba(232,246,250,0.92)',
-              borderLeft: (theme) => theme.palette.mode === 'dark' ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(8,145,178,0.18)',
-
-              transform: collapsed ? 'translateX(100%)' : 'translateX(0)',
-              transition: 'transform 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
-
-              overflow: 'hidden',
-              zIndex: 20,
-              px: 2,
-            }}
-          >
-            {!collapsed && (
-              <Box
+              <Button
+                onClick={() => setCollapsed(!collapsed)}
                 sx={{
-                  p: 2.5,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 2,
+                  minWidth: 0,
+                  width: 52,
+                  height: 52,
+                  borderRadius: '18px',
+                  backdropFilter: 'blur(14px)',
+                  background: (theme) => theme.palette.mode === 'dark' ? 'rgba(15,23,42,0.85)' : 'rgba(8,145,178,0.90)',
+                  border: (theme) => theme.palette.mode === 'dark' ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(8,145,178,0.3)',
+                  color: '#FFFFFF',
+                  boxShadow: '0 8px 30px rgba(0,0,0,0.25)',
+                  '&:hover': {
+                    background: (theme) => theme.palette.mode === 'dark' ? 'rgba(25,35,55,0.95)' : 'rgba(14,116,144,0.95)',
+                    transform: 'scale(1.05)',
+                  },
                 }}
               >
+                {collapsed ? <AssistantIcon /> : <ChevronRightIcon />}
+              </Button>
+            </Box>
 
-                <Box>
-                  <Typography sx={{
-                    fontSize: '0.72rem',
-                    letterSpacing: '0.12em',
-                    textTransform: 'uppercase',
-                    color: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.45)' : 'rgba(8,145,178,0.7)',
-                    fontWeight: 700,
-                  }}>
-                    AI Explanation
-                  </Typography>
+            {/* Sidebar */}
+            <Box
+              sx={{
+                width: 360,
 
-                  <Typography sx={{
-                    color: (theme) => theme.palette.mode === 'dark' ? '#FFFFFF' : theme.palette.text.primary,
-                    fontWeight: 700,
-                    fontSize: '1.1rem',
-                    mt: 0.5,
-                  }}>
-                    Clinical Summary
-                  </Typography>
-                </Box>
+                position: 'fixed',
+                right: 0,
+                top: 0,
+                height: '100vh',
 
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
 
+                backdropFilter: 'blur(18px)',
+                background: (theme) => theme.palette.mode === 'dark' ? 'rgba(10,15,25,0.72)' : 'rgba(232,246,250,0.92)',
+                borderLeft: (theme) => theme.palette.mode === 'dark' ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(8,145,178,0.18)',
+
+                transform: collapsed ? 'translateX(100%)' : 'translateX(0)',
+                transition: 'transform 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
+
+                overflow: 'hidden',
+                zIndex: 20,
+                px: 2,
+              }}
+            >
+              {!collapsed && (
                 <Box
                   sx={{
-                    p: 2.2,
-                    borderRadius: '22px',
-                    background: (theme) => theme.palette.mode === 'dark'
-                      ? 'linear-gradient(180deg, rgba(34,211,238,0.08), rgba(34,211,238,0.03))'
-                      : 'linear-gradient(180deg, rgba(8,145,178,0.06), rgba(8,145,178,0.02))',
-                    border: (theme) => theme.palette.mode === 'dark'
-                      ? '1px solid rgba(34,211,238,0.12)'
-                      : '1px solid rgba(8,145,178,0.20)',
+                    p: 2.5,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 2,
                   }}
                 >
 
-                  {summary ? (
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1,
-                        mb: 1.5,
-                      }}
-                    >
-                      <AutoAwesomeIcon sx={{ color: 'primary.main', fontSize: 18 }} />
-                      <Typography sx={{
-                        color: 'primary.main',
-                        fontSize: '0.75rem',
-                        fontWeight: 700,
-                        letterSpacing: '0.08em',
-                        textTransform: 'uppercase',
-                      }}>
-                        Generated Interpretation
-                      </Typography>
-                    </Box>
+                  <Box>
+                    <Typography sx={{
+                      fontSize: '0.72rem',
+                      letterSpacing: '0.12em',
+                      textTransform: 'uppercase',
+                      color: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.45)' : 'rgba(8,145,178,0.7)',
+                      fontWeight: 700,
+                    }}>
+                      AI Explanation
+                    </Typography>
 
-                  ) : (<Container></Container>)
+                    <Typography sx={{
+                      color: (theme) => theme.palette.mode === 'dark' ? '#FFFFFF' : theme.palette.text.primary,
+                      fontWeight: 700,
+                      fontSize: '1.1rem',
+                      mt: 0.5,
+                    }}>
+                      Clinical Summary
+                    </Typography>
+                  </Box>
 
 
+                  <Box
+                    sx={{
+                      p: 2.2,
+                      borderRadius: '22px',
+                      background: (theme) => theme.palette.mode === 'dark'
+                        ? 'linear-gradient(180deg, rgba(34,211,238,0.08), rgba(34,211,238,0.03))'
+                        : 'linear-gradient(180deg, rgba(8,145,178,0.06), rgba(8,145,178,0.02))',
+                      border: (theme) => theme.palette.mode === 'dark'
+                        ? '1px solid rgba(34,211,238,0.12)'
+                        : '1px solid rgba(8,145,178,0.20)',
+                    }}
+                  >
 
-                  }
+                    {summary ? (
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1,
+                          mb: 1.5,
+                        }}
+                      >
+                        <AutoAwesomeIcon sx={{ color: 'primary.main', fontSize: 18 }} />
+                        <Typography sx={{
+                          color: 'primary.main',
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          letterSpacing: '0.08em',
+                          textTransform: 'uppercase',
+                        }}>
+                          Generated Interpretation
+                        </Typography>
+                      </Box>
 
-                  {LLMloading ? (
-
-                    <Container sx={{ display: 'flex', justifyContent: 'center' }}>
-
-                      <ThreeDot color='#22D3EE' size="small" text="" textColor="" />
-
-                    </Container>) : (
+                    ) : (<Container></Container>)
 
 
-                    <Box
-                      sx={{
-                        maxHeight: 500,
-                        overflowY: 'auto',
-                        pr: 1,
 
-                        '&::-webkit-scrollbar': {
-                          width: '6px',
-                        },
-                        '&::-webkit-scrollbar-track': {
-                          background: 'transparent',
-                        },
-                        '&::-webkit-scrollbar-thumb': {
-                          background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.14)' : 'rgba(8,145,178,0.25)',
-                          borderRadius: '999px',
-                        },
-                        '&::-webkit-scrollbar-thumb:hover': {
-                          background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.28)' : 'rgba(8,145,178,0.45)',
-                        },
-                      }}
-                    >
-                      <Typography sx={{
-                        color: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.78)' : theme.palette.text.secondary,
-                        fontSize: '0.92rem',
-                        lineHeight: 1.85,
-                      }}>
-                        {summary ? summary.explanation : 'Generate a structured explanation of the mammogram analysis results using AI analysis.'}
-                      </Typography>
-                    </Box>)}
+                    }
+
+                    {LLMloading ? (
+
+                      <Container sx={{ display: 'flex', justifyContent: 'center' }}>
+
+                        <ThreeDot color='#22D3EE' size="small" text="" textColor="" />
+
+                      </Container>) : (
+
+
+                      <Box
+                        sx={{
+                          maxHeight: 500,
+                          overflowY: 'auto',
+                          pr: 1,
+
+                          '&::-webkit-scrollbar': {
+                            width: '6px',
+                          },
+                          '&::-webkit-scrollbar-track': {
+                            background: 'transparent',
+                          },
+                          '&::-webkit-scrollbar-thumb': {
+                            background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.14)' : 'rgba(8,145,178,0.25)',
+                            borderRadius: '999px',
+                          },
+                          '&::-webkit-scrollbar-thumb:hover': {
+                            background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.28)' : 'rgba(8,145,178,0.45)',
+                          },
+                        }}
+                      >
+                        <Typography sx={{
+                          color: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.78)' : theme.palette.text.secondary,
+                          fontSize: '0.92rem',
+                          lineHeight: 1.85,
+                        }}>
+                          {summary ? summary.explanation : 'Generate a structured explanation of the mammogram analysis results using AI analysis.'}
+                        </Typography>
+                      </Box>)}
+                  </Box>
+
+
+                  <Button
+                    variant="contained"
+                    fullWidth
+                    onClick={analysisMode === 'future-risk' ? handleExplainFutureRisk : handleExplain}
+                    sx={{
+                      height: 50,
+                      borderRadius: '16px',
+                      textTransform: 'none',
+                      fontWeight: 700,
+                      fontSize: '0.95rem',
+                      background: (theme) => theme.palette.mode === 'dark'
+                        ? 'linear-gradient(135deg, #0891B2 0%, #22D3EE 100%)'
+                        : 'linear-gradient(135deg, #0E7490 0%, #0891B2 100%)',
+                      color: '#FFFFFF',
+                      boxShadow: '0 10px 30px rgba(8,145,178,0.30)',
+                    }}
+                  >
+                    Generate Explanation
+                  </Button>
                 </Box>
-
-
-                <Button
-                  variant="contained"
-                  fullWidth
-                  onClick={handleExplain}
-                  sx={{
-                    height: 50,
-                    borderRadius: '16px',
-                    textTransform: 'none',
-                    fontWeight: 700,
-                    fontSize: '0.95rem',
-                    background: (theme) => theme.palette.mode === 'dark'
-                      ? 'linear-gradient(135deg, #0891B2 0%, #22D3EE 100%)'
-                      : 'linear-gradient(135deg, #0E7490 0%, #0891B2 100%)',
-                    color: '#FFFFFF',
-                    boxShadow: '0 10px 30px rgba(8,145,178,0.30)',
-                  }}
-                >
-                  Generate Explanation
-                </Button>
-              </Box>
-            )}
-          </Box>
-        </>
-      )}
+              )}
+            </Box>
+          </>
+        )}
     </Box>
   );
 }

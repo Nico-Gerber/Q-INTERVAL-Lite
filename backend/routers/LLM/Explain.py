@@ -140,3 +140,117 @@ async def explain(data: ExplainRequest):
         "audience": data.audience,
         "disclaimer": "This explanation is AI-generated and intended solely to interpret model outputs. It must not be used as a substitute for professional clinical assessment.",
     })
+
+
+
+# ── Future Risk Explanation ─────────────────────────────────────────────────────
+future_risk_router = APIRouter(prefix="/explain-future-risk", tags=["explain"])
+
+class FutureRiskExplainRequest(BaseModel):
+    audience: str = "clinician"
+    patient_age: Optional[int] = None
+    num_exams: Optional[int] = None
+    # Classical — primary
+    cnn_yearly_risk: Optional[dict] = None
+    cnn_five_year_risk: Optional[float] = None
+    cnn_trend: Optional[str] = None
+    # Quantum — secondary
+    qml_yearly_risk: Optional[dict] = None
+    qml_five_year_risk: Optional[float] = None
+    qml_trend: Optional[str] = None
+
+
+def build_future_risk_prompt(data: FutureRiskExplainRequest) -> str:
+
+    def yearly_lines(yearly):
+        if not yearly:
+            return "  (not provided)"
+        return "\n".join(
+            f"  - Year {k.replace('_year', '')}: {round(v, 1)}%"
+            for k, v in yearly.items()
+        )
+
+    audience_instruction = (
+        "You are explaining results to a General Practitioner. "
+        "Use precise clinical language. Be concise and action-oriented."
+        if data.audience == "clinician"
+        else
+        "You are explaining results to a patient in plain, reassuring language. "
+        "Avoid technical jargon. Focus on what happens next."
+    )
+
+    cnn5 = data.cnn_five_year_risk
+    qml5 = data.qml_five_year_risk
+    agreement = "not comparable"
+    if cnn5 is not None and qml5 is not None:
+        diff = abs(cnn5 - qml5)
+        agreement = (
+            "agree closely" if diff < 2
+            else "partially agree" if diff < 5
+            else "disagree"
+        )
+
+    return f"""You are a clinical decision support assistant explaining an AI longitudinal breast cancer risk projection.
+{audience_instruction}
+
+STRICT RULES:
+- Do NOT diagnose the patient
+- Do NOT recommend specific treatments
+- Do NOT estimate, recompute, or invent any numbers — use ONLY the values given below
+- Keep your response to 3-4 sentences maximum
+- Base your PRIMARY explanation on the Classical model. Lead with its 5-year figure and the shape of its trajectory.
+- Reference the Quantum model only as a secondary comparison. State whether the two models {agreement}; if they disagree, defer to the Classical result.
+- Treat the trend as a basis for monitoring cadence only — neutral and non-prescriptive
+- End with a reminder to consult a qualified clinician
+
+MODEL CONTEXT:
+- Classical CNN 
+- Quantum ML 
+- Predictions are recency-weighted (recent exams influence the projection more) and age-group adjusted
+
+PATIENT:
+  Age: {data.patient_age if data.patient_age is not None else "not provided"}
+  Exams analysed: {data.num_exams if data.num_exams is not None else "not provided"}
+
+CLASSICAL MODEL (primary):
+  5-year cumulative risk: {round(cnn5, 1) if cnn5 is not None else "not provided"}%
+  Trend: {data.cnn_trend or "not provided"}
+  Year-by-year:
+{yearly_lines(data.cnn_yearly_risk)}
+
+QUANTUM MODEL (secondary reference):
+  5-year cumulative risk: {round(qml5, 1) if qml5 is not None else "not provided"}%
+  Trend: {data.qml_trend or "not provided"}
+  Year-by-year:
+{yearly_lines(data.qml_yearly_risk)}
+
+The two models {agreement} at the 5-year horizon.
+
+Write the explanation for a {data.audience}, leading with the Classical projection and noting the Quantum comparison."""
+
+@future_risk_router.post("/")
+async def explain_future_risk(data: FutureRiskExplainRequest):
+    prompt = build_future_risk_prompt(data)
+
+    try:
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            response = await client.post(MODEL_URL, json={
+                "model": MODEL,
+                "prompt": prompt,
+                "stream": False,
+                "think": False,
+            })
+        result = response.json()
+        explanation = result.get("response", "").strip()
+
+    except Exception as e:
+        return JSONResponse(
+            status_code=503,
+            content={"error": f"Model unavailable: {str(e)}", "type": type(e).__name__}
+        )
+
+    return JSONResponse(content={
+        "explanation": explanation,
+        "audience": data.audience,
+        "disclaimer": "This explanation is AI-generated and intended solely to interpret model outputs. It must not be used as a substitute for professional clinical assessment.",
+    })
