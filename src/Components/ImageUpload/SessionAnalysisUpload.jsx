@@ -284,12 +284,15 @@ export default function MultiViewUpload({ views, setViews, setActiveStep, handle
           })}
 
           {/* Counter — bright & bold, right-docked */}
-          <Box sx={{ display: 'flex', alignItems: 'center', px: 1.75, flexShrink: 0, borderLeft: '1px solid', borderColor: 'divider', gap: 0.25 }}>
-            <Typography sx={{ fontWeight: 900, fontSize: '1rem', lineHeight: 1, color: allFilled ? 'primary.main' : filledCount > 0 ? 'primary.main' : (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.55)' : 'rgba(8,145,178,0.6)', transition: 'color 0.3s', fontVariantNumeric: 'tabular-nums' }}>
-              {filledCount}
-            </Typography>
-            <Typography sx={{ fontWeight: 700, fontSize: '1rem', lineHeight: 1, color: (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(8,145,178,0.3)' }}>/</Typography>
-            <Typography sx={{ fontWeight: 700, fontSize: '1rem', lineHeight: 1, color: (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.28)' : 'rgba(8,145,178,0.4)' }}>4</Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', px: 1.75, flexShrink: 0, borderLeft: '1px solid', borderColor: 'divider' }}>
+            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.25 }}>
+              <Typography sx={{ fontWeight: 900, fontSize: '1rem', lineHeight: 1, color: allFilled ? 'primary.main' : filledCount > 0 ? 'primary.main' : (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.55)' : 'rgba(8,145,178,0.6)', transition: 'color 0.3s', fontVariantNumeric: 'tabular-nums' }}>
+                {filledCount}
+              </Typography>
+              <Typography sx={{ fontWeight: 700, fontSize: '1rem', lineHeight: 1, color: (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(8,145,178,0.3)' }}>/</Typography>
+              <Typography sx={{ fontWeight: 700, fontSize: '1rem', lineHeight: 1, color: (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.28)' : 'rgba(8,145,178,0.4)' }}>4</Typography>
+            </Box>
+            <Typography sx={{ fontSize: '0.56rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'text.disabled', lineHeight: 1, mt: 0.3 }}>photos</Typography>
           </Box>
         </Box>
 
@@ -395,7 +398,7 @@ export default function MultiViewUpload({ views, setViews, setActiveStep, handle
                   </Box>
                 )}
 
-               
+                {/* Needs attention */}
                 <AnimatePresence>
                   {pending.length > 0 && (
                     <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
