@@ -423,11 +423,21 @@ export default function Analysis() {
                 borderRadius: '999px',
               }}
             />
-            <Typography variant="h3" sx={{ fontWeight: 700, mb: 1.5, letterSpacing: '-0.01em', color: 'text.primary' }}>
-              Mammogram Analysis
+            <Typography variant="h3" sx={{ fontWeight: 700, mb: 1.5, letterSpacing: '-0.02em', color: 'text.primary', fontSize: { xs: '2rem', md: '2.75rem' } }}>
+              Mammo
+              <Box component="span" sx={{
+                color: 'primary.main',
+                fontStyle: 'italic',
+              }}>
+                Analysis
+              </Box>
             </Typography>
-            <Typography variant="h6" sx={{ color: 'text.secondary', fontWeight: 400, maxWidth: 520, mx: 'auto', lineHeight: 1.6 }}>
-              Upload a mammogram and let our AI models detect, classify, and predict risk.
+            <Typography variant="body1" sx={{
+              color: 'text.secondary', fontWeight: 400,
+              maxWidth: 680, mx: 'auto', lineHeight: 1.7,
+              fontSize: '0.95rem',
+            }}>
+              Upload mammogram imaging for automated classification, composite risk scoring, and side-by-side classical vs quantum model comparison.
             </Typography>
             {status && !status.ok && (
               <Container maxWidth="sm" sx={{ mt: 2 }}>
