@@ -87,9 +87,9 @@ const ViewSlot = ({ viewKey, label, fullLabel, description, item, onDrop, onRemo
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop: handleDrop, accept: { 'image/jpeg': [], 'image/png': [], 'application/dicom': ['.dcm'] }, maxFiles: 1, maxSize: 10485760, multiple: false });
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.6 }}>
-      {/* Slot label */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.7 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.6, minWidth: 0 }}>
+      {/* Label row */}
+      <Box sx={{ height: 20, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 0.7 }}>
         <Box sx={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, transition: 'background-color 0.3s', backgroundColor: item ? 'primary.main' : (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.14)' : 'rgba(8,145,178,0.24)' }} />
         <Typography variant="caption" sx={{ fontWeight: 700, color: item ? 'primary.main' : 'text.primary', letterSpacing: '0.06em', fontSize: '0.7rem', textTransform: 'uppercase', transition: 'color 0.3s' }}>{label}</Typography>
         <Tooltip title={`${fullLabel} — ${description}`} placement="top" arrow>
@@ -97,46 +97,64 @@ const ViewSlot = ({ viewKey, label, fullLabel, description, item, onDrop, onRemo
         </Tooltip>
       </Box>
 
-      <AnimatePresence mode="wait">
-        {!item ? (
-          <motion.div key="e" variants={fadeUp} initial="hidden" animate="visible" exit="exit">
-            <Box {...getRootProps()} sx={{
-              height: SLOT_H, border: '2px dashed', borderRadius: 2, cursor: 'pointer',
-              borderColor: isDragActive ? 'primary.main' : err ? 'error.main' : (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.11)' : 'rgba(8,145,178,0.22)',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 0.5,
-              backgroundColor: isDragActive ? (t) => `${t.palette.primary.main}0E` : err ? 'rgba(239,68,68,0.04)' : 'background.default',
-              transition: 'all 0.18s',
-              '&:hover': { borderColor: 'primary.main', backgroundColor: (t) => `${t.palette.primary.main}09` },
-            }}>
-              <input {...getInputProps()} />
-              <GalleryIcon sx={{ fontSize: 20, color: isDragActive ? 'primary.main' : 'text.disabled' }} />
-              <Typography variant="caption" sx={{ color: isDragActive ? 'primary.main' : 'text.secondary', fontWeight: 500, fontSize: '0.68rem', textAlign: 'center', px: 0.75 }}>{isDragActive ? 'Drop here' : description}</Typography>
-              <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.58rem' }}>JPEG · PNG · DICOM</Typography>
-            </Box>
-            <AnimatePresence>
-              {err && <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}><Alert severity="error" icon={<WarnIcon sx={{ fontSize: 13 }} />} sx={{ mt: 0.5, py: 0.2, fontSize: '0.66rem' }}>{err}</Alert></motion.div>}
-            </AnimatePresence>
-          </motion.div>
-        ) : (
-          <motion.div key="f" variants={fadeUp} initial="hidden" animate="visible" exit="exit">
-            <Box sx={{ height: SLOT_H, border: '2px solid', borderColor: (t) => `${t.palette.primary.main}45`, borderRadius: 2, overflow: 'hidden', display: 'flex', flexDirection: 'column', backgroundColor: (t) => `${t.palette.primary.main}08` }}>
-              <Box sx={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
-                <Box component="img" src={item.preview} alt={label} sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                <Box sx={{ position: 'absolute', top: 5, left: 5, px: 0.8, py: 0.2, borderRadius: '999px', backgroundColor: (t) => `${t.palette.primary.main}CC`, display: 'flex', alignItems: 'center', gap: 0.4 }}>
-                  <CheckIcon sx={{ fontSize: 9, color: '#fff' }} />
-                  <Typography sx={{ fontSize: '0.55rem', color: '#fff', fontWeight: 700, letterSpacing: '0.05em' }}>READY</Typography>
+      {/* Slot frame — position:relative + explicit height is the ONLY thing sizing this */}
+      <Box sx={{ height: SLOT_H, flexShrink: 0, position: 'relative', borderRadius: 2, overflow: 'hidden' }}>
+        <AnimatePresence mode="wait">
+          {!item ? (
+            <motion.div key="e"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              transition={{ duration: 0.16 }}
+              style={{ position: 'absolute', inset: 0 }}>
+              <Box {...getRootProps()} sx={{
+                position: 'absolute', inset: 0,
+                border: '2px dashed', borderRadius: 2, cursor: 'pointer',
+                borderColor: isDragActive ? 'primary.main' : err ? 'error.main' : (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.11)' : 'rgba(8,145,178,0.22)',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 0.5,
+                backgroundColor: isDragActive ? (t) => `${t.palette.primary.main}0E` : err ? 'rgba(239,68,68,0.04)' : 'background.default',
+                transition: 'all 0.18s',
+                '&:hover': { borderColor: 'primary.main', backgroundColor: (t) => `${t.palette.primary.main}09` },
+              }}>
+                <input {...getInputProps()} />
+                <GalleryIcon sx={{ fontSize: 20, color: isDragActive ? 'primary.main' : 'text.disabled' }} />
+                <Typography variant="caption" sx={{ color: isDragActive ? 'primary.main' : 'text.secondary', fontWeight: 500, fontSize: '0.68rem', textAlign: 'center', px: 0.75 }}>{isDragActive ? 'Drop here' : description}</Typography>
+                <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.58rem' }}>JPEG · PNG · DICOM</Typography>
+              </Box>
+            </motion.div>
+          ) : (
+            <motion.div key="f"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              transition={{ duration: 0.16 }}
+              style={{ position: 'absolute', inset: 0 }}>
+              <Box sx={{
+                position: 'absolute', inset: 0,
+                border: '2px solid', borderColor: (t) => `${t.palette.primary.main}45`, borderRadius: 2,
+                display: 'flex', flexDirection: 'column', overflow: 'hidden',
+                backgroundColor: (t) => `${t.palette.primary.main}08`,
+              }}>
+                {/* Image fills everything except the footer strip */}
+                <Box component="img" src={item.preview} alt={label} sx={{ flex: 1, width: '100%', objectFit: 'cover', display: 'block', minHeight: 0 }} />
+                {/* Footer strip — constrained to full cell width */}
+                <Box sx={{
+                  px: 1, py: 0.5, flexShrink: 0, borderTop: '1px solid', borderColor: 'divider',
+                  display: 'flex', alignItems: 'center', gap: 0.75, minWidth: 0,
+                  backgroundColor: 'background.paper',
+                }}>
+                  <Box sx={{ position: 'absolute', top: 5, left: 5, px: 0.8, py: 0.2, borderRadius: '999px', backgroundColor: (t) => `${t.palette.primary.main}CC`, display: 'flex', alignItems: 'center', gap: 0.4 }}>
+                    <CheckIcon sx={{ fontSize: 9, color: '#fff' }} />
+                    <Typography sx={{ fontSize: '0.55rem', color: '#fff', fontWeight: 700, letterSpacing: '0.05em' }}>READY</Typography>
+                  </Box>
+                  <Typography variant="caption" noWrap sx={{ flex: 1, minWidth: 0, color: 'text.primary', fontWeight: 500, fontSize: '0.63rem' }}>{item.file.name}</Typography>
+                  <Button size="small" variant="outlined" color="error" onClick={() => { setErr(null); onRemove(viewKey); }} sx={{ fontSize: '0.57rem', py: 0.15, px: 0.6, minWidth: 0, flexShrink: 0 }}>Remove</Button>
                 </Box>
               </Box>
-              <Box sx={{ px: 1, py: 0.55, borderTop: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 0.75, flexShrink: 0 }}>
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography variant="caption" noWrap sx={{ color: 'text.primary', fontWeight: 500, fontSize: '0.64rem', display: 'block' }}>{item.file.name}</Typography>
-                  <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.58rem' }}>{formatSize(item.file.size)}</Typography>
-                </Box>
-                <Button size="small" variant="outlined" color="error" onClick={() => { setErr(null); onRemove(viewKey); }} sx={{ fontSize: '0.57rem', py: 0.15, px: 0.6, minWidth: 0, flexShrink: 0 }}>Remove</Button>
-              </Box>
-            </Box>
-          </motion.div>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </Box>
+
+      {/* Error alert — outside locked frame so it can grow freely */}
+      <AnimatePresence>
+        {err && <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}><Alert severity="error" icon={<WarnIcon sx={{ fontSize: 13 }} />} sx={{ py: 0.2, fontSize: '0.66rem' }}>{err}</Alert></motion.div>}
       </AnimatePresence>
     </Box>
   );
@@ -275,24 +293,28 @@ export default function MultiViewUpload({ views, setViews, setActiveStep, handle
           </Box>
         </Box>
 
-        {/* ── Persistent info bar — identical styling in both modes ── */}
+        {/* ── Info / status bar — same fixed height in every state ── */}
         <Box sx={{
           display: 'flex', alignItems: 'center', gap: 0.85,
           px: 1.75, minHeight: 38,
           borderBottom: '1px solid', borderColor: 'divider',
-          backgroundColor: (t) => t.palette.mode === 'dark' ? 'rgba(34,211,238,0.06)' : 'rgba(8,145,178,0.07)',
+          backgroundColor: allFilled
+            ? (t) => t.palette.mode === 'dark' ? 'rgba(34,211,238,0.10)' : 'rgba(8,145,178,0.12)'
+            : (t) => t.palette.mode === 'dark' ? 'rgba(34,211,238,0.06)' : 'rgba(8,145,178,0.07)',
+          transition: 'background-color 0.25s',
         }}>
-          {/* Direct flex children — no wrapper divs so alignItems:center is exact */}
-          <InfoIcon sx={{ fontSize: 14, flexShrink: 0, color: 'primary.main' }} />
-          <Typography variant="caption" sx={{ fontSize: '0.69rem', lineHeight: 1.5, color: 'rgba(255,255,255,0.82)', minWidth: 0 }}>
-            {isSmrt ? (
+          {allFilled
+            ? <CheckIcon sx={{ fontSize: 14, flexShrink: 0, color: 'primary.main' }} />
+            : <InfoIcon  sx={{ fontSize: 14, flexShrink: 0, color: 'primary.main' }} />}
+          <Typography variant="caption" sx={{ fontSize: '0.69rem', lineHeight: 1.5, minWidth: 0, fontWeight: allFilled ? 600 : 400, color: allFilled ? 'primary.main' : 'text.secondary' }}>
+            {allFilled ? 'All 4 views uploaded — ready for analysis.' : isSmrt ? (
               <>
                 {'Needs '}
-                <Box component="span" sx={{ fontWeight: 700, color: '#fff' }}>laterality</Box>
+                <Box component="span" sx={{ fontWeight: 700, color: 'text.primary' }}>laterality</Box>
                 {' (L/R or Left/Right) and '}
-                <Box component="span" sx={{ fontWeight: 700, color: '#fff' }}>view</Box>
+                <Box component="span" sx={{ fontWeight: 700, color: 'text.primary' }}>view</Box>
                 {' (CC/MLO) in filename\u00A0— e.g.\u00A0'}
-                <Box component="span" sx={{ fontFamily: 'monospace', fontSize: '0.67rem', color: 'primary.main', backgroundColor: (t) => `${t.palette.primary.main}22`, px: 0.45, borderRadius: 0.5 }}>…_L_CC</Box>
+                <Box component="span" sx={{ fontFamily: 'monospace', fontSize: '0.67rem', color: 'primary.main', backgroundColor: (t) => `${t.palette.primary.main}18`, px: 0.45, borderRadius: 0.5 }}>…_L_CC</Box>
                 {'. Unmatched files listed below.'}
               </>
             ) : (
@@ -373,7 +395,7 @@ export default function MultiViewUpload({ views, setViews, setActiveStep, handle
                   </Box>
                 )}
 
-                {/* Needs attention */}
+               
                 <AnimatePresence>
                   {pending.length > 0 && (
                     <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
@@ -408,14 +430,6 @@ export default function MultiViewUpload({ views, setViews, setActiveStep, handle
             )}
           </AnimatePresence>
 
-          {/* Completion alert */}
-          <AnimatePresence>
-            {allFilled && (
-              <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>
-                <Alert severity="success" icon={<CheckIcon />} sx={{ mt: 1.25, fontSize: '0.75rem' }}>All 4 views uploaded — ready for analysis.</Alert>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </Box>
       </Box>
 
