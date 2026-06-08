@@ -4,9 +4,9 @@ import { Check } from '@mui/icons-material';
 
 const CustomStepIcon = ({ active, completed, icon }) => (
   <Box sx={{
-    width: 48,
-    height: 48,
-    borderRadius: 2,
+    width: 36,
+    height: 36,
+    borderRadius: 1.5,
     backgroundColor: active || completed ? 'primary.main' : 'rgba(255,255,255,0.07)',
     border: '2px solid',
     borderColor: active || completed ? 'primary.main' : 'rgba(255,255,255,0.12)',
@@ -15,17 +15,17 @@ const CustomStepIcon = ({ active, completed, icon }) => (
     justifyContent: 'center',
     color: active || completed ? 'primary.contrastText' : 'text.disabled',
     fontWeight: 700,
-    fontSize: '1rem',
+    fontSize: '0.85rem',
     boxShadow: active
       ? (theme) =>
-          `0 0 0 5px ${theme.palette.primary.main}22,
-           0 0 18px 4px ${theme.palette.primary.main}55`
+          `0 0 0 4px ${theme.palette.primary.main}22,
+           0 0 14px 3px ${theme.palette.primary.main}55`
       : completed
-        ? (theme) => `0 0 8px 2px ${theme.palette.primary.main}33`
+        ? (theme) => `0 0 6px 2px ${theme.palette.primary.main}33`
         : 'none',
     transition: 'all 0.3s ease',
   }}>
-    {completed ? <Check sx={{ fontSize: '1.1rem' }} /> : icon}
+    {completed ? <Check sx={{ fontSize: '0.95rem' }} /> : icon}
   </Box>
 );
 
@@ -37,15 +37,15 @@ const STEPS = [
 
 export default function AnalysisStepper({ activeStep }) {
   return (
-    <Container maxWidth="sm" sx={{ pt: 3, pb: 2 }}>
+    <Container maxWidth="sm" sx={{ pt: 2, pb: 1.5 }}>
       <Stepper
         activeStep={activeStep}
         alternativeLabel
         sx={{
           '& .MuiStepConnector-root': {
-            top: 24,
-            left: 'calc(-50% + 32px)',
-            right: 'calc(50% + 32px)',
+            top: 18,
+            left: 'calc(-50% + 26px)',
+            right: 'calc(50% + 26px)',
           },
           '& .MuiStepConnector-line': {
             borderTopWidth: 2,
@@ -56,22 +56,22 @@ export default function AnalysisStepper({ activeStep }) {
             border: 'none',
             height: 2,
             boxShadow: (theme) =>
-              `0 0 8px 2px ${theme.palette.primary.main}AA,
-               0 0 16px 4px ${theme.palette.primary.main}55`,
+              `0 0 6px 2px ${theme.palette.primary.main}AA,
+               0 0 12px 3px ${theme.palette.primary.main}55`,
           },
           '& .MuiStepConnector-root.Mui-completed .MuiStepConnector-line': {
             backgroundColor: 'primary.main',
             border: 'none',
             height: 2,
             boxShadow: (theme) =>
-              `0 0 8px 2px ${theme.palette.primary.main}AA,
-               0 0 16px 4px ${theme.palette.primary.main}55`,
+              `0 0 6px 2px ${theme.palette.primary.main}AA,
+               0 0 12px 3px ${theme.palette.primary.main}55`,
           },
           '& .MuiStepLabel-label': {
-            fontSize: '0.78rem',
+            fontSize: '0.72rem',
             fontWeight: 600,
             color: 'text.disabled',
-            mt: 0.75,
+            mt: 0.5,
             letterSpacing: '0.06em',
             textTransform: 'uppercase',
           },
@@ -94,10 +94,10 @@ export default function AnalysisStepper({ activeStep }) {
                 StepIconComponent={CustomStepIcon}
                 optional={
                   <Typography variant="caption" sx={{
-                    fontSize: '0.72rem',
+                    fontSize: '0.66rem',
                     fontWeight: isActive ? 600 : 400,
                     color: isActive
-                      ? 'text.primary'
+                      ? 'text.secondary'
                       : isCompleted
                         ? 'primary.main'
                         : 'text.disabled',
