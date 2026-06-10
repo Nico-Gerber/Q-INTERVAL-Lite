@@ -15,7 +15,7 @@ from lime import lime_image
 # CONFIG
 # ============================================================
 
-QRF_MODEL_PATH   = "QML/quantum_random_forest.joblib"
+QRF_MODEL_PATH   = "QML/quantum_random_forest_v2.joblib"
 PCA_MODEL_PATH   = "QML/8pca/pcaObj.joblib"
 SCALER_PATH      = "QML/8pca/scalerObj.joblib"
 
