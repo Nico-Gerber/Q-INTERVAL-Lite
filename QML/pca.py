@@ -5,6 +5,7 @@ from PIL import Image
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
+from skimage.filters import threshold_otsu
 import joblib
 
 # =========================================================
@@ -154,6 +155,8 @@ for _, row in sampled_df.iterrows():
         img = Image.open(img_path).convert("L")
         img = img.resize(RESIZE_TO)
         arr = np.array(img, dtype=np.float32) / 255.0
+        thresh = threshold_otsu(arr)
+        arr[arr < thresh] = 0.0
         arr = arr.flatten()
 
         X.append(arr)
