@@ -376,6 +376,9 @@ export default function FutureRiskResults({ analyisedImage, reset, currentModel,
 
                     </Box>
 
+                    <Container sx={{ padding: 4, display: 'flex', justifyContent: 'center' }}>
+                        <Button variant="contained" onClick={() => reset()}>Reset</Button>
+                    </Container>
 
 
                 </Box>

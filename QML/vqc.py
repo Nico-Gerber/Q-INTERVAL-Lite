@@ -2,28 +2,28 @@ import numpy as np
 import pandas as pd
 import pennylane as qml
 from pennylane import numpy as pnp
-from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 import joblib
 import matplotlib.pyplot as plt
 
 #vars
-CSV_PATH = "dataset/qml_900_pca4_multiclass.csv"
+CSV_PATH = "8pca/qml_4500_pca8_multiclass.csv"
 LABEL_COLUMN = "label"
-FEATURE_COLUMNS = [f"pc{i}" for i in range(1, 5)]
+FEATURE_COLUMNS = [f"pc{i}" for i in range(1, 9)]
 
 RANDOM_SEED = 42
 TEST_SIZE = 0.2
-N_QUBITS = 4
-N_LAYERS = 4
+N_QUBITS = 8
+N_LAYERS = 3
 N_CLASSES = 3
-EPOCHS = 25
+EPOCHS = 60
 BATCH_SIZE = 16
-LEARNING_RATE = 0.01
+LEARNING_RATE = 0.003
 
-MODEL_SAVE_PATH = "vqc_900_pca4_multiclass_v5.joblib"
-HISTORY_SAVE_PATH = "vqc_900_pca4_multiclass_v5_history.joblib"
+MODEL_SAVE_PATH = "vqc_4500_pca8_multiclass_v2.joblib"
+HISTORY_SAVE_PATH = "vqc_4500_pca8_multiclass_v2_history.joblib"
 
 LABEL_NAMES = {
     0: "normal",
@@ -64,39 +64,36 @@ print("Test label distribution:", dict(zip(*np.unique(y_test, return_counts=True
 
 dev = qml.device("default.qubit", wires=N_QUBITS)
 
-def variational_layer(weights, x):
-    # re-upload with per-layer learnable scale (weights[:, 2])
-    for i in range(N_QUBITS):
-        qml.RY(weights[i, 2] * x[i], wires=i)
-        qml.RZ(weights[i, 2] * x[(i + 1) % len(x)], wires=i)
-
-    # trainable rotations
+def variational_layer(weights):
     for i in range(N_QUBITS):
         qml.RY(weights[i, 0], wires=i)
         qml.RZ(weights[i, 1], wires=i)
 
-    # brick-layer entanglement
-    for i in range(0, N_QUBITS - 1, 2):
-        qml.CNOT(wires=[i, i + 1])
-    for i in range(1, N_QUBITS - 1, 2):
-        qml.CNOT(wires=[i, i + 1])
+    for i in range(N_QUBITS):
+        qml.CNOT(wires=[i, (i + 1) % N_QUBITS])
 
 @qml.qnode(dev, interface="autograd")
 def circuit(x, weights):
     for layer in range(N_LAYERS):
-        variational_layer(weights[layer], x)
-    return [qml.expval(qml.PauliZ(i)) for i in range(N_QUBITS)]
 
+        # encoding
+        for i in range(N_QUBITS):
+            qml.RY(x[i], wires=i)
+            qml.RZ(x[i], wires=i)
 
-def softmax(logits):
-    logits = pnp.array(logits)
-    shifted = logits - pnp.max(logits)
-    exp_vals = pnp.exp(shifted)
-    return exp_vals / pnp.sum(exp_vals)
+        # structured variational layer
+        qml.templates.StronglyEntanglingLayers(
+            weights[layer:layer+1],
+            wires=range(N_QUBITS)
+        )
+
+    return qml.probs(wires=[0,1])
+
 
 def predict_probs(x, weights):
-    raw_outputs = circuit(x, weights)[:N_CLASSES]
-    probs = softmax(raw_outputs)
+    probs = circuit(x, weights)
+    probs = probs[:N_CLASSES]
+    probs = probs / pnp.sum(probs)
     return probs
 
 def predict_label(x, weights):
@@ -120,10 +117,10 @@ def evaluate(X, y, weights):
     return acc, probs, preds
 
 weights = pnp.array(
-    np.random.normal(
-        loc=0.0,
-        scale=0.1,
-        size=(N_LAYERS, N_QUBITS, 3)
+    0.01 * np.random.randn(
+        N_LAYERS,
+        N_QUBITS,
+        3
     ),
     requires_grad=True
 )
