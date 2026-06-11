@@ -140,73 +140,90 @@ export default function Analysis() {
 
     setLoading(true);
     setStatus(null);
-    /*
+
     if (analysisMode === 'future-risk') {
-      const isMulti = files.length > 1;
-      const endpoint = isMulti ? 'multi' : 'single';
+      // sessions that have a date AND at least one uploaded image
+      const datedSessions = sessions.filter(
+        s => s.scanDate && Object.values(s.views).some(v => (v?.file ?? v) instanceof File)
+      );
 
-      const qmlFormData = new FormData();
-      // const cnnFormData = new FormData(); // TODO: wire up CNN future risk endpoint when ready
-
-      if (isMulti) {
-        files.forEach(f => qmlFormData.append('files', f.file));
-      } else {
-        qmlFormData.append('file', files[0].file);
+      if (datedSessions.length === 0) {
+        setStatus({ ok: false, msg: 'Add at least one session with a date and one mammogram image.' });
+        setLoading(false);
+        return;
       }
 
+      // UI slot names use hyphens; the endpoint expects underscores
+      const slotMap = { 'L-CC': 'L_CC', 'R-CC': 'R_CC', 'L-MLO': 'L_MLO', 'R-MLO': 'R_MLO' };
+
+      const fd = new FormData();
+      if (patientAge) fd.append('age', String(patientAge));
+      datedSessions.forEach((s, i) => {
+        fd.append(`s${i}_date`, s.scanDate);
+        Object.entries(slotMap).forEach(([uiKey, apiKey]) => {
+          const v = s.views?.[uiKey];
+          const file = v?.file ?? (v instanceof File ? v : null);
+          if (file) fd.append(`s${i}_${apiKey}`, file);
+        });
+      });
+
+      // reshape /future-risk response into the { patient_summary, image_level_results }
+      // contract FutureRiskResults reads
+      const adaptFutureRisk = (api) => {
+        if (!api?.risk_predictions) return null;
+        const num = (x) => parseFloat(String(x).replace('%', '')) || 0;
+
+        const yearly = Object.fromEntries(
+          Object.entries(api.risk_predictions).map(([k, val]) => [k, num(val)])
+        );
+
+        // one contribution % per exam, matched by date (5-year relative contribution)
+        const byDate = Object.fromEntries(
+          (api.session_contributions ?? []).map(r =>
+            [String(r.exam_date), r.risk_5yr_relative_contribution_percent ?? 0])
+        );
+
+        return {
+          patient_summary: {
+            final_patient_yearly_future_risk: yearly,
+            final_patient_5_year_risk_score: yearly['5_year'] ?? 0,
+          },
+          // emit a row per session; null contribution lets the component fall back
+          // to an even 1/n weight for single-view sessions (skipped in ablation)
+          image_level_results: datedSessions.map((s, i) => ({
+            filename: `exam_${i + 1}`,
+            image_contribution_percent: byDate[String(s.scanDate)] ?? null,
+          })),
+        };
+      };
+
       try {
-        const [qmlRes] = await Promise.all([
-          fetch(`${API_BASE}/qml-future-risk/predict/${endpoint}`, { method: 'POST', body: qmlFormData }),
-          // fetch(`${API_BASE}/cnn-future-risk/predict/${endpoint}`, { method: 'POST', body: cnnFormData }), // TODO: CNN future risk
-        ]);
-        const [qmlData] = await Promise.all([
-          qmlRes.json(),
-          // cnnRes.json(), // TODO: CNN future risk
-        ]);
-        setResult({ resultFile: { qml: qmlData, cnn: null } });
+        const cnnRes = await fetch(`${API_BASE}/future-risk`, { method: 'POST', body: fd });
+        const cnnApi = await cnnRes.json();
+        const cnnData = adaptFutureRisk(cnnApi);
+
+        // TODO: swap in the real QML future-risk endpoint when ready.
+        // FutureRiskResults early-returns "No results available" if qml is falsy,
+        // so keep a structured placeholder in the qml slot for now.
+        const qmlData = {
+          patient_summary: {
+            final_patient_yearly_future_risk: {
+              '1_year': 1.8, '2_year': 3.0, '3_year': 4.4, '4_year': 5.9, '5_year': 7.6,
+            },
+            final_patient_5_year_risk_score: 7.6,
+          },
+          image_level_results: datedSessions.map((s, i) => ({
+            filename: `exam_${i + 1}`,
+            image_contribution_percent: [55, 30, 15][i] ?? 10,
+          })),
+        };
+
+        setResult({ resultFile: { qml: qmlData, cnn: cnnData } });
       } catch {
         setStatus({ ok: false, msg: 'Cannot reach the server. Make sure the backend is running.' });
       } finally {
         setLoading(false);
       }
-        */
-    const datedSessions = sessions.filter(s => s.scanDate);
-
-
-    if (analysisMode === 'future-risk') {
-      // TEMP mock until AI team's endpoint is ready
-      const mockYearly = {
-        "1_year": 2.1, "2_year": 3.4, "3_year": 5.0,
-        "4_year": 6.8, "5_year": 9.2,
-      };
-
-      const qmlData = {
-        patient_summary: {
-          final_patient_yearly_future_risk: mockYearly,
-          final_patient_5_year_risk_score: 9.2,
-        },
-        image_level_results: datedSessions.map((s, i) => ({
-          filename: `exam_${i + 1}`,
-          image_contribution_percent: [58, 26, 16][i] ?? 10,
-        })),
-      };
-
-      const cnnData = {
-        patient_summary: {
-          final_patient_yearly_future_risk: {
-            "1_year": 1.8, "2_year": 3.0, "3_year": 4.4,
-            "4_year": 5.9, "5_year": 7.6,
-          },
-          final_patient_5_year_risk_score: 7.6,
-        },
-        image_level_results: datedSessions.map((s, i) => ({
-          filename: `exam_${i + 1}`,
-          image_contribution_percent: [55, 30, 15][i] ?? 10,
-        })),
-      };
-
-      setResult({ resultFile: { qml: qmlData, cnn: cnnData } });
-      setLoading(false);
       return;
     } else {
       const formData = new FormData();
@@ -224,18 +241,22 @@ export default function Analysis() {
 
 
       try {
-        const [qmlRes, cnnRes, CRqmlRes, CRcnnRes] = await Promise.all([
-          //  fetch(`${API_BASE}/images/upload`, { method: 'POST', body: formData }),
+        const [qmlRes, sessionRes, CRqmlRes] = await Promise.all([
           fetch(`${API_BASE}/QMLPredictV2/predict-four-views-QML`, { method: 'POST', body: formData }),
-          fetch(`${API_BASE}/S2CNNPredict/predict-four-views`, { method: 'POST', body: formData }),
+          fetch(`${API_BASE}/session-analysis/predict-four-views`, { method: 'POST', body: formData }),
           fetch(`${API_BASE}/qml-mammo-risk/predict/multi`, { method: 'POST', body: compositeRiskData }),
-          fetch(`${API_BASE}/mammo-risk/predict/multi`, { method: 'POST', body: compositeRiskData }),
-
         ]);
-        const [qmlData, cnnData, CRqmlData, CRcnnData] = await Promise.all([
-          qmlRes.json(), cnnRes.json(), CRqmlRes.json(), CRcnnRes.json()
+        const [qmlData, sessionData, CRqmlData] = await Promise.all([
+          qmlRes.json(), sessionRes.json(), CRqmlRes.json(),
         ]);
-        setResult({ resultFile: { qml: qmlData, cnn: cnnData, CRqml: CRqmlData, CRcnn: CRcnnData } });
+        setResult({
+          resultFile: {
+            qml: qmlData,
+            cnn: sessionData.classification,
+            CRcnn: sessionData.composite_risk,
+            CRqml: CRqmlData,
+          }
+        });
       } catch {
         setStatus({ ok: false, msg: 'Cannot reach the server. Make sure the backend is running.' });
       } finally {
