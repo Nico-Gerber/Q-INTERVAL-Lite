@@ -304,6 +304,10 @@ export default function Analysis() {
           qml_overall_classification: result.resultFile.qml?.aggregated?.overall_classification ?? null,
           qml_patient_malignant_score: result.resultFile.qml?.aggregated?.patient_malignant_score ?? null,
           qml_views: result.resultFile.qml?.views ?? null,
+          qml_composite_risk_score: result.resultFile.CRqml?.future_risk_score ?? null,
+          qml_composite_risk_level: result.resultFile.CRqml?.risk_level ?? null,
+          qml_highest_density: result.resultFile.CRqml?.highest_density_risk_score ?? null,
+          qml_highest_birads: result.resultFile.CRqml?.highest_birads_risk_score ?? null,
         })
       })
 
@@ -716,6 +720,8 @@ export default function Analysis() {
                         }}>
                           Generated Interpretation
                         </Typography>
+
+
                       </Box>
 
                     ) : (<Container></Container>)
@@ -784,6 +790,55 @@ export default function Analysis() {
                   >
                     Generate Explanation
                   </Button>
+                  {/* Audience toggle */}
+                  <Box>
+                    <Typography sx={{
+                      fontSize: '0.65rem', letterSpacing: '0.12em', textTransform: 'uppercase',
+                      fontWeight: 700, mb: 0.75,
+                      color: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.4)' : 'rgba(8,145,178,0.7)',
+                    }}>
+                      Audience
+                    </Typography>
+
+                    <Box sx={{
+                      display: 'flex', gap: 0.5, p: 0.5, borderRadius: '14px',
+                      background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(8,145,178,0.06)',
+                      border: (theme) => theme.palette.mode === 'dark' ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(8,145,178,0.15)',
+                    }}>
+                      {[
+                        { value: 'clinician', label: 'Clinician' },
+                        { value: 'patient', label: 'Patient' },
+                      ].map(({ value, label }) => {
+                        const active = audience === value;
+                        return (
+                          <Box
+                            key={value}
+                            onClick={() => { setAudience(value); }}
+                            sx={{
+                              flex: 1, textAlign: 'center', cursor: 'pointer',
+                              py: 0.9, borderRadius: '11px',
+                              fontSize: '0.8rem', fontWeight: 700,
+                              transition: 'all 0.18s',
+                              color: active
+                                ? '#FFFFFF'
+                                : (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.5)' : 'rgba(8,145,178,0.7)',
+                              background: active
+                                ? (theme) => theme.palette.mode === 'dark'
+                                  ? 'linear-gradient(135deg, #0891B2 0%, #22D3EE 100%)'
+                                  : 'linear-gradient(135deg, #0E7490 0%, #0891B2 100%)'
+                                : 'transparent',
+                              boxShadow: active ? '0 4px 14px rgba(8,145,178,0.30)' : 'none',
+                              '&:hover': active ? {} : {
+                                background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(8,145,178,0.05)',
+                              },
+                            }}
+                          >
+                            {label}
+                          </Box>
+                        );
+                      })}
+                    </Box>
+                  </Box>
                 </Box>
               )}
             </Box>

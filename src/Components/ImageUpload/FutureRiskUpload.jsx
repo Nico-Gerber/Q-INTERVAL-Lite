@@ -19,14 +19,14 @@ import { useDropzone } from 'react-dropzone';
 
 const MAX_SESSIONS = 5;
 const MIN_SESSIONS = 2;
-const SLOT_H       = 88;
-const TODAY        = new Date().toISOString().split('T')[0];
+const SLOT_H = 88;
+const TODAY = new Date().toISOString().split('T')[0];
 
 const VIEW_CONFIG = [
-  { key: 'L-CC',  label: 'L-CC',  fullLabel: 'Left Craniocaudal',          description: 'Left breast — top-down view'  },
-  { key: 'R-CC',  label: 'R-CC',  fullLabel: 'Right Craniocaudal',         description: 'Right breast — top-down view' },
-  { key: 'L-MLO', label: 'L-MLO', fullLabel: 'Left Mediolateral Oblique',  description: 'Left breast — angled view'    },
-  { key: 'R-MLO', label: 'R-MLO', fullLabel: 'Right Mediolateral Oblique', description: 'Right breast — angled view'   },
+  { key: 'L-CC', label: 'L-CC', fullLabel: 'Left Craniocaudal', description: 'Left breast — top-down view' },
+  { key: 'R-CC', label: 'R-CC', fullLabel: 'Right Craniocaudal', description: 'Right breast — top-down view' },
+  { key: 'L-MLO', label: 'L-MLO', fullLabel: 'Left Mediolateral Oblique', description: 'Left breast — angled view' },
+  { key: 'R-MLO', label: 'R-MLO', fullLabel: 'Right Mediolateral Oblique', description: 'Right breast — angled view' },
 ];
 
 // ── Filename detectors ────────────────────────────────────────────────────────
@@ -34,14 +34,14 @@ const SIDE_MAP = { L: 'L', LEFT: 'L', R: 'R', RIGHT: 'R' };
 const VIEW_SET = ['CC', 'MLO'];
 
 const detectView = (filename) => {
-  const base   = filename.replace(/\.[^.]+$/, '');
+  const base = filename.replace(/\.[^.]+$/, '');
   const tokens = base.split(/[^A-Za-z0-9]+/).filter(Boolean);
-  const upper  = tokens.map(t => t.toUpperCase());
+  const upper = tokens.map(t => t.toUpperCase());
   for (let i = 0; i < upper.length; i++) {
     const m = upper[i].match(/^(LEFT|RIGHT|L|R)(CC|MLO)$/);
     if (m) return { ok: true, side: SIDE_MAP[m[1]], view: m[2], key: `${SIDE_MAP[m[1]]}-${m[2]}`, sideIdx: i, viewIdx: i, sideProof: tokens[i], viewProof: tokens[i], adjacent: true };
   }
-  const sc = upper.map((t, i) => ({ i, side: SIDE_MAP[t]  })).filter(x => x.side);
+  const sc = upper.map((t, i) => ({ i, side: SIDE_MAP[t] })).filter(x => x.side);
   const vc = upper.map((t, i) => ({ i, view: t })).filter(x => VIEW_SET.includes(x.view));
   if (!sc.length || !vc.length) return { ok: false, missing: [!sc.length && 'laterality', !vc.length && 'view (CC/MLO)'].filter(Boolean) };
   let best = null;
@@ -67,8 +67,8 @@ const sideName = (s) => (s === 'L' ? 'Left' : 'Right');
 
 // ── Mode toggle tabs ──────────────────────────────────────────────────────────
 const TABS = [
-  { val: 'manual', Icon: GridViewIcon,    label: 'Manual', blurb: 'Drop each view into its slot.' },
-  { val: 'smart',  Icon: AutoAwesomeIcon, label: 'Smart',  blurb: 'Auto-detect view + date from filename.' },
+  { val: 'manual', Icon: GridViewIcon, label: 'Manual', blurb: 'Drop each view into its slot.' },
+  { val: 'smart', Icon: AutoAwesomeIcon, label: 'Smart', blurb: 'Auto-detect view + date from filename.' },
 ];
 
 const ModeToggle = ({ mode, setMode }) => (
@@ -170,9 +170,9 @@ const RoutedRow = ({ cfg, item, proof, onRemove }) => {
 
 // ── Slide animation ───────────────────────────────────────────────────────────
 const slideVariants = {
-  enter:  (dir) => ({ opacity: 0, x: dir *  22 }),
+  enter: (dir) => ({ opacity: 0, x: dir * 22 }),
   center: { opacity: 1, x: 0, transition: { duration: 0.22, ease: 'easeOut' } },
-  exit:   (dir) => ({ opacity: 0, x: dir * -22, transition: { duration: 0.16 } }),
+  exit: (dir) => ({ opacity: 0, x: dir * -22, transition: { duration: 0.16 } }),
 };
 
 // ── Arrow button ──────────────────────────────────────────────────────────────
@@ -185,11 +185,11 @@ const ArrowBtn = ({ dir, onClick, disabled }) => (
 // ── Main export ───────────────────────────────────────────────────────────────
 export default function FutureRiskUpload({ sessions, setSessions, setActiveStep, handleAnalyse, patientAge, setPatientAge }) {
   const [uploadMode, setUploadMode] = useState('manual');
-  const [activeIdx,  setActiveIdx ] = useState(0);
-  const [proofMaps,  setProofMaps ] = useState({});
-  const [pendings,   setPendings  ] = useState({});
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [proofMaps, setProofMaps] = useState({});
+  const [pendings, setPendings] = useState({});
   const [dateProofs, setDateProofs] = useState({});
-  const [smartErrs,  setSmartErrs ] = useState({});
+  const [smartErrs, setSmartErrs] = useState({});
   const slideDir = useRef(1);
 
   const goTo = (i) => {
@@ -198,20 +198,20 @@ export default function FutureRiskUpload({ sessions, setSessions, setActiveStep,
     setActiveIdx(clamped);
   };
 
-  const currentSession  = sessions[activeIdx] ?? sessions[0];
-  const sid             = currentSession?.id;
-  const currentProof    = proofMaps[sid] ?? {};
-  const currentPending  = pendings[sid]  ?? [];
+  const currentSession = sessions[activeIdx] ?? sessions[0];
+  const sid = currentSession?.id;
+  const currentProof = proofMaps[sid] ?? {};
+  const currentPending = pendings[sid] ?? [];
   const currentDateProof = dateProofs[sid] ?? null;
-  const currentSmartErr  = smartErrs[sid]  ?? null;
-  const filledCount      = currentSession ? Object.values(currentSession.views).filter(Boolean).length : 0;
-  const hasSmartContent  = filledCount > 0 || currentPending.length > 0;
+  const currentSmartErr = smartErrs[sid] ?? null;
+  const filledCount = currentSession ? Object.values(currentSession.views).filter(Boolean).length : 0;
+  const hasSmartContent = filledCount > 0 || currentPending.length > 0;
 
   const sessionComplete = (s) => s.scanDate !== '' && Object.values(s.views).every(v => v !== null);
-  const completedCount  = sessions.filter(sessionComplete).length;
-  const canContinue     = sessions.length >= MIN_SESSIONS && sessions.every(sessionComplete);
-  const isSmrt          = uploadMode === 'smart';
-  const freeSlots       = VIEW_CONFIG.filter(c => !currentSession?.views[c.key]);
+  const completedCount = sessions.filter(sessionComplete).length;
+  const canContinue = sessions.length >= MIN_SESSIONS && sessions.every(sessionComplete);
+  const isSmrt = uploadMode === 'smart';
+  const freeSlots = VIEW_CONFIG.filter(c => !currentSession?.views[c.key]);
 
   // ── Session management ─────────────────────────────────────────────────────
   const addSession = () => {
@@ -257,9 +257,9 @@ export default function FutureRiskUpload({ sessions, setSessions, setActiveStep,
 
     const nv = { ...sess.views };
     const np = { ...(proofMaps[id_] ?? {}) };
-    const npe = [...(pendings[id_]  ?? [])];
-    let   nd  = sess.scanDate;
-    let   ndp = dateProofs[id_] ?? null;
+    const npe = [...(pendings[id_] ?? [])];
+    let nd = sess.scanDate;
+    let ndp = dateProofs[id_] ?? null;
 
     accepted.forEach(f => {
       const vd = detectView(f.name);
@@ -272,9 +272,9 @@ export default function FutureRiskUpload({ sessions, setSessions, setActiveStep,
     });
 
     setSessions(prev => prev.map((s, i) => i === activeIdx ? { ...s, views: nv, scanDate: nd } : s));
-    setProofMaps(p  => ({ ...p,  [id_]: np  }));
-    setPendings(p   => ({ ...p,  [id_]: npe }));
-    setDateProofs(p => ({ ...p,  [id_]: ndp }));
+    setProofMaps(p => ({ ...p, [id_]: np }));
+    setPendings(p => ({ ...p, [id_]: npe }));
+    setDateProofs(p => ({ ...p, [id_]: ndp }));
   }, [sessions, activeIdx, proofMaps, pendings, dateProofs, setSessions]);
 
   const assignPending = (pid, viewKey) => {
@@ -313,8 +313,8 @@ export default function FutureRiskUpload({ sessions, setSessions, setActiveStep,
           <Typography variant="caption" sx={{ fontSize: '0.69rem', lineHeight: 1.5, minWidth: 0, fontWeight: canContinue ? 600 : 400, color: canContinue ? 'primary.main' : 'text.secondary' }}>
             {canContinue ? `All ${sessions.length} sessions complete — ready for temporal analysis.`
               : isSmrt
-              ? <>Filename needs <Box component="span" sx={{ fontWeight: 700, color: 'text.primary' }}>laterality</Box> (L/R), <Box component="span" sx={{ fontWeight: 700, color: 'text.primary' }}>view</Box> (CC/MLO) and <Box component="span" sx={{ fontWeight: 700, color: 'text.primary' }}>date</Box> (YYYY-MM-DD) — e.g.{'\u00A0'}<Box component="span" sx={{ fontFamily: 'monospace', fontSize: '0.67rem', color: 'primary.main', backgroundColor: (t) => `${t.palette.primary.main}18`, px: 0.45, borderRadius: 0.5 }}>…_2014-03-01_…_R_CC</Box></>
-              : `Future Risk · Fill all 4 views + scan date for each session. At least ${MIN_SESSIONS} sessions required.`}
+                ? <>Filename needs <Box component="span" sx={{ fontWeight: 700, color: 'text.primary' }}>laterality</Box> (L/R), <Box component="span" sx={{ fontWeight: 700, color: 'text.primary' }}>view</Box> (CC/MLO) and <Box component="span" sx={{ fontWeight: 700, color: 'text.primary' }}>date</Box> (YYYY-MM-DD) — e.g.{'\u00A0'}<Box component="span" sx={{ fontFamily: 'monospace', fontSize: '0.67rem', color: 'primary.main', backgroundColor: (t) => `${t.palette.primary.main}18`, px: 0.45, borderRadius: 0.5 }}>…_2014-03-01_…_R_CC</Box></>
+                : `Future Risk · Fill all 4 views + scan date for each session. At least ${MIN_SESSIONS} sessions required.`}
           </Typography>
         </Box>
 
@@ -347,7 +347,7 @@ export default function FutureRiskUpload({ sessions, setSessions, setActiveStep,
 
           {/* Carousel: ← content → */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-            <ArrowBtn dir="left"  onClick={() => goTo(activeIdx - 1)} disabled={activeIdx === 0} />
+            <ArrowBtn dir="left" onClick={() => goTo(activeIdx - 1)} disabled={activeIdx === 0} />
 
             <Box sx={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
               <AnimatePresence mode="wait" custom={slideDir.current}>
@@ -371,9 +371,9 @@ export default function FutureRiskUpload({ sessions, setSessions, setActiveStep,
                           {hasSmartContent
                             ? <Typography variant="caption" sx={{ color: isDragActive ? 'primary.main' : 'text.secondary', fontWeight: 600, fontSize: '0.71rem' }}>{isDragActive ? 'Drop to add more' : `Add more — ${filledCount}/4 routed for Session ${activeIdx + 1}`}</Typography>
                             : (<>
-                                <Typography variant="subtitle1" fontWeight={700} sx={{ color: isDragActive ? 'primary.main' : 'text.primary' }}>{isDragActive ? 'Drop files here' : `Drop files for Session ${activeIdx + 1}`}</Typography>
-                                <Typography variant="body2" sx={{ color: 'text.secondary', textAlign: 'center', maxWidth: 300 }}>View, laterality and date are read from filenames automatically.</Typography>
-                              </>)}
+                              <Typography variant="subtitle1" fontWeight={700} sx={{ color: isDragActive ? 'primary.main' : 'text.primary' }}>{isDragActive ? 'Drop files here' : `Drop files for Session ${activeIdx + 1}`}</Typography>
+                              <Typography variant="body2" sx={{ color: 'text.secondary', textAlign: 'center', maxWidth: 300 }}>View, laterality and date are read from filenames automatically.</Typography>
+                            </>)}
                         </Box>
                       )}
                       {filledCount === 4 && <input {...getInputProps()} style={{ display: 'none' }} />}

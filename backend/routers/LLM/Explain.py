@@ -32,11 +32,14 @@ class ExplainRequest(BaseModel):
     qml_overall_classification: Optional[str] = None
     qml_patient_malignant_score: Optional[float] = None
     qml_views: Optional[dict] = None
+    qml_composite_risk_score: Optional[float] = None
+    qml_composite_risk_level: Optional[str] = None
+    qml_highest_density: Optional[float] = None
+    qml_highest_birads:  Optional[float] = None
 
 # ── Prompt builder ─────────────────────────────────────────────────────────────
 def build_prompt(data: ExplainRequest) -> str:
 
-    # ── Per-view summary — this is now the centrepiece ──
     def view_line(view, info):
         probs = info.get("class_probabilities", {}) or {}
         breakdown = " / ".join(
@@ -44,7 +47,7 @@ def build_prompt(data: ExplainRequest) -> str:
             for cls in ("Malignant", "Benign", "Normal") if cls in probs
         )
         label = VIEW_NAMES.get(view, view)
-        line = f"  - {label}: {info.get('result', 'N/A')} ({round(info.get('score', 0) * 100, 1)}% confidence)"       
+        line = f"  - {label}: {info.get('result', 'N/A')} ({round(info.get('score', 0) * 100, 1)}% confidence)"
         return line + (f"  [{breakdown}]" if breakdown else "")
 
     view_summary = "\n".join(view_line(v, info) for v, info in data.views.items())
@@ -53,13 +56,34 @@ def build_prompt(data: ExplainRequest) -> str:
     if data.qml_views:
         qml_view_summary = "\n".join(view_line(v, info) for v, info in data.qml_views.items())
 
-    # ── Composite risk = background context ONLY, single line, omitted when malignant ──
-    composite_context = ""
-    if not data.malignant_detected and data.composite_risk_score is not None:
-        composite_context = (
-            f"\nBackground context only (do NOT build the explanation around this): "
-            f"composite future-risk score {data.composite_risk_score}/100 "
-            f"({data.composite_risk_level})."
+    # ── Composite future-risk: shown AFTER the views, classical vs quantum ──
+    def composite_line(label, score, level):
+        if score is None:
+            return f"  - {label}: NOT APPLICABLE (withheld — a malignant finding was detected)"
+        return f"  - {label}: {score}/100 ({level})"
+
+    cnn_comp = data.composite_risk_score
+    qml_comp = data.qml_composite_risk_score
+
+    composite_section = (
+        "\nCOMPOSITE FUTURE-RISK SCORE (background context only — a future-risk index, "
+        "NOT a malignancy result):\n"
+        + composite_line("Classical", cnn_comp, data.composite_risk_level) + "\n"
+        + composite_line("Quantum", qml_comp, data.qml_composite_risk_level)
+    )
+
+    if cnn_comp is not None and qml_comp is not None:
+        diff = abs(cnn_comp - qml_comp)
+        comp_agreement = (
+            "agree closely" if diff < 10
+            else "partially agree" if diff < 25
+            else "disagree"
+        )
+        composite_section += f"\n  The two models {comp_agreement} on the composite risk score."
+    elif cnn_comp is None and qml_comp is None:
+        composite_section += (
+            "\n  Both composite scores are withheld because a malignant finding was detected; "
+            "do NOT state or compare any risk numbers."
         )
 
     audience_instruction = (
@@ -67,8 +91,9 @@ def build_prompt(data: ExplainRequest) -> str:
         "Use precise clinical language. Be concise and action-oriented."
         if data.audience == "clinician"
         else
-        "You are explaining results to a patient in plain, reassuring language. "
-        "Avoid technical jargon. Focus on what happens next."
+        "You are explaining results to a patient in plain, supportive language. "
+        "Keep explanations simple and avoid technical jargon. Be honest and clear about "
+        "any concerning findings — do not downplay results or over-reassure."
     )
 
     return f"""You are a clinical decision support assistant explaining AI mammogram analysis results.
@@ -78,40 +103,33 @@ STRICT RULES:
 - Do NOT diagnose the patient
 - Do NOT recommend specific treatments
 - Do NOT go beyond what the results show
-- Keep your response to 3-4 sentences maximum
+- Keep your response to 4-5 sentences maximum
 - Centre your explanation on the INDIVIDUAL per-view classifications. Describe what the relevant views show and call out any left-vs-right (L / R) asymmetry or disagreement between views.
-- Determine malignancy from the CLASSIFICATION results (the per-view results and the overall classification) — NOT from the composite risk score.
-- Treat the composite future-risk score, if present, as minor background context only. Mention it in at most a brief clause, never as the main point.
-- Base your primary explanation on the Classical CNN results. Reference the Quantum model only as a secondary comparison note; if they disagree, defer to the Classical result.
+- Determine malignancy from the per-view CLASSIFICATION results. If any single view is classified Malignant, treat the case as having a malignant finding.
+- Lead with the classical per-view findings, then the quantum per-view findings, stating whether the two models agree on the CLASSIFICATION.
+- AFTER the per-view findings, add one short sentence comparing the Classical and Quantum composite future-risk scores. If a score is NOT APPLICABLE, say future-risk scoring was withheld rather than giving a number. Keep this as background context — never make risk the main point.
 - End with a reminder to consult a qualified clinician.
 
 MODEL CONTEXT:
-- Classical CNN (ResNet50): Primary model, 70% test accuracy, clinically calibrated
-- Quantum ML (VQC): Experimental model, ~47-51% accuracy, research prototype only
+- Classical CNN (ResNet50):
+- Quantum ML (VQC):
 
 - Use the view names exactly as given. Do NOT expand, reinterpret, or invent meanings for any abbreviation or term.
-
 - Describe what the model CLASSIFIED each view as. Do NOT assert that lesions, masses, or abnormalities are actually present — the model outputs classifications, not findings.
-
-
 - Asymmetry between left and right is expected and is not a contradiction. Only flag disagreement when two views of the SAME breast diverge, or when confidence is low (e.g. a "Malignant" label below ~50%).
+- The patient malignant score and the Quantum "% malignant" are the models' CONFIDENCE in a malignant classification — they are NOT a cancer-risk percentage. Never call either a "risk" or an "overall risk", and never present them as a risk figure.
+- Only the composite future-risk score represents risk. If it is not provided or marked NOT APPLICABLE, do NOT state, imply, or invent any overall risk level or percentage.
+- When commenting on agreement, refer to classification and composite risk SEPARATELY — do not merge them into one "agree/disagree".
+- If any view is classified Malignant, clearly state that a malignant classification was reached on that view and recommend timely clinical review. Do NOT describe it as merely "suspicious", and do NOT reassure that the overall result is fine.
 
-CLASSICAL CNN — PER-VIEW CLASSIFICATIONS (primary focus):
+CLASSICAL CNN — PER-VIEW CLASSIFICATIONS:
 {view_summary}
 
-Overall (aggregated from the per-view results above):
-  Classification: {data.overall_classification}
-  Patient malignant score: {round(data.patient_malignant_score * 100, 1)}%
-  Malignant detected: {data.malignant_detected}
-{composite_context}
-
-QUANTUM ML — PER-VIEW (secondary reference only):
+QUANTUM ML — PER-VIEW:
 {qml_view_summary}
-  Overall: {data.qml_overall_classification} ({round((data.qml_patient_malignant_score or 0) * 100, 1)}% malignant)
+{composite_section}
 
-Models {'agree' if data.overall_classification == data.qml_overall_classification else 'disagree'} at the patient level.
-
-Write the explanation for a {data.audience}, leading with the per-view classical findings."""
+Write the explanation for a {data.audience}: lead with the per-view classical findings, then the quantum per-view findings, then briefly compare the composite future-risk scores."""
 
 # ── Endpoint ───────────────────────────────────────────────────────────────────
 @router.post("/")
@@ -219,14 +237,14 @@ PATIENT:
   Age: {data.patient_age if data.patient_age is not None else "not provided"}
   Exams analysed: {data.num_exams if data.num_exams is not None else "not provided"}
 
-CLASSICAL MODEL (primary):
+CLASSICAL MODEL:
   5-year cumulative risk: {round(cnn5, 1) if cnn5 is not None else "not provided"}%
   Year-by-year:
 {yearly_lines(data.cnn_yearly_risk)}
   Exam contributions:
 {contrib_lines(data.cnn_exam_contributions)}
 
-QUANTUM MODEL (secondary reference):
+QUANTUM MODEL:
   5-year cumulative risk: {round(qml5, 1) if qml5 is not None else "not provided"}%
   Year-by-year:
 {yearly_lines(data.qml_yearly_risk)}
