@@ -9,7 +9,7 @@ from PIL import Image
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
-ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif", "application/dicom"}
+ALLOWED_TYPES = {"image/jpeg", "image/png", "application/dicom"}
 DICOM_TYPES  = {"application/dicom"}
 MAX_SIZE_MB  = 10
 

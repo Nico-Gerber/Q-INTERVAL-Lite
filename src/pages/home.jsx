@@ -1,709 +1,761 @@
-import React, { useCallback, useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useDropzone } from 'react-dropzone';
 import {
-  Box, Button, Chip, Container, Divider, Paper,
-  Step, StepLabel, Stepper, Typography, Alert,
-  ToggleButton, ToggleButtonGroup, CircularProgress,
-  Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions,
+  Box, Button, Chip, Container, Typography, Paper, IconButton,
 } from '@mui/material';
 import {
+  FavoriteBorder as HeartIcon,
+  Link as LinkIcon,
+  School as SchoolIcon,
   Memory as ClassicalIcon,
-  Science as QuantumIcon,
-  AutoAwesome as BothIcon,
-  CloudUpload as UploadIcon,
-  CheckCircleOutline as CheckIcon,
-  WarningAmber as WarnIcon,
-  ImageSearch as ImageSearchIcon,
-  InfoOutlined as InfoIcon,
-  CenterFocusStrong,
+  ImageOutlined as ImageIcon,
+  ScienceOutlined as ScienceIcon,
+  ShieldOutlined as ShieldIcon,
+  PeopleAlt as PeopleIcon,
+  CalendarMonth as CalendarIcon,
+  Warning as WarningIcon,
+  VisibilityOff as EyeOffIcon,
+  KeyboardArrowUp as ArrowUpIcon,
+  KeyboardArrowDown as ArrowDownIcon,
+  Biotech as BiotechIcon,
+  LocalHospital as LocalHospitalIcon,
+  CastForEducation as CastForEducationIcon,
+  RadioOutlined as RadioOutlinedIcon,
+  PsychologyOutlined as PsychologyOutlinedIcon,
 } from '@mui/icons-material';
+import { motion, animate, AnimatePresence } from 'framer-motion';
 
-
-
-
-const API_BASE = 'http://localhost:8000';
-
-const MODES = {
-  classical: {
-    label: 'Classical CNN',
-    icon: <ClassicalIcon />,
-    postmethod: '/CNNPredict',
-    color: '#1565C0',
-    description:
-      'Convolutional Neural Network trained on mammogram datasets. Fast inference with high accuracy on standard imaging.',
-  },
-  quantum: {
-    label: 'Quantum AI',
-    icon: <QuantumIcon />,
-    postmethod: '/QMLPredict',
-    color: '#6A0DAD',
-    description:
-      'Quantum-enhanced model leveraging superposition and entanglement for pattern detection beyond classical limits.',
-  },
-  both: {
-    label: 'Classical + Quantum',
-    icon: <BothIcon />,
-    postmethod: '',
-    color: '#C2185B',
-    description:
-      'Run both models in parallel and compare results. Ideal for research validation and benchmarking.',
-  },
+const A = {
+  teal:   '#22D3EE',
+  violet: '#A78BFA',
+  amber:  '#FCD34D',
+  red:    '#FB923C',
+  pink:   '#F472B6',
+  blue:   '#67E8F9',
 };
 
+const TC = {
+  mode:    '#94A3B8',
+  upload:  '#22D3EE',
+  cnn:     '#67E8F9',
+  qml:     '#A78BFA',
+  results: '#FCD34D',
+};
 
+const NAV_H = 70;
+const SECTION_IDS = ['hero', 'about', 'why', 'who', 'technology', 'support'];
+const ICON_SX = { fontSize: 26 };
 
+const HERO_STATS = [
+  {
+    Icon: PeopleIcon,
+    value: '1 in 7', numericEnd: 7, prefix: '1 in ', suffix: '',
+    label: 'Australian women will be diagnosed with breast cancer in their lifetime.',
+  },
+  {
+    Icon: CalendarIcon,
+    value: '1.9 Million', numericEnd: 1.9, prefix: '', suffix: 'M',
+    label: 'Australian women rely on routine screening cycles biennially.',
+  },
+  {
+    Icon: WarningIcon,
+    value: '22%', numericEnd: 22, prefix: '', suffix: '%',
+    label: "Of invasive cancers emerge as 'interval cancers' between routine clear screenings.",
+  },
+  {
+    Icon: EyeOffIcon,
+    value: '80%+', numericEnd: 80, prefix: '', suffix: '%+',
+    label: 'Of interval cancers are deemed clinically invisible to the human eye on prior scans.',
+  },
+];
 
+const SUPPORT_ORGS = [
+  {
+    name: 'Cancer Council Australia',
+    domain: 'cancer.org.au',
+    description: 'Trusted cancer information, support programs, and a free 13 11 20 helpline for Australians affected by breast cancer.',
+    url: 'https://www.cancer.org.au/',
+  },
+  {
+    name: 'McGrath Foundation',
+    domain: 'mcgrathfoundation.com.au',
+    description: 'Providing free McGrath Breast Care Nurses and support to individuals and families experiencing breast cancer.',
+    url: 'https://www.mcgrathfoundation.com.au/',
+  },
+  {
+    name: 'Breast Cancer Network Australia',
+    domain: 'bcna.org.au',
+    description: "Australia's leading breast cancer network offering trusted resources, peer support, and the My Journey care tool.",
+    url: 'https://www.bcna.org.au/',
+  },
+  {
+    name: 'BreastScreen Victoria',
+    domain: 'breastscreen.org.au',
+    description: 'Free breast screening and mammogram services for Victorian women aged 40+, helping detect cancer early.',
+    url: 'https://www.breastscreen.org.au/',
+  },
+];
+
+const faviconUrl = (domain) =>
+  `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+
+// ── Section patterns ───────────────────────────────────────────────────────
+const DotGrid = () => (
+  <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+    <Box component="svg" width="100%" height="100%" style={{ position: 'absolute', inset: 0 }}
+      sx={{ '& circle': { fill: (theme) => theme.palette.mode === 'dark' ? 'rgba(45,212,191,0.10)' : 'rgba(13,148,136,0.13)' } }}>
+      <defs>
+        <pattern id="pg-dots" x="0" y="0" width="28" height="28" patternUnits="userSpaceOnUse">
+          <circle cx="2" cy="2" r="1.5" />
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#pg-dots)" />
+    </Box>
+  </Box>
+);
+
+const HorizontalLines = () => (
+  <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+    <Box component="svg" width="100%" height="100%" style={{ position: 'absolute', inset: 0 }}
+      sx={{ '& line': { stroke: (theme) => theme.palette.mode === 'dark' ? 'rgba(45,212,191,0.08)' : 'rgba(13,148,136,0.12)' } }}>
+      <defs>
+        <pattern id="pg-hlines" x="0" y="0" width="1" height="32" patternUnits="userSpaceOnUse">
+          <line x1="0" y1="0" x2="9999" y2="0" strokeWidth="1" />
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#pg-hlines)" />
+    </Box>
+  </Box>
+);
+
+const SparsePlus = () => (
+  <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+    <Box component="svg" width="100%" height="100%" style={{ position: 'absolute', inset: 0 }}
+      sx={{ '& line': { stroke: (theme) => theme.palette.mode === 'dark' ? 'rgba(45,212,191,0.08)' : 'rgba(13,148,136,0.12)' } }}>
+      <defs>
+        <pattern id="pg-plus" x="0" y="0" width="64" height="64" patternUnits="userSpaceOnUse">
+          <line x1="32" y1="22" x2="32" y2="42" strokeWidth="1.5" strokeLinecap="round" />
+          <line x1="22" y1="32" x2="42" y2="32" strokeWidth="1.5" strokeLinecap="round" />
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#pg-plus)" />
+    </Box>
+  </Box>
+);
+
+const DiagonalLines = () => (
+  <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+    <Box component="svg" width="100%" height="100%" style={{ position: 'absolute', inset: 0 }}
+      sx={{ '& line': { stroke: (theme) => theme.palette.mode === 'dark' ? 'rgba(45,212,191,0.08)' : 'rgba(13,148,136,0.12)' } }}>
+      <defs>
+        <pattern id="pg-diag" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <line x1="0" y1="0" x2="0" y2="20" strokeWidth="1" />
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#pg-diag)" />
+    </Box>
+  </Box>
+);
+
+function NeuralCanvas() {
+  const canvasRef = useRef(null);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let raf;
+    const resize = () => { canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight; };
+    resize();
+    window.addEventListener('resize', resize);
+    const NODE_COUNT = 48;
+    const CONNECT_DIST = 160;
+    const nodes = Array.from({ length: NODE_COUNT }, () => ({
+      x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+      vx: (Math.random() - 0.5) * 0.18, vy: (Math.random() - 0.5) * 0.18,
+      r: Math.random() * 1.2 + 0.6,
+    }));
+    const draw = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          const dx = nodes[i].x - nodes[j].x, dy = nodes[i].y - nodes[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < CONNECT_DIST) {
+            const alpha = (1 - dist / CONNECT_DIST) * 0.12;
+            ctx.beginPath(); ctx.moveTo(nodes[i].x, nodes[i].y); ctx.lineTo(nodes[j].x, nodes[j].y);
+            ctx.strokeStyle = `rgba(45,212,191,${alpha})`; ctx.lineWidth = 0.8; ctx.stroke();
+          }
+        }
+      }
+      nodes.forEach((n) => {
+        n.x += n.vx; n.y += n.vy;
+        if (n.x < 0) n.x = canvas.width; if (n.x > canvas.width) n.x = 0;
+        if (n.y < 0) n.y = canvas.height; if (n.y > canvas.height) n.y = 0;
+        ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(45,212,191,0.28)'; ctx.fill();
+      });
+      raf = requestAnimationFrame(draw);
+    };
+    draw();
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); };
+  }, []);
+  return <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 0 }} />;
+}
+
+function AnimatedCounter({ end, prefix = '', suffix = '', isDecimal = false, isVisible }) {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    if (!isVisible) { setCount(0); return; }
+    const ctrl = animate(0, end, {
+      duration: 1.8, ease: 'easeOut',
+      onUpdate: (v) => setCount(isDecimal ? parseFloat(v.toFixed(1)) : Math.round(v)),
+    });
+    return ctrl.stop;
+  }, [isVisible, end, isDecimal]);
+  return <span>{prefix}{count}{suffix}</span>;
+}
+
+function FadeUp({ children, delay = 0, isVisible }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 28 }}
+      animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 28 }}
+      transition={{ duration: 0.55, ease: 'easeOut', delay }}
+      style={{ width: '100%' }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+const SectionLabel = ({ icon, label, color }) => (
+  <Box sx={{
+    display: 'inline-flex', alignItems: 'center', gap: 1, mb: 2.5, px: 1.5, py: 0.6,
+    borderRadius: '999px',
+    backgroundColor: (theme) => theme.palette.mode === 'dark' ? `${color}1A` : color,
+    border: (theme) => theme.palette.mode === 'dark'
+      ? `1px solid ${color}40`
+      : '1.5px solid rgba(255,255,255,0.35)',
+  }}>
+    <Box sx={{ color: (theme) => theme.palette.mode === 'dark' ? color : '#FFFFFF', display: 'flex', alignItems: 'center' }}>{icon}</Box>
+    <Typography variant="caption" sx={{ color: (theme) => theme.palette.mode === 'dark' ? color : '#FFFFFF', fontWeight: 700, fontSize: '0.72rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>{label}</Typography>
+  </Box>
+);
+
+const ImageSlot = ({ accent, label, ratio = '4/3' }) => (
+  <Box sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper', aspectRatio: ratio, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1.5, position: 'relative', overflow: 'hidden', '&::before': { content: '""', position: 'absolute', inset: 0, background: `radial-gradient(ellipse at center, ${accent}0D 0%, transparent 70%)`, pointerEvents: 'none' } }}>
+  <ImageIcon sx={{ fontSize: 28, color: `${accent}40` }} />
+  <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.7rem', textAlign: 'center', px: 3 }}>{label}</Typography>
+</Box>
+);
+
+function OrgLogo({ domain, name }) {
+  const [failed, setFailed] = useState(false);
+  const initial = name.charAt(0).toUpperCase();
+  if (failed) {
+    return (
+      <Box sx={{ width: 32, height: 32, borderRadius: 1.5, flexShrink: 0, backgroundColor: 'rgba(232,83,122,0.12)', border: '1px solid rgba(232,83,122,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Typography sx={{ color: A.pink, fontWeight: 800, fontSize: '0.85rem', lineHeight: 1 }}>{initial}</Typography>
+      </Box>
+    );
+  }
+  return (
+    <Box sx={{ width: 32, height: 32, borderRadius: 1.5, flexShrink: 0, backgroundColor: 'background.paper', border: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+      <Box component="img" src={faviconUrl(domain)} alt={`${name} logo`} onError={() => setFailed(true)} sx={{ width: 20, height: 20, objectFit: 'contain' }} />
+    </Box>
+  );
+}
+
+const scrollToId = (id) => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - NAV_H, behavior: 'smooth' });
+};
+
+const SectionArrows = ({ current, total, onUp, onDown }) => {
+  const btnSx = {
+    width: 36, height: 36,
+    border: 'none',
+    backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#071020' : '#0E7490',
+    color: (theme) => theme.palette.mode === 'dark' ? '#22D3EE' : '#FFFFFF',
+    transition: 'all 0.2s',
+    '&:hover': {
+      backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#0D1B2E' : '#0891B2',
+      transform: 'scale(1.08)',
+    },
+  };
+  const dotActiveSx = { width: 8, height: 8, borderRadius: '50%', backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#22D3EE' : '#0E7490', transition: 'all 0.2s', cursor: 'pointer' };
+  const dotInactiveSx = { width: 5, height: 5, borderRadius: '50%', backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.28)' : 'rgba(14,116,144,0.28)', transition: 'all 0.2s', cursor: 'pointer', '&:hover': { backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(34,211,238,0.6)' : 'rgba(14,116,144,0.55)' } };
+  return (
+    <Box sx={{ position: 'fixed', right: { xs: 10, md: 20 }, top: '50%', transform: 'translateY(-50%)', zIndex: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.75 }}>
+      {current > 0 ? <IconButton onClick={onUp} size="small" sx={btnSx}><ArrowUpIcon sx={{ fontSize: 18 }} /></IconButton> : <Box sx={{ width: 36, height: 36 }} />}
+      {Array.from({ length: total }).map((_, i) => (
+        <Box key={i} onClick={() => scrollToId(SECTION_IDS[i])} sx={i === current ? dotActiveSx : dotInactiveSx} />
+      ))}
+      {current < total - 1 ? <IconButton onClick={onDown} size="small" sx={btnSx}><ArrowDownIcon sx={{ fontSize: 18 }} /></IconButton> : <Box sx={{ width: 36, height: 36 }} />}
+    </Box>
+  );
+};
+
+function TechCard({ accent, stepNum, icon, title, summary, delay }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, delay, ease: 'easeOut' }}
+      onHoverStart={() => setHovered(true)}
+      onHoverEnd={() => setHovered(false)}
+      style={{ flex: 1 }}
+    >
+      <Paper
+        elevation={0}
+        sx={{
+          p: 2.5,
+          borderRadius: 3,
+          border: '2px solid rgba(0,0,0,0.18)',
+          backgroundColor: accent,
+          outline: '1.5px solid rgba(255,255,255,0.28)',
+          outlineOffset: '-4px',
+          position: 'relative',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 1,
+          transition: 'all 0.22s ease',
+          transform: hovered ? 'translateY(-4px)' : 'translateY(0)',
+          boxShadow: hovered ? `0 10px 30px rgba(0,0,0,0.25), 0 0 0 2px ${accent}` : 'none',
+          cursor: 'default',
+          '&::before': {
+            content: '""',
+            position: 'absolute', top: 0, left: 0, right: 0, height: '3px',
+            backgroundColor: 'rgba(255,255,255,0.4)',
+            opacity: hovered ? 1 : 0.7,
+            transition: 'opacity 0.22s ease',
+          },
+        }}
+      >
+        <Typography sx={{ fontSize: '0.6rem', fontWeight: 800, letterSpacing: '0.14em', color: 'rgba(255,255,255,0.85)' }}>
+          STEP {stepNum}
+        </Typography>
+        <Box sx={{
+          width: 44, height: 44, borderRadius: 2, mb: 0.5, flexShrink: 0,
+          backgroundColor: 'rgba(255,255,255,0.18)',
+          border: '1.5px solid rgba(255,255,255,0.35)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: '#FFFFFF',
+          transition: 'all 0.22s ease',
+        }}>
+          {icon}
+        </Box>
+        <Typography sx={{ fontWeight: 800, fontSize: '0.88rem', lineHeight: 1.3, color: '#FFFFFF' }}>
+          {title}
+        </Typography>
+        <Typography sx={{ fontSize: '0.75rem', lineHeight: 1.55, color: 'rgba(255,255,255,0.82)', transition: 'color 0.22s ease' }}>
+          {summary}
+        </Typography>
+      </Paper>
+    </motion.div>
+  );
+}
+
+function TechCards() {
+  const HArrow = () => (
+    <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', flexShrink: 0, alignSelf: 'center' }}>
+      <Box sx={{ width: 28, height: 3, backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.5)' : 'rgba(13,118,110,0.45)' }} />
+      <Box sx={{ width: 0, height: 0, borderTop: '6px solid transparent', borderBottom: '6px solid transparent', borderLeft: (theme) => `10px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.5)' : 'rgba(13,118,110,0.45)'}` }} />
+    </Box>
+  );
+
+  const VConnector = () => (
+    <Box sx={{ display: { xs: 'none', md: 'flex' }, justifyContent: 'center' }}>
+      <Box sx={{ width: 2, height: 16, backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.18)' : 'rgba(13,118,110,0.3)' }} />
+    </Box>
+  );
+
+  return (
+    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: { md: 'center' }, gap: 0 }}>
+      <TechCard accent={TC.mode}    stepNum="01" icon={<SchoolIcon    sx={{ fontSize: 22 }} />} title="Choose a Mode"       summary="Select your analysis type before uploading."      delay={0} />
+      <HArrow />
+      <TechCard accent={TC.upload}  stepNum="02" icon={<ImageIcon     sx={{ fontSize: 22 }} />} title="Upload Mammogram"    summary="Submit a single image or sequential scans."       delay={0.07} />
+      <HArrow />
+      <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.14, ease: 'easeOut' }} style={{ flex: 1 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+          <TechCard accent={TC.cnn} stepNum="03" icon={<ScienceIcon   sx={{ fontSize: 22 }} />} title="Classical CNN"       summary="[Placeholder]"                                   delay={0} />
+          <VConnector />
+          <TechCard accent={TC.qml} stepNum="04" icon={<ClassicalIcon sx={{ fontSize: 22 }} />} title="Quantum ML"          summary="[Placeholder]"                                   delay={0} />
+        </Box>
+      </motion.div>
+      <HArrow />
+      <TechCard accent={TC.results} stepNum="05" icon={<ScienceIcon   sx={{ fontSize: 22 }} />} title="Side-by-Side Results" summary="Compare CNN vs QML outputs directly."            delay={0.21} />
+    </Box>
+  );
+}
 
 export default function Home() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState('classical');
-  const [file, setFile] = useState(null);
-  const [preview, setPreview] = useState(null);
-  const [status, setStatus] = useState(null);   // { ok, msg }
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);   // placeholder for future AI output
-  const targetRef = useRef(null);
-  const targetRef1 = useRef(null);
+  const [currentSection, setCurrentSection] = useState(0);
+  const sectionH = `calc(100vh - ${NAV_H}px)`;
 
-  const [isVisible, setIsVisible] = useState(false);
-  const [isVisible1, setIsVisible1] = useState(false);
-  // Derived active step
-  const activeStep = file ? (result ? 2 : 1) : 0;
-
-  const onDrop = useCallback((accepted, rejected) => {
-
-    const toBigStrin = "File is larger than 10485760 bytes"
-
-
-    if (rejected.length) {
-      if (rejected[0].errors[0].message === toBigStrin) {
-
-        setStatus({ ok: false, msg: 'File is larger than 10MB' });
-
-
-        return;
-
-      }
-
-
-      setStatus({ ok: false, msg: rejected[0].errors[0].message });
-
-      return;
-
-    }
-
-
-
-
-    const f = accepted[0];
-    setFile(f);
-    setPreview(URL.createObjectURL(f));
-    setStatus(null);
-    setResult(null);
-  }, []);
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: { 'image/jpeg': [], 'image/png': [], 'application/dicom': ['.dcm'] },
-    maxFiles: 1,
-    maxSize: 10 * 1024 * 1024,
-
-  });
-
-
+  const goUp   = useCallback(() => scrollToId(SECTION_IDS[Math.max(0, currentSection - 1)]), [currentSection]);
+  const goDown = useCallback(() => scrollToId(SECTION_IDS[Math.min(SECTION_IDS.length - 1, currentSection + 1)]), [currentSection]);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
+    const observers = SECTION_IDS.map((id, i) => {
+      const el = document.getElementById(id);
+      if (!el) return null;
+      const obs = new IntersectionObserver(
+        ([entry]) => { if (entry.isIntersecting) setCurrentSection(i); },
+        { rootMargin: `-${NAV_H}px 0px 0px 0px`, threshold: 0.5 }
+      );
+      obs.observe(el);
+      return obs;
+    });
+    return () => observers.forEach((o) => o?.disconnect());
+  }, []);
 
-        setIsVisible(entry.isIntersecting);
-      },
-      { threshold: 0.1 }
-    );
-
-    const observer1 = new IntersectionObserver(
-      ([entry]) => {
-
-        setIsVisible1(entry.isIntersecting);
-      },
-      { threshold: 0.1 }
-    );
-
-
-
-    if (targetRef.current) {
-      observer.observe(targetRef.current);
-    }
-    if (targetRef1.current) {
-      observer1.observe(targetRef1.current);
-    }
-
-
-
-
-    return () => {
-      observer.disconnect()
-      observer1.disconnect()
-
-    };
-  }, [result]);
-
-
-
-
-
-  const [detailsOpen, setDetailsOpen] = useState(false);
-
-  const handleOpenDetails = () => setDetailsOpen(true);
-  const handleCloseDetails = () => setDetailsOpen(false);
-
-  const handleAnalyse = async () => {
-    if (!file) return;
-    setLoading(true);
-    setStatus(null);
-
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      if (mode === 'both') {
-        const [uploadRes, qmlRes, cnnRes] = await Promise.all([
-
-          fetch(`${API_BASE}/images/upload`, { method: 'POST', body: formData }),
-          fetch(`${API_BASE}/QMLPredict`, { method: 'POST', body: formData }),
-          fetch(`${API_BASE}/CNNPredict`, { method: 'POST', body: formData }),
-
-
-        ]);
-
-        const uploadData = await uploadRes.json();
-        const qmlData = await qmlRes.json();
-        const cnnData = await cnnRes.json();
-
-
-        setResult({
-          mode,
-          filename: uploadData.filename,
-          resultFile: {
-            qml: qmlData,
-            cnn: cnnData,
-          }
-        });
-
-
-      } else {
-
-        const [res, AIres] = await Promise.all([
-
-          fetch(`${API_BASE}/images/upload`, { method: 'POST', body: formData }),
-          fetch(`${API_BASE}${selectedMode.postmethod}`, { method: 'POST', body: formData }),
-
-        ]);
-
-
-        const data = await res.json();
-
-
-        const AIdata = await AIres.json()
-
-
-        if (res.ok) {
-
-
-          setStatus({
-            ok: true, msg: `Image uploaded successfully (
-    
-               ${file.size > 1 * 1024 * 1024 ? (file.size / 1000024).toFixed(2) + ' MB ' + '· ' + file.type : (file.size / 1024).toFixed(1) + ' KB ' + '· ' + file.type})`
-          });
-
-          setResult({
-            mode,
-            filename: data.filename,
-            resultFile: AIdata
-
-          });
-        } else {
-          setStatus({ ok: false, msg: data.detail || 'Upload failed.' });
-        }
-      }
-
-    } catch {
-      setStatus({ ok: false, msg: 'Cannot reach the server. Make sure the backend is running.' });
-    } finally {
-      setLoading(false);
-    }
-
-
-  };
-
-
-
-  const handleReset = () => {
-    setFile(null);
-    setPreview(null);
-    setStatus(null);
-    setResult(null);
-  };
-
-  const selectedMode = MODES[mode];
-
-
-
+  const inHero    = currentSection === 0;
+  const inAbout   = currentSection === 1;
+  const inWhy     = currentSection === 2;
+  const inWho     = currentSection === 3;
+  const inTech    = currentSection === 4;
+  const inSupport = currentSection === 5;
 
   return (
-    <Box sx={{ backgroundColor: 'background.default', minHeight: '100%', pb: 8 }}>
+    <Box sx={{ backgroundColor: 'background.default' }}>
 
-      {/* ── Hero ── */}
-      <Box
-        sx={{
-          background: 'linear-gradient(135deg, #0D1B2A 0%, #1565C0 100%)',
-          color: 'white',
-          py: { xs: 5, md: 8 },
-          px: 2,
-          textAlign: 'center',
-        }}
-      >
-        <Chip
-          label="RESEARCH PROTOTYPE · NOT FOR CLINICAL USE"
-          size="small"
-          sx={{
-            mb: 2,
-            backgroundColor: 'rgba(255,255,255,0.12)',
-            color: 'rgba(255,255,255,0.85)',
-            letterSpacing: '0.08em',
-            fontSize: '0.65rem',
-            fontWeight: 700,
-            border: '1px solid rgba(255,255,255,0.2)',
-          }}
-        />
-        <Typography variant="h3" sx={{ fontWeight: 800, mb: 1.5, letterSpacing: '-0.02em' }}>
-          Mammogram Analysis
-        </Typography>
-        <Typography
-          variant="h6"
-          sx={{ color: 'rgba(255,255,255,0.7)', fontWeight: 400, maxWidth: 580, mx: 'auto' }}
-        >
-          Upload a mammogram image and select an AI analysis method — Classical CNN, Quantum AI, or both.
-        </Typography>
-      </Box>
+      <SectionArrows current={currentSection} total={SECTION_IDS.length} onUp={goUp} onDown={goDown} />
 
-      <Container maxWidth="md" sx={{ mt: { xs: -3, md: -4 } }}>
-
-        {/* ── Progress stepper ── */}
-        <Paper elevation={2} sx={{ p: { xs: 2, md: 3 }, mb: 3, borderRadius: 2 }}>
-          <Stepper activeStep={activeStep} alternativeLabel>
-            {['Select Mode', 'Upload Image', 'View Results'].map((label) => (
-              <Step key={label}>
-                <StepLabel>{label}</StepLabel>
-              </Step>
-            ))}
-          </Stepper>
-        </Paper>
-
-        {/* ── Step 1: Mode selector ── */}
-        <Paper elevation={2} sx={{ p: { xs: 2, md: 3 }, mb: 3, borderRadius: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: 1 }}>
-            <Typography variant="h6" gutterBottom sx={{ mb: 0 }}>
-              1 · Select Analysis Mode
+      {/* ── 1. HERO ── */}
+      <Box id="hero" sx={{ height: sectionH, position: 'relative', background: (theme) => theme.palette.background.hero, display: 'flex', flexDirection: 'column', '&::before': { content: '""', position: 'absolute', top: '-30%', left: '50%', transform: 'translateX(-50%)', width: '800px', height: '800px', borderRadius: '50%', background: (theme) => `radial-gradient(circle, ${theme.palette.primary.main}12 0%, transparent 70%)`, pointerEvents: 'none', zIndex: 0 } }}>
+        <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0, overflow: 'hidden', backgroundImage: (theme) => `linear-gradient(${theme.palette.primary.main}06 1px, transparent 1px), linear-gradient(90deg, ${theme.palette.primary.main}06 1px, transparent 1px)`, backgroundSize: '60px 60px' }} />
+        <NeuralCanvas />
+        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', px: 2, py: 2, position: 'relative', zIndex: 1 }}>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: 'easeOut' }}>
+            <Chip label="● Version 0.3 - Sprint 3" size="small" sx={{ mb: 2.5, bgcolor: (theme) => `${theme.palette.primary.main}12`, color: 'primary.main', letterSpacing: '0.06em', fontSize: '0.7rem', fontWeight: 700, border: '1px solid', borderColor: (theme) => `${theme.palette.primary.main}28`, borderRadius: '999px' }} />
+          </motion.div>
+          <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.65, ease: 'easeOut', delay: 0.1 }}>
+            <Typography variant="h1" sx={{ mb: 1, fontSize: { xs: '2.2rem', md: '3.5rem' }, maxWidth: 800, mx: 'auto', color: 'text.primary' }}>Revealing the</Typography>
+            <Typography variant="h1" sx={{ mb: 3, fontSize: { xs: '2.2rem', md: '3.5rem' }, maxWidth: 800, mx: 'auto', fontStyle: 'italic', background: (theme) => theme.palette.mode === 'dark' ? 'linear-gradient(90deg, #67E8F9, #22D3EE)' : 'linear-gradient(90deg, #0891B2, #0E7490)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Invisible.</Typography>
+          </motion.div>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: 'easeOut', delay: 0.25 }}>
+            <Typography sx={{ color: 'text.secondary', maxWidth: 500, mx: 'auto', lineHeight: 1.8, mb: 4, fontSize: '1rem', fontStyle: 'italic' }}>
+              An educational platform comparing standard and quantum-enhanced AI to detect hidden precursors of breast cancer — making complex diagnostics transparent and visual.
             </Typography>
-            <Button
-              size="small"
-              variant="text"
-              onClick={handleOpenDetails}
-              startIcon={<InfoIcon fontSize="small" />}
-              sx={{
-                color: 'primary.main',
-                textDecoration: 'underline',
-                fontWeight: 700,
-                minWidth: 0,
-                p: 0,
-              }}
-            >
-              How do these models differ?
-            </Button>
-          </Box>
-          <Divider sx={{ mb: 2 }} />
-
-          <ToggleButtonGroup
-            value={mode}
-            exclusive
-            onChange={(_, v) => { if (v) setMode(v); }}
-            fullWidth
-            sx={{ mb: 2, gap: 1, flexWrap: { xs: 'wrap', sm: 'nowrap' } }}
-          >
-            {Object.entries(MODES).map(([key, m]) => (
-              <ToggleButton
-                key={key}
-                value={key}
-                sx={{
-                  flex: 1,
-                  py: 1.5,
-                  border: '2px solid !important',
-                  borderColor: `${mode === key ? m.color : 'rgba(0,0,0,0.12)'} !important`,
-                  borderRadius: '8px !important',
-                  color: mode === key ? m.color : 'text.secondary',
-                  backgroundColor: mode === key ? `${m.color}12` : 'transparent',
-                  fontWeight: 600,
-                  gap: 1,
-                  '&:hover': { backgroundColor: `${m.color}18` },
-                  '&.Mui-selected': {
-                    color: m.color,
-                    backgroundColor: `${m.color}12`,
-                    '&:hover': { backgroundColor: `${m.color}20` },
-                  },
-                }}
-              >
-                {m.icon}
-                <span style={{ fontSize: '0.85rem' }}>{m.label}</span>
-              </ToggleButton>
-            ))}
-          </ToggleButtonGroup>
-
-          {/* Mode description card */}
-          <Box
-            sx={{
-              backgroundColor: `${selectedMode.color}0D`,
-              border: `1px solid ${selectedMode.color}30`,
-              borderLeft: `4px solid ${selectedMode.color}`,
-              borderRadius: 2,
-              px: 2,
-              py: 1.5,
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: 1.5,
-            }}
-          >
-            <Box sx={{ color: selectedMode.color, mt: '2px' }}>{selectedMode.icon}</Box>
-            <Box>
-              <Typography variant="subtitle2" sx={{ color: selectedMode.color, fontWeight: 700 }}>
-                {selectedMode.label}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {selectedMode.description}
-              </Typography>
+          </motion.div>
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: 'easeOut', delay: 0.4 }}>
+            <Box sx={{ display: 'flex', gap: 1.5, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <Button variant="contained" onClick={() => navigate('/Analysis')} sx={{ px: 3, py: 1.1, fontSize: '0.88rem', color: '#FFFFFF !important' }}>Launch Analysis Dashboard →</Button>
+              <Button onClick={() => navigate('/Models')} variant="outlined" sx={{ px: 3, py: 1.1, fontSize: '0.88rem', borderRadius: '999px', borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(13,118,110,0.6)', color: (theme) => theme.palette.mode === 'dark' ? '#E8EEF8' : '#0F766E', '&:hover': { backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(13,148,136,0.08)', borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.55)' : '#0D9488', color: (theme) => theme.palette.mode === 'dark' ? '#FFFFFF' : '#0D9488' } }}>Our Models</Button>
             </Box>
-          </Box>
-        </Paper>
-
-        {/* ── Step 2: Upload ── */}
-        <Paper elevation={2} sx={{ p: { xs: 2, md: 3 }, mb: 3, borderRadius: 2 }}>
-          <Typography variant="h6" gutterBottom>
-            2 · Upload Mammogram Image
-          </Typography>
-          <Divider sx={{ mb: 2 }} />
-
-          {!file ? (
-            <Box
-              {...getRootProps()}
-              sx={{
-                border: `2px dashed ${isDragActive ? '#1565C0' : 'rgba(0,0,0,0.2)'}`,
-                borderRadius: 2,
-                p: { xs: 4, md: 6 },
-                textAlign: 'center',
-                cursor: 'pointer',
-                backgroundColor: isDragActive ? 'rgba(21,101,192,0.04)' : 'rgba(0,0,0,0.01)',
-                transition: 'all 0.2s ease',
-                '&:hover': {
-                  borderColor: '#1565C0',
-                  backgroundColor: 'rgba(21,101,192,0.04)',
-                },
-              }}
-            >
-              <input {...getInputProps()} />
-              <UploadIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
-              <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-                {isDragActive ? 'Drop the image here' : 'Drag & drop a mammogram image'}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                or click to browse
-              </Typography>
-              <Typography variant="caption" color="text.disabled">
-                Accepted: JPEG, PNG, DICOM (.dcm) · Max size: 10 MB
-              </Typography>
-            </Box>
-          ) : (
-            <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-              {/* Thumbnail */}
-              <Box
-                component="img"
-                src={preview}
-                alt="Selected mammogram"
-                sx={{
-                  width: 140,
-                  height: 140,
-                  objectFit: 'cover',
-                  borderRadius: 2,
-                  border: '1px solid rgba(0,0,0,0.1)',
-                  flexShrink: 0,
-                }}
-              />
-              <Box sx={{ flex: 1, minWidth: 180 }}>
-                <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 0.5 }}>
-                  {file.name}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                  {file.size > 1 * 1024 * 1024 ? (file.size / 1000024).toFixed(2) + ' MB ' + '· ' + file.type : (file.size / 1024).toFixed(1) + ' KB ' + '· ' + file.type}
-                </Typography>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  color="error"
-                  onClick={handleReset}
-                >
-                  Remove
-                </Button>
-              </Box>
-            </Box>
-          )}
-
-          {/* Status message */}
-          {status && (
-            <Alert
-              severity={status.ok ? 'success' : 'error'}
-              icon={status.ok ? <CheckIcon /> : <WarnIcon />}
-              sx={{ mt: 2 }}
-            >
-              {status.msg}
-            </Alert>
-          )}
-        </Paper>
-
-        {/* ── Step 3: Analyse button ── */}
-        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
-          <Button
-            variant="contained"
-            size="large"
-            disabled={!file || loading}
-            onClick={handleAnalyse}
-            startIcon={loading ? <CircularProgress size={18} color="inherit" /> : <ImageSearchIcon />}
-            sx={{
-              px: 5,
-              py: 1.5,
-              fontSize: '1rem',
-              backgroundColor: selectedMode.color,
-              '&:hover': { backgroundColor: selectedMode.color, filter: 'brightness(0.9)' },
-              '&:disabled': { backgroundColor: 'rgba(0,0,0,0.1)' },
-            }}
-          >
-            {loading ? 'Uploading…' : `Analyse with ${selectedMode.label}`}
-          </Button>
+          </motion.div>
         </Box>
 
-        {/* ── Results */}
-        {result && (
-          <>
-            <Paper
-              elevation={2}
-              sx={{
-                p: { xs: 2, md: 3 },
-                borderRadius: 2,
-                borderTop: `4px solid ${selectedMode.color}`,
-              }}
-            >
-              <Typography variant="h6" gutterBottom>
-                3 · Analysis Results
+        {/* Stats strip */}
+        <Box sx={(theme) => ({
+          flexShrink: 0,
+          borderTop: `2px solid ${theme.palette.background.heroStatsBorder}`,
+          backgroundColor: theme.palette.background.heroStatsBg,
+          position: 'relative',
+          zIndex: 1,
+        })}>
+          <Container maxWidth="lg">
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: '1fr 1fr 1fr 1fr' } }}>
+              {HERO_STATS.map((stat, i, arr) => (
+                <Box key={stat.value} sx={(theme) => {
+                  const b = `2px solid ${theme.palette.background.heroStatsBorder}`;
+                  return {
+                    textAlign: 'center',
+                    py: { xs: 2.5, md: 3 },
+                    px: { xs: 1.5, md: 2.5 },
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start',
+                    borderRight:  { xs: i % 2 === 0        ? b : 'none', md: i < arr.length - 1 ? b : 'none' },
+                    borderBottom: { xs: i < 2              ? b : 'none', md: 'none' },
+                  };
+                }}>
+                  <Box sx={{ height: 36, display: 'flex', alignItems: 'center', mb: 1, color: (theme) => theme.palette.mode === 'dark' ? '#22D3EE' : 'rgba(255,255,255,0.95)' }}>
+                    <stat.Icon sx={ICON_SX} />
+                  </Box>
+                  <Typography sx={{ fontWeight: 700, fontSize: { xs: '1.25rem', md: '1.5rem' }, color: (theme) => theme.palette.mode === 'dark' ? '#22D3EE' : '#FFFFFF', lineHeight: 1.1, mb: 0.75 }}>
+                    <AnimatedCounter end={stat.numericEnd} prefix={stat.prefix} suffix={stat.suffix} isDecimal={stat.value.includes('.')} isVisible={inHero} />
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.82)', fontSize: '0.67rem', lineHeight: 1.45, display: 'block', maxWidth: 160, fontStyle: 'italic' }}>{stat.label}</Typography>
+                </Box>
+              ))}
+            </Box>
+            <Typography variant="caption" sx={{ display: 'block', textAlign: 'center', pt: 0.5, pb: 1.5, color: 'rgba(255,255,255,0.45)', fontSize: '0.62rem', letterSpacing: '0.02em' }}>
+              Data sourced from the AIHW BreastScreen Australia Monitoring Report (2025) and Cancer Australia.
+            </Typography>
+          </Container>
+        </Box>
+      </Box>
+
+      {/* ── 2. ABOUT ── */}
+      <Box id="about" sx={{ height: sectionH, bgcolor: 'background.default', borderBottom: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', position: 'relative', overflow: 'hidden' }}>
+        <DotGrid />
+        <Container maxWidth="lg" sx={{ width: '100%', position: 'relative', zIndex: 1 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '3fr 2fr' }, gap: { xs: 4, md: 8 }, alignItems: 'center' }}>
+            <FadeUp isVisible={inAbout}>
+              <SectionLabel icon={<SchoolIcon sx={{ fontSize: 16 }} />} label="About the project" color={A.teal} />
+              <Typography variant="h3" sx={{ mb: 2, lineHeight: 1.25, color: 'text.primary' }}>
+                What is Q-INTERVAL-Lite+?
               </Typography>
-              <Divider sx={{ mb: 2 }} />
+              <Typography sx={{ color: 'text.secondary', lineHeight: 1.8, fontSize: '0.95rem', mb: 2 }}>
+                Started as a Swinburne University capstone project, Q-INTERVAL-Lite+ is an interactive
+                web platform exploring how quantum-enhanced AI can detect subtle, clinically invisible
+                signs of breast cancer in mammograms. Whether classifying abnormalities, assessing
+                composite risk, or predicting future risk from sequential scans, the platform aims to
+                make complex AI diagnostics transparent, visual, and comparable.
+              </Typography>
+              <Typography sx={{ color: 'text.secondary', lineHeight: 1.8, fontSize: '0.95rem' }}>
+                Built by a multidisciplinary team of Swinburne students across Software Development,
+                Artificial Intelligence, and Cybersecurity, the platform runs every uploaded scan
+                through two entirely separate AI pipelines simultaneously — a Classical CNN and a
+                Quantum ML model — surfacing both results side by side so users can directly observe
+                how each paradigm interprets the same tissue data.
+              </Typography>
+            </FadeUp>
+            <FadeUp isVisible={inAbout} delay={0.15}>
+              <ImageSlot accent={A.teal} label="Image / Diagram placeholder" />
+            </FadeUp>
+          </Box>
+        </Container>
+      </Box>
 
-
-              <Box sx={{
-                alignItems: 'center',
-                justifyContent: 'center',
-                display: 'flex',
-                paddingBottom: '1rem',
-              }}>
-
-                <Box
-                  component="img"
-                  src={preview}
-                  alt="Selected mammogram"
-                  sx={{
-                    width: 300,
-                    height: 300,
-                    objectFit: 'cover',
-                    flexShrink: 0,
-                  }}
-                />
+      {/* ── 3. WHY ── */}
+      <Box id="why" sx={{ height: sectionH, bgcolor: 'background.paper', borderBottom: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', position: 'relative', overflow: 'hidden' }}>
+        <DiagonalLines />
+        <Container maxWidth="lg" sx={{ width: '100%', position: 'relative', zIndex: 1 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '2fr 3fr' }, gap: { xs: 4, md: 10 }, alignItems: 'center' }}>
+            <FadeUp isVisible={inWhy} delay={0.1}>
+              <Box sx={{ order: { xs: 1, md: 0 } }}>
+                <ImageSlot accent={A.violet} label="Image / Diagram placeholder" ratio="3/4" />
               </Box>
+            </FadeUp>
+            <FadeUp isVisible={inWhy}>
+              <Box sx={{ order: { xs: 0, md: 1 } }}>
+                <SectionLabel icon={<HeartIcon sx={{ fontSize: 16 }} />} label="Why it matters" color={A.violet} />
+                <Typography variant="h3" sx={{ mb: 2, lineHeight: 1.15, color: 'text.primary', fontSize: { xs: '2rem', md: '2.2rem' } }}>
+                  The Gap in Standard Screening
+                </Typography>
+                <Box sx={{ borderLeft: `3px solid ${A.violet}`, pl: 2.5, mb: 2, py: 0.5 }}>
+                  <Typography sx={{ color: 'text.primary', lineHeight: 1.65, fontSize: '0.88rem', fontStyle: 'italic', opacity: 0.85 }}>
+                    Interval cancers are not simply missed tumors; they are biologically aggressive cancers that rapidly emerge between routine screenings.
+                  </Typography>
+                </Box>
+                <Typography sx={{ color: 'text.secondary', lineHeight: 1.75, fontSize: '0.88rem' }}>
+                  Because they often mask themselves within complex, dense breast tissue, they remain virtually invisible to the human eye on a baseline mammogram until they reach an advanced, highly dangerous stage. Catching them requires more than just looking closer.
+                  <br /><br />
+                  Q-INTERVAL-Lite+ investigates whether quantum-enhanced AI can penetrate this visual noise, detecting the microscopic, structural precursors of these deadly tumors before they ever have the chance to surface.
+                </Typography>
+              </Box>
+            </FadeUp>
+          </Box>
+        </Container>
+      </Box>
 
-              {mode !== 'both' ? (
-                <>
+      {/* ── 4. WHO ── */}
+      <Box id="who" sx={{ height: sectionH, bgcolor: 'background.default', borderBottom: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', position: 'relative', overflow: 'hidden' }}>
+        <DotGrid />
+        <Container maxWidth="lg" sx={{ width: '100%', position: 'relative', zIndex: 1 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '2fr 3fr' }, gap: { xs: 4, md: 10 }, alignItems: 'center' }}>
 
-                  <Box sx={{ mb: 2 }}>
-                    {/* Result Label */}
-                    <Typography fontWeight={500} variant='h3' gutterBottom>{result.resultFile.result}</Typography>
-                    {/* Percentage */}
+            {/* Left — header text, same as About section */}
+            <FadeUp isVisible={inWho}>
+              <SectionLabel icon={<PeopleIcon sx={{ fontSize: 16 }} />} label="Who it's for" color={A.blue} />
+              <Typography variant="h3" sx={{ mb: 2, lineHeight: 1.25, color: 'text.primary', fontSize: { xs: '1.8rem', md: '2.2rem' } }}>
+                Built for the whole care chain.
+              </Typography>
+              <Typography sx={{ color: 'text.secondary', lineHeight: 1.8, fontSize: '0.95rem', mb: 2 }}>
+                [Introductory paragraph placeholder — brief overview of the intended audience and how the platform serves them.]
+              </Typography>
+              <Typography sx={{ color: 'text.secondary', lineHeight: 1.8, fontSize: '0.95rem' }}>
+                [Second paragraph placeholder — note on educational, non-clinical scope and cross-disciplinary reach.]
+              </Typography>
+            </FadeUp>
 
+            {/* Right — tiered user cards */}
+            <FadeUp isVisible={inWho} delay={0.12}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
 
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography fontWeight={500} variant='subtitle2' fontSize={25} color='grey' gutterBottom> Confidence</Typography>
-                      <Typography fontWeight={500} variant='subtitle2' fontSize={25} color='grey' gutterBottom> {(result.resultFile.score * 100).toFixed(2)} %</Typography>
+                {/* ── Primary tier label ── */}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                  <Typography sx={{ fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: A.teal, whiteSpace: 'nowrap' }}>Primary Users</Typography>
+                  <Box sx={{ flex: 1, height: '1px', backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(34,211,238,0.18)' : 'rgba(8,145,178,0.3)' }} />
+                </Box>
+
+                {[
+                  { Icon: BiotechIcon,       role: 'Radiologists',                  accent: A.teal },
+                  { Icon: LocalHospitalIcon, role: 'Referring Doctors & Physicians', accent: A.blue },
+                ].map((item, i) => (
+                  <motion.div key={item.role}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={inWho ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
+                    transition={{ duration: 0.28, delay: 0.14 + i * 0.08, ease: 'easeOut' }}
+                  >
+                    <Box sx={{
+                      display: 'flex', alignItems: 'flex-start', gap: 2,
+                      px: 2.5, py: 2, mb: 1.25, borderRadius: 2,
+                      backgroundColor: (theme) => theme.palette.mode === 'dark'
+                        ? `${item.accent}12` : item.accent,
+                      border: '1px solid',
+                      borderColor: (theme) => theme.palette.mode === 'dark' ? `${item.accent}30` : `${item.accent}CC`,
+                      borderLeft: (theme) => theme.palette.mode === 'dark' ? `2px solid ${item.accent}` : `2px solid rgba(0,0,0,0.18)`,
+                      transition: 'all 0.2s',
+                      '&:hover': {
+                        backgroundColor: (theme) => theme.palette.mode === 'dark' ? `${item.accent}1C` : item.accent,
+                        boxShadow: (theme) => theme.palette.mode === 'light' ? '0 4px 16px rgba(0,0,0,0.18)' : 'none',
+                        transform: 'translateY(-1px)',
+                      },
+                    }}>
+                      <item.Icon sx={{ fontSize: 18, flexShrink: 0, mt: '3px',
+                        color: (theme) => theme.palette.mode === 'dark' ? item.accent : 'rgba(255,255,255,0.92)',
+                      }} />
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography sx={{ fontWeight: 700, fontSize: '0.87rem', mb: 0.3, lineHeight: 1.2,
+                          color: (theme) => theme.palette.mode === 'dark' ? 'text.primary' : '#FFFFFF',
+                        }}>{item.role}</Typography>
+                        <Typography sx={{ fontSize: '0.77rem', lineHeight: 1.6,
+                          color: (theme) => theme.palette.mode === 'dark' ? 'text.secondary' : 'rgba(255,255,255,0.82)',
+                        }}>[Placeholder — how {item.role.toLowerCase()} use the platform.]</Typography>
+                      </Box>
                     </Box>
-                    <div ref={targetRef} >
-                      <div style={{ background: '#eee', borderRadius: 4, height: 8 }}>
-                        <div style={{
-                          width: isVisible ? `${result.resultFile.score * 100}%` : '0%',
-                          background: `${selectedMode.color}`,
-                          height: '100%',
-                          borderRadius: 4,
-                          transition: 'width 1s ease'
+                  </motion.div>
+                ))}
+
+                {/* ── Secondary tier label ── */}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 1.5, mb: 2 }}>
+                  <Typography sx={{ fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: A.violet, whiteSpace: 'nowrap' }}>Secondary Users</Typography>
+                  <Box sx={{ flex: 1, height: '1px', backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(167,139,250,0.18)' : 'rgba(167,139,250,0.35)' }} />
+                </Box>
+
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1.25 }}>
+                  {[
+                    { Icon: CastForEducationIcon,  role: 'Medical Students',       accent: A.violet },
+                    { Icon: RadioOutlinedIcon,      role: 'Radiology Trainees',     accent: '#C4B5FD' },
+                    { Icon: PsychologyOutlinedIcon, role: 'Medical AI Researchers', accent: '#818CF8' },
+                  ].map((item, i) => (
+                    <motion.div key={item.role}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={inWho ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
+                      transition={{ duration: 0.28, delay: 0.34 + i * 0.07, ease: 'easeOut' }}
+                    >
+                      <Box sx={{
+                        px: 2, py: 2, borderRadius: 2,
+                        backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'transparent' : item.accent,
+                        border: '1px solid',
+                        borderColor: (theme) => theme.palette.mode === 'dark' ? `${item.accent}30` : `${item.accent}CC`,
+                        borderTop: (theme) => theme.palette.mode === 'dark' ? `2px solid ${item.accent}70` : `2px solid rgba(0,0,0,0.15)`,
+                        transition: 'all 0.2s',
+                        '&:hover': {
+                          backgroundColor: (theme) => theme.palette.mode === 'dark' ? `${item.accent}0D` : item.accent,
+                          borderColor: (theme) => theme.palette.mode === 'dark' ? `${item.accent}50` : `${item.accent}CC`,
+                          boxShadow: (theme) => theme.palette.mode === 'light' ? '0 4px 16px rgba(0,0,0,0.18)' : 'none',
+                          transform: 'translateY(-1px)',
+                        },
+                      }}>
+                        <item.Icon sx={{ fontSize: 17, mb: 0.75,
+                          color: (theme) => theme.palette.mode === 'dark' ? item.accent : 'rgba(255,255,255,0.92)',
                         }} />
-                      </div>
-                    </div>
-                  </Box>
-
-                  <Box sx={{ display: 'flex', gap: 2 }}>
-                    <Box sx={{ flex: 1, borderRadius: 2, p: 2 }}>
-                      <Typography variant="caption">Model used</Typography>
-                      <Typography variant="subtitle1" fontWeight={500}>{MODES[mode].label}</Typography>
-                    </Box>
-                    <Box sx={{ flex: 1, borderRadius: 2, p: 2 }}>
-                      <Typography variant="caption">Image</Typography>
-                      <Typography variant="subtitle1" fontWeight={500}>{file.name}</Typography>
-                    </Box>
-                  </Box>
-                </>
-              ) : (
-                <>
-                  <Box sx={{ display: 'flex', gap: 2 }}>
-
-
-                    {/* Quantum Results */}
-
-                    <Box sx={{ flex: 1, borderTop: '3px solid #6A0DAD', p: 2, border: '1px solid #eee', borderRadius: 2 }}>
-                      <Typography variant="caption">Quantum AI</Typography>
-                      <Typography variant="h5" fontWeight={500}>{result.resultFile.qml.result}</Typography>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography fontWeight={500} variant='subtitle2' fontSize={25} color='grey' gutterBottom> Confidence</Typography>
-                        <Typography variant="body2" color="grey">{(result.resultFile.qml.score * 100).toFixed(2)}%</Typography>
+                        <Typography sx={{ fontWeight: 700, fontSize: '0.76rem', mb: 0.35, lineHeight: 1.25,
+                          color: (theme) => theme.palette.mode === 'dark' ? 'text.primary' : '#FFFFFF',
+                        }}>{item.role}</Typography>
+                        <Typography sx={{ fontSize: '0.69rem', lineHeight: 1.55,
+                          color: (theme) => theme.palette.mode === 'dark' ? 'text.secondary' : 'rgba(255,255,255,0.82)',
+                        }}>[Placeholder — how {item.role.toLowerCase()} engage.]</Typography>
                       </Box>
+                    </motion.div>
+                  ))}
+                </Box>
 
-                      <div ref={targetRef} >
-                        <div style={{ background: '#eee', borderRadius: 4, height: 8 }}>
-                          <div style={{
-                            width: isVisible1 ? `${(result.resultFile.qml.score * 100).toFixed(2)}%` : '0%',
-                            background: '#6A0DAD',
-                            height: '100%',
-                            borderRadius: 4,
-                            transition: 'width 1s ease'
-                          }} />
-                        </div>
-                      </div>
+              </Box>
+            </FadeUp>
 
+          </Box>
+        </Container>
+      </Box>
 
-                    </Box>
+      {/* ── 5. TECHNOLOGY ── */}
+      <Box id="technology" sx={{ height: sectionH, bgcolor: 'background.paper', borderBottom: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', position: 'relative', overflow: 'hidden' }}>
+        <SparsePlus />
+        <Container maxWidth="lg" sx={{ width: '100%', position: 'relative', zIndex: 1 }}>
+          <FadeUp isVisible={inTech}>
+            <Box sx={{ mb: 4 }}>
+              <SectionLabel icon={<ClassicalIcon sx={{ fontSize: 16 }} />} label="How it works" color={A.amber} />
+              <Typography variant="h3" sx={{ mb: 1.5, lineHeight: 1.25, maxWidth: 560, color: 'text.primary', fontSize: { xs: '1.8rem', md: '2.2rem' } }}>
+                Two pipelines. One scan.
+              </Typography>
+              <Typography sx={{ color: 'text.secondary', lineHeight: 1.8, fontSize: '0.88rem', maxWidth: 560 }}>
+                [Placeholder — a short intro to the technical approach.]
+              </Typography>
+            </Box>
+            <TechCards />
+          </FadeUp>
+        </Container>
+      </Box>
 
-                    {/* Classical Results */}
-                    <Box sx={{ flex: 1, borderTop: '3px solid #1565C0', p: 2, border: '1px solid #eee', borderRadius: 2 }}>
-                      <Typography variant="caption">Classical CNN</Typography>
-                      <Typography variant="h5" fontWeight={500}>{result.resultFile.cnn.result}</Typography>
-
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography fontWeight={500} variant='subtitle2' fontSize={25} color='grey' gutterBottom> Confidence</Typography>
-                        <Typography variant="body2" color="grey">{(result.resultFile.cnn.score * 100).toFixed(2)}%</Typography>
+      {/* ── 6. SUPPORT ── */}
+      <Box id="support" sx={{ height: sectionH, bgcolor: 'background.paper', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+        <HorizontalLines />
+        <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', overflow: 'hidden', position: 'relative', zIndex: 1 }}>
+          <Container maxWidth="md" sx={{ width: '100%' }}>
+            <FadeUp isVisible={inSupport}>
+              <Box sx={{ position: 'relative', borderRadius: 3, overflow: 'hidden', backgroundColor: 'background.default', border: '2px solid rgba(232,83,122,0.25)', boxShadow: '0 4px 24px rgba(232,83,122,0.08)', p: { xs: 3, md: 4 }, textAlign: 'center' }}>
+                <Box sx={{ position: 'absolute', top: '-30%', left: '50%', transform: 'translateX(-50%)', width: 280, height: 280, borderRadius: '50%', background: 'radial-gradient(circle, rgba(232,83,122,0.07) 0%, transparent 70%)', pointerEvents: 'none' }} />
+                <HeartIcon sx={{ fontSize: 32, color: A.pink, mb: 1.25 }} />
+                <Typography variant="h5" sx={{ mb: 1.25, color: 'text.primary', fontWeight: 700 }}>Patient Support &amp; Resources</Typography>
+                <Typography sx={{ color: 'text.secondary', maxWidth: 500, mx: 'auto', mb: 3, lineHeight: 1.75, fontSize: '0.88rem' }}>
+                  Whether you're navigating a diagnosis, supporting a loved one, or seeking guidance,
+                  the organisations below provide trusted support, information, and free screening
+                  services across Australia.
+                </Typography>
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5, textAlign: 'left' }}>
+                  {SUPPORT_ORGS.map((org, i) => (
+                    <motion.div key={i} whileHover={{ y: -3, transition: { duration: 0.18 } }}>
+                      <Box
+                        component="a"
+                        href={org.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        sx={{
+                          display: 'flex', alignItems: 'flex-start', gap: 1.5, p: 2,
+                          borderRadius: 2, backgroundColor: 'background.paper',
+                          border: '1px solid', borderColor: 'divider',
+                          textDecoration: 'none', transition: 'border-color 0.2s, background-color 0.2s',
+                          '&:hover': { backgroundColor: 'rgba(232,83,122,0.05)', borderColor: 'rgba(232,83,122,0.3)' },
+                        }}
+                      >
+                        <OrgLogo domain={org.domain} name={org.name} />
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Typography variant="subtitle2" sx={{ color: 'text.primary', fontWeight: 700, fontSize: '0.82rem', mb: 0.25 }}>{org.name}</Typography>
+                          <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: '0.76rem', lineHeight: 1.5 }}>{org.description}</Typography>
+                        </Box>
+                        <LinkIcon sx={{ fontSize: 13, color: 'text.disabled', mt: '3px', flexShrink: 0 }} />
                       </Box>
+                    </motion.div>
+                  ))}
+                </Box>
+              </Box>
+            </FadeUp>
+          </Container>
+        </Box>
 
-                      <div ref={targetRef1} >
-                        <div style={{ background: '#eee', borderRadius: 4, height: 8 }}>
-                          <div style={{
-                            width: isVisible ? `${(result.resultFile.cnn.score * 100).toFixed(2)}%` : '0%',
-                            background: '#1565C0',
-                            height: '100%',
-                            borderRadius: 4,
-                            transition: 'width 1s ease'
-                          }} />
-                        </div>
-                      </div>
-
-
-
-                    </Box>
-                  </Box>
-
-
-                </>
-
-              )}
-
-            </Paper>
-
-
-
-
-            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 7, padding: '1rem', }}>
-              <Button
-                variant="contained"
-                size="large"
-                disabled={!file || loading}
-                onClick={handleReset}
-
-                sx={{
-                  px: 5,
-                  py: 1.5,
-
-                  fontSize: '1rem',
-                  backgroundColor: selectedMode.color,
-                  '&:hover': { backgroundColor: selectedMode.color, filter: 'brightness(0.9)' },
-                  '&:disabled': { backgroundColor: 'rgba(0,0,0,0.1)' },
-                }}
-              >
-                {'Reset'}
-              </Button>
-            </Box>
-
-
-          </>
-        )}
-
-
-
-        <Dialog
-          open={detailsOpen}
-          onClose={handleCloseDetails}
-          aria-labelledby="analysis-details-dialog-title"
-          aria-describedby="analysis-details-dialog-description"
-          fullWidth
-          maxWidth="sm"
-        >
-          <DialogTitle id="analysis-details-dialog-title">
-            How do these models differ?
-          </DialogTitle>
-          <DialogContent>
-            <Box component="ul" sx={{ pl: 2, mb: 2 }}>
-              <Typography component="li" variant="body2" sx={{ mb: 2 }}>
-                <strong>Classical CNN</strong>:
-              </Typography>
-              <Typography component="li" variant="body2" sx={{ mb: 2 }}>
-                <strong>Quantum AI</strong>:
-              </Typography>
-              <Typography component="li" variant="body2" sx={{ mb: 2 }}>
-                <strong>Classical + Quantum</strong>:
+        {/* Disclaimer */}
+        <Box sx={{ flexShrink: 0, borderTop: '1px solid', borderColor: 'divider', py: 3, backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#071020' : '#0C3040', position: 'relative', zIndex: 1 }}>
+          <Container maxWidth="md">
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap', justifyContent: { xs: 'center', md: 'flex-start' } }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
+                <ShieldIcon sx={{ fontSize: 20, color: A.red, opacity: 0.85 }} />
+                <Typography sx={{ color: A.red, fontWeight: 700, fontSize: '0.95rem', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Disclaimer</Typography>
+              </Box>
+              <Typography sx={{ color: (theme) => theme.palette.mode === 'dark' ? 'text.secondary' : 'rgba(255,255,255,0.7)', fontSize: '0.95rem', lineHeight: 1.6, fontWeight: 500 }}>
+                Research prototype only. Not validated for clinical use. Must not be used to inform medical decisions.
               </Typography>
             </Box>
-            <Box sx={{ mt: 3, p: 2, backgroundColor: 'rgba(21, 101, 192, 0.08)', borderRadius: 1, borderLeft: `4px solid #1565C0` }}>
-              <Typography variant="body2" color="text.secondary">
-                <strong>Want to learn more?</strong> Visit the Models page for an in-depth explanation of how each model works, training data, accuracy metrics, and more.
-              </Typography>
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCloseDetails}>
-              Close
-            </Button>
-            <Button
-              onClick={() => {
-                handleCloseDetails();
-                navigate('/models');
-              }}
-              variant="contained"
-              color="primary"
-            >
-              View Models
-            </Button>
-          </DialogActions>
-        </Dialog>
-      </Container>
-    </Box >
+          </Container>
+        </Box>
+      </Box>
+
+    </Box>
   );
 }

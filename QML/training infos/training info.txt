@@ -1,0 +1,105 @@
+Epoch 01/25 complete | Train Loss: 1.0740 | Test Loss: 1.0850 | Train Acc: 0.4319 | Test Acc: 0.4222
+Sample probs:
+[[0.3509 0.252  0.3971]
+ [0.3432 0.3627 0.2941]
+ [0.3344 0.3116 0.354 ]
+ [0.2869 0.355  0.3581]
+ [0.3444 0.2636 0.392 ]]
+Sample preds: [2 1 2 2 2]
+Weight sample: 0.263726
+Weight mean: 0.024841
+Weight std: 0.351627
+
+Epoch 03/25 complete | Train Loss: 1.0671 | Test Loss: 1.0836 | Train Acc: 0.4222 | Test Acc: 0.4333
+Sample probs:
+[[0.3265 0.2515 0.422 ]
+ [0.2784 0.3909 0.3307]
+ [0.3137 0.3011 0.3852]
+ [0.2319 0.3816 0.3864]
+ [0.3261 0.2656 0.4083]]
+Sample preds: [2 1 2 2 2]
+Weight sample: 0.056793
+Weight mean: -0.015401
+Weight std: 0.480688
+
+Epoch 10/25 complete | Train Loss: 1.0632 | Test Loss: 1.0810 | Train Acc: 0.4333 | Test Acc: 0.4111
+Sample probs:
+[[0.2904 0.2437 0.4658]
+ [0.2764 0.3779 0.3457]
+ [0.3174 0.2902 0.3924]
+ [0.2939 0.3834 0.3227]
+ [0.3021 0.2541 0.4438]]
+Sample preds: [2 1 2 1 2]
+Weight sample: 0.127065
+Weight mean: -0.042409
+Weight std: 0.61452
+
+Epoch 15/25 complete | Train Loss: 1.0624 | Test Loss: 1.0825 | Train Acc: 0.4583 | Test Acc: 0.4444
+Sample probs:
+[[0.2878 0.2457 0.4665]
+ [0.2751 0.3767 0.3482]
+ [0.3189 0.3027 0.3784]
+ [0.3149 0.3919 0.2932]
+ [0.3    0.2572 0.4428]]
+Sample preds: [2 1 2 1 2]
+Weight sample: 0.157692
+Weight mean: -0.105867
+Weight std: 0.6621
+
+Epoch 18/25 complete | Train Loss: 1.0621 | Test Loss: 1.0787 | Train Acc: 0.4403 | Test Acc: 0.4333
+Sample probs:
+[[0.2847 0.2346 0.4807]
+ [0.2673 0.3907 0.342 ]
+ [0.3146 0.2989 0.3866]
+ [0.2947 0.3916 0.3137]
+ [0.2953 0.2443 0.4604]]
+Sample preds: [2 1 2 1 2]
+Weight sample: 0.215859
+Weight mean: -0.088213
+Weight std: 0.674979
+
+Epoch 20/25 complete | Train Loss: 1.0627 | Test Loss: 1.0822 | Train Acc: 0.4625 | Test Acc: 0.4222
+Sample probs:
+[[0.2919 0.2426 0.4655]
+ [0.2846 0.3653 0.3501]
+ [0.3249 0.3014 0.3737]
+ [0.3146 0.39   0.2954]
+ [0.3048 0.2523 0.4428]]
+Sample preds: [2 1 2 1 2]
+Weight sample: 0.158219
+Weight mean: -0.10403
+Weight std: 0.677037
+
+Epoch 25/25 complete | Train Loss: 1.0620 | Test Loss: 1.0798 | Train Acc: 0.4514 | Test Acc: 0.4444
+Sample probs:
+[[0.2743 0.2474 0.4784]
+ [0.2578 0.3957 0.3466]
+ [0.3141 0.3066 0.3794]
+ [0.3042 0.3955 0.3002]
+ [0.2865 0.2574 0.4561]]
+Sample preds: [2 1 2 1 2]
+Weight sample: 0.179641
+Weight mean: -0.102275
+Weight std: 0.687743
+
+Using best weights from epoch 21 | Best Test Acc: 0.4556 | Best Test Loss: 1.0814
+
+Final Train Accuracy: 0.4722
+Final Test Accuracy: 0.4556
+
+Classification Report:
+              precision    recall  f1-score   support
+
+      normal     0.6154    0.1333    0.2192        60
+      benign     0.4130    0.6333    0.5000        60
+   malignant     0.4800    0.6000    0.5333        60
+
+    accuracy                         0.4556       180
+   macro avg     0.5028    0.4556    0.4175       180
+weighted avg     0.5028    0.4556    0.4175       180
+
+
+Confusion Matrix:
+[[ 8 31 21]
+ [ 4 38 18]
+ [ 1 23 36]]
