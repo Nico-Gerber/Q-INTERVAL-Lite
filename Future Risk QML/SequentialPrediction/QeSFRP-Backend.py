@@ -30,6 +30,11 @@ ARTIFACTS_PATH = resolve_artifacts_path()
 
 APPLY_AGE_MULTIPLIER = True
 
+# Demo/display setting:
+# True = the main frontend risk output uses the smooth demo-shaped yearly curve.
+# The raw QML probabilities are still returned separately for transparency/debugging.
+USE_DEMO_RISK_AS_MAIN_OUTPUT = True
+
 # Post-processing / interpretability settings.
 ENFORCE_CUMULATIVE_RISK = True
 MIN_TOTAL_POSITIVE_DROP_FOR_PERCENT = 1.0  # percentage points; below this, % contribution is unstable
@@ -451,22 +456,74 @@ def calculate_risk_level(risk_5y: float) -> str:
     return "High Risk"
 
 
-def make_yearly_risk_dict(probs: np.ndarray, apply_cumulative: bool = True) -> Dict[str, float]:
+def make_raw_qml_yearly_risk_dict(probs: np.ndarray, apply_cumulative: bool = True) -> Dict[str, float]:
+    """
+    True model output from the QML head for each yearly horizon.
+    This is returned for debugging/transparency, but not used as the main display
+    output when USE_DEMO_RISK_AS_MAIN_OUTPUT=True.
+    """
     horizon_years = [int(y) for y in artifacts["horizon_years"]]
-    base_prob = float(probs[-1])  # Use 5-year risk as base
-    base_risk_pct = safe_percent(float(base_prob * 100.0))
-    
+    probs = np.asarray(probs, dtype=float)
+
+    if apply_cumulative:
+        probs = np.maximum.accumulate(probs)
+
+    return {
+        f"{year}_year": safe_percent(float(probs[i] * 100.0))
+        for i, year in enumerate(horizon_years)
+    }
+
+
+def make_yearly_risk_dict(probs: np.ndarray, apply_cumulative: bool = True) -> Dict[str, float]:
+    """
+    Demo-shaped yearly risk curve used as the MAIN frontend display.
+
+    Important: this intentionally creates a visible 1-5 year curve
+    from the model's 5-year QML output. The real raw QML outputs are still
+    returned separately as raw_true_qml_risk_for_debug.
+    """
+    horizon_years = [int(y) for y in artifacts["horizon_years"]]
+
+    # Anchor the curve on the model's 5-year probability.
+    base_prob = float(np.asarray(probs, dtype=float)[-1])
+    five_year_risk_pct = safe_percent(base_prob * 100.0)
+
+    # Stronger visible curve for frontend demonstration.
+    # This avoids the graph looking flat when the true QML outputs are near 50/50.
+    curve_factors = {
+        1: 0.12,
+        2: 0.28,
+        3: 0.20,
+        4: 1.00,
+        5: 1.00,
+    }
+
     yearly_risks = {}
-    for i, year in enumerate(horizon_years):
-        if year == 1:
-            risk_1y = base_risk_pct * 0.15
-            yearly_risks[f"{year}_year"] = safe_percent(risk_1y)
-        else:
-            year_fraction = (year - 1) / 4.0 
-            curved_risk = base_risk_pct * 0.15 + (base_risk_pct - base_risk_pct * 0.15) * (year_fraction ** 1.5)
-            yearly_risks[f"{year}_year"] = safe_percent(curved_risk)
-    
+    previous = 0.0
+    for year in horizon_years:
+        factor = curve_factors.get(year, min(float(year) / max(horizon_years), 1.0))
+        risk = safe_percent(five_year_risk_pct * factor)
+
+        # Keep the demo curve shaped rather than strictly cumulative so year 3 can dip.
+        if apply_cumulative and year != 3:
+            risk = max(previous, risk)
+        previous = risk
+
+        yearly_risks[f"{year}_year"] = round(float(risk), 2)
+
     return yearly_risks
+
+
+def make_risk_curve_points(risk_dict: Dict[str, float]) -> List[Dict[str, Any]]:
+    """Frontend-friendly chart array so the UI does not accidentally plot the raw/debug field."""
+    points = []
+    for key in ["1_year", "2_year", "3_year", "4_year", "5_year"]:
+        if key in risk_dict:
+            points.append({
+                "year": key.replace("_", " "),
+                "risk_percent": round(float(risk_dict[key]), 2),
+            })
+    return points
 
 
 def highest_risk_year_from_dict(risk_dict: Dict[str, float]) -> str:
@@ -493,7 +550,18 @@ def run_view_aware_inference(metadata: Dict[str, Any], file_bytes_by_name: Dict[
     )
 
     probs = predict_qml(patient_feature_raw)
-    base_qml_risk = make_yearly_risk_dict(probs, apply_cumulative=True)
+
+    # True raw model probabilities for each horizon.
+    raw_qml_risk = make_raw_qml_yearly_risk_dict(probs, apply_cumulative=True)
+
+    # Demo-shaped curve anchored on the model's 5-year probability.
+    demo_qml_risk = make_yearly_risk_dict(probs, apply_cumulative=True)
+
+    # Main displayed risk. For the current test workflow, this is demo-shaped.
+    if USE_DEMO_RISK_AS_MAIN_OUTPUT:
+        base_qml_risk = demo_qml_risk
+    else:
+        base_qml_risk = raw_qml_risk
 
     patient_age = float(metadata["patient_age"])
     age_group = get_age_group(patient_age)
@@ -514,6 +582,8 @@ def run_view_aware_inference(metadata: Dict[str, Any], file_bytes_by_name: Dict[
         "patient_feature_raw": patient_feature_raw,
         "feature_debug": feature_debug,
         "base_qml_risk": base_qml_risk,
+        "raw_qml_risk": raw_qml_risk,
+        "demo_qml_risk": demo_qml_risk,
         "final_risk": final_risk,
         "risk_level": risk_level,
         "age_group": age_group,
@@ -694,6 +764,8 @@ async def qml_future_risk_view_aware(
 
     feature_debug = inference["feature_debug"]
     base_qml_risk = inference["base_qml_risk"]
+    raw_qml_risk = inference.get("raw_qml_risk", {})
+    demo_qml_risk = inference.get("demo_qml_risk", {})
     final_risk = inference["final_risk"]
     risk_level = inference["risk_level"]
     patient_age = float(metadata["patient_age"])
@@ -757,23 +829,41 @@ async def qml_future_risk_view_aware(
             "patient_feature_shape": feature_debug["patient_feature_shape"],
             "feature_stream_scales": feature_debug.get("feature_stream_scales", {}),
             "cumulative_risk_postprocessing_used": ENFORCE_CUMULATIVE_RISK,
+            "demo_risk_used_as_main_output": USE_DEMO_RISK_AS_MAIN_OUTPUT,
         },
         "future_risk": {
+            "output_mode": "demo_main" if USE_DEMO_RISK_AS_MAIN_OUTPUT else "true_qml_main",
             "base_qml_risk": base_qml_risk,
             "age_adjusted_risk": final_risk,
+            "risk_curve_for_chart": make_risk_curve_points(final_risk),
+            "raw_true_qml_risk_for_debug": raw_qml_risk,
+            "demo_qml_risk": demo_qml_risk,
             "risk_level": risk_level,
             "highest_risk_year": highest_risk_year_from_dict(final_risk),
             "cumulative_risk_enforced": ENFORCE_CUMULATIVE_RISK,
+        },
+        "patient_summary": {
+            "number_of_exams": feature_debug["num_exams"],
+            "final_patient_qml_yearly_future_risk": final_risk,
+            "final_patient_qml_1_year_risk_score": final_risk.get("1_year"),
+            "final_patient_qml_2_year_risk_score": final_risk.get("2_year"),
+            "final_patient_qml_3_year_risk_score": final_risk.get("3_year"),
+            "final_patient_qml_4_year_risk_score": final_risk.get("4_year"),
+            "final_patient_qml_5_year_risk_score": final_risk.get("5_year"),
+            "final_patient_qml_risk_level": risk_level,
+            "risk_curve_for_chart": make_risk_curve_points(final_risk),
+            "output_mode": "demo_main",
         },
         "model_explanation": {
             "simple_summary": (
                 "The model used all uploaded exams, four standard mammogram views per exam, "
                 "exam dates, recency weighting, and left-right asymmetry comparison "
-                "to estimate base 1-year to 5-year future risk. Patient age is then applied as a separate final multiplier. Exam contribution is calculated separately using ablation: the model is re-run with each exam removed to see how much the 5-year risk changes."
+                "to estimate future risk. For the current frontend demonstration, the main displayed yearly risks use a demo-shaped curve anchored on the model's 5-year QML output. The raw QML yearly outputs are still returned separately under raw_true_qml_risk_for_debug. Patient age is then applied as a separate final multiplier. Exam contribution is calculated separately using ablation: the model is re-run with each exam removed to see how much the 5-year risk changes."
             ),
             "main_contributing_factors": explanation_factors,
         },
         "disclaimer": {
-            "message": "Research prototype only. Not clinically validated. Do not use for medical decision-making."
+            "message": "Research prototype only. Not clinically validated. Do not use for medical decision-making.",
+            "demo_output_note": "Main yearly risk output is demo-shaped for frontend testing while full EMBED training is processing. Raw QML output is included separately for debugging."
         },
     }

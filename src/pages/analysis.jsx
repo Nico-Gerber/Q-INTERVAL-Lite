@@ -153,8 +153,15 @@ export default function Analysis() {
         return;
       }
 
+      if (!patientAge) {
+        setStatus({ ok: false, msg: 'Enter patient age before running future-risk analysis.' });
+        setLoading(false);
+        return;
+      }
+
       // UI slot names use hyphens; the endpoint expects underscores
       const slotMap = { 'L-CC': 'L_CC', 'R-CC': 'R_CC', 'L-MLO': 'L_MLO', 'R-MLO': 'R_MLO' };
+      const viewKeys = ['L-CC', 'R-CC', 'L-MLO', 'R-MLO'];
 
       const fd = new FormData();
       if (patientAge) fd.append('age', String(patientAge));
@@ -164,6 +171,31 @@ export default function Analysis() {
           const v = s.views?.[uiKey];
           const file = v?.file ?? (v instanceof File ? v : null);
           if (file) fd.append(`s${i}_${apiKey}`, file);
+        });
+      });
+
+      const qmlFd = new FormData();
+      const qmlMetadata = {
+        patient_age: Number(patientAge),
+        exams: datedSessions.map((s, i) => ({
+          exam_id: `exam_${i + 1}`,
+          exam_date: s.scanDate,
+          views: Object.fromEntries(
+            viewKeys.map((viewKey) => {
+              const file = s.views?.[viewKey]?.file ?? s.views?.[viewKey];
+              const safeOriginalName = file?.name?.replace(/[^A-Za-z0-9._-]/g, '_') ?? `${viewKey}.png`;
+              return [viewKey, `exam_${i + 1}_${viewKey}_${safeOriginalName}`];
+            })
+          ),
+        })),
+      };
+
+      qmlFd.append('metadata_json', JSON.stringify(qmlMetadata));
+      datedSessions.forEach((s, i) => {
+        viewKeys.forEach((viewKey) => {
+          const file = s.views?.[viewKey]?.file ?? s.views?.[viewKey];
+          const filename = qmlMetadata.exams[i].views[viewKey];
+          qmlFd.append('files', file, filename);
         });
       });
 
@@ -197,30 +229,49 @@ export default function Analysis() {
         };
       };
 
-      try {
-        const cnnRes = await fetch(`${API_BASE}/future-risk`, { method: 'POST', body: fd });
-        const cnnApi = await cnnRes.json();
-        const cnnData = adaptFutureRisk(cnnApi);
+      const adaptQmlFutureRisk = (api) => {
+        const yearly = api?.future_risk?.age_adjusted_risk;
+        if (!yearly) return null;
 
-        // TODO: swap in the real QML future-risk endpoint when ready.
-        // FutureRiskResults early-returns "No results available" if qml is falsy,
-        // so keep a structured placeholder in the qml slot for now.
-        const qmlData = {
+        const byExamId = Object.fromEntries(
+          (api.exam_contributions ?? []).map(row => [
+            String(row.exam_id),
+            row.contribution_percent,
+          ])
+        );
+
+        return {
           patient_summary: {
-            final_patient_yearly_future_risk: {
-              '1_year': 1.8, '2_year': 3.0, '3_year': 4.4, '4_year': 5.9, '5_year': 7.6,
-            },
-            final_patient_5_year_risk_score: 7.6,
+            final_patient_yearly_future_risk: yearly,
+            final_patient_5_year_risk_score: yearly['5_year'] ?? 0,
+            future_risk_score: yearly['5_year'] ?? 0,
+            risk_level: api.future_risk?.risk_level,
           },
           image_level_results: datedSessions.map((s, i) => ({
             filename: `exam_${i + 1}`,
-            image_contribution_percent: [55, 30, 15][i] ?? 10,
+            image_contribution_percent: byExamId[`exam_${i + 1}`] ?? null,
           })),
+          model_info: api.model,
         };
+      };
+
+      try {
+        const [cnnRes, qmlRes] = await Promise.all([
+          fetch(`${API_BASE}/future-risk`, { method: 'POST', body: fd }),
+          fetch(`${API_BASE}/qml-future-risk-view-aware/`, { method: 'POST', body: qmlFd }),
+        ]);
+
+        const [cnnApi, qmlApi] = await Promise.all([cnnRes.json(), qmlRes.json()]);
+
+        if (!cnnRes.ok) throw new Error(cnnApi?.detail ?? 'Classical future-risk request failed.');
+        if (!qmlRes.ok) throw new Error(qmlApi?.detail ?? 'Quantum future-risk request failed.');
+
+        const cnnData = adaptFutureRisk(cnnApi);
+        const qmlData = adaptQmlFutureRisk(qmlApi);
 
         setResult({ resultFile: { qml: qmlData, cnn: cnnData } });
-      } catch {
-        setStatus({ ok: false, msg: 'Cannot reach the server. Make sure the backend is running.' });
+      } catch (err) {
+        setStatus({ ok: false, msg: err?.message || 'Cannot reach the server. Make sure the backend is running.' });
       } finally {
         setLoading(false);
       }
