@@ -11,10 +11,7 @@ from skimage.segmentation import slic
 from skimage.transform import resize as sk_resize
 from lime import lime_image
 
-# ============================================================
-# CONFIG
-# ============================================================
-
+# Config
 QRF_MODEL_PATH   = "QML/quantum_random_forest_v2.joblib"
 PCA_MODEL_PATH   = "QML/8pca/pcaObj.joblib"
 SCALER_PATH      = "QML/8pca/scalerObj.joblib"
@@ -25,10 +22,7 @@ N_LAYERS         = 4
 LABEL_NAMES      = {0: "normal", 1: "benign", 2: "malignant"}
 LIME_NUM_SAMPLES = 300
 
-# ============================================================
-# LOAD
-# ============================================================
-
+# Load artifects
 def load_artifacts():
     bundle          = joblib.load(QRF_MODEL_PATH)
     clf             = bundle["classifier"]
@@ -37,10 +31,7 @@ def load_artifacts():
     scaler          = joblib.load(SCALER_PATH)
     return clf, quantum_weights, pca, scaler
 
-# ============================================================
-# IMAGE → SCALED PCA
-# ============================================================
-
+# Image loading
 def load_mammogram(image_path):
     img = Image.open(image_path).convert("L")
     img = img.resize((RESIZE_TO[1], RESIZE_TO[0]))
@@ -50,10 +41,7 @@ def image_to_pca(image, pca, scaler):
     flat = image.flatten().reshape(1, -1).astype(np.float32)
     return scaler.transform(pca.transform(flat)).astype(np.float64)
 
-# ============================================================
-# QUANTUM CIRCUIT
-# ============================================================
-
+# Quantum Circuit
 def make_quantum_circuit(quantum_weights):
     dev = qml.device("default.qubit", wires=N_QUBITS)
 
@@ -81,10 +69,7 @@ def make_quantum_circuit(quantum_weights):
 def extract_quantum_features(X, qfm):
     return np.array([qfm(x) for x in X], dtype=np.float64)
 
-# ============================================================
-# LIME PREDICT FUNCTION
-# ============================================================
-
+# Lime prediction function
 def make_predict_fn(clf, pca, scaler, qfm):
     def predict_fn(images):
         flat     = images[..., 0].reshape(len(images), -1).astype(np.float32)
@@ -92,12 +77,17 @@ def make_predict_fn(clf, pca, scaler, qfm):
         return clf.predict_proba(extract_quantum_features(scaled, qfm))
     return predict_fn
 
-# ============================================================
-# MAIN
-# ============================================================
-
-def run_explanation(image_path, y_true, clf, pca, scaler, quantum_weights,
-                    target_label=None, save_path="heatmap.png"):
+# Main
+def run_explanation(
+    image_path,
+    y_true,
+    clf,
+    pca,
+    scaler,
+    quantum_weights,
+    target_label=None, 
+    save_path="heatmap.png",
+):
 
     image    = load_mammogram(image_path)
     X_scaled = image_to_pca(image, pca, scaler)

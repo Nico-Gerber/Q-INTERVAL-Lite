@@ -18,7 +18,7 @@ FEATURE_COLUMNS = [f"pc{i}" for i in range(1, 9)]
 RANDOM_SEED     = 42
 TEST_SIZE       = 0.2
 N_QUBITS        = 8
-N_LAYERS        = 6          # increased from 4 → deeper circuit, richer features
+N_LAYERS        = 6
 MODEL_SAVE_PATH = "quantum_random_forest_v2.joblib"
 LABEL_NAMES     = {0: "normal", 1: "benign", 2: "malignant"}
 
@@ -85,7 +85,7 @@ def extract_quantum_features(X, circuit):
     return np.array(feats, dtype=np.float64)
 
 # ============================================================
-# SEED SEARCH — find best random weights over 20 seeds
+# SEED SEARCH (find best random weights over 20 seeds)
 # ============================================================
 
 print("\n================================================")
