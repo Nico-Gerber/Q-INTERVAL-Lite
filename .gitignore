@@ -21,3 +21,6 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+backend/models/birads_v2_explainable.pth
+backend/models/cancer_v5_explainable.pth
+backend/models/density_v2_explainable.pth
