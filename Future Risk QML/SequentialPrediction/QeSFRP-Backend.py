@@ -21,7 +21,7 @@ from pennylane import numpy as pnp
 
 def resolve_artifacts_path() -> Path:
     # Strict: Always use the bundled primary model file in backend/models.
-    repo_root = Path(__file__).resolve().parents[3]
+    repo_root = Path(__file__).resolve().parents[2]
     candidate = repo_root / "backend" / "models" / "QeSFRP_V0.1.pkl"
     return candidate
 
