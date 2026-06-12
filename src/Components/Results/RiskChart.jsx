@@ -25,13 +25,13 @@ export default function RiskChart({ data, color = 'rgba(178,34,34,1)', label = '
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
 
-  const gridStroke  = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(8,145,178,0.08)';
-  const axisColor   = isDark ? 'rgba(255,255,255,0.35)' : '#5a7080';
-  const axisLine    = isDark ? 'rgba(255,255,255,0.1)'  : 'rgba(8,145,178,0.15)';
-  const labelColor  = isDark ? 'rgba(255,255,255,0.5)'  : '#4a6070';
-  const refColor    = isDark ? 'rgba(229,255,0,0.5)'    : 'rgba(180,140,0,0.7)';
-  const refLabel    = isDark ? 'rgba(229,255,0,0.75)'   : 'rgba(150,110,0,0.9)';
-  const gradId      = `rg${color.replace(/[^a-z0-9]/gi, '')}`;
+  const gridStroke = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(8,145,178,0.08)';
+  const axisColor = isDark ? 'rgba(255,255,255,0.35)' : '#5a7080';
+  const axisLine = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(8,145,178,0.15)';
+  const labelColor = isDark ? 'rgba(255,255,255,0.5)' : '#4a6070';
+  const refColor = isDark ? 'rgba(229,255,0,0.5)' : 'rgba(180,140,0,0.7)';
+  const refLabel = isDark ? 'rgba(229,255,0,0.75)' : 'rgba(150,110,0,0.9)';
+  const gradId = `rg${color.replace(/[^a-z0-9]/gi, '')}`;
 
   return (
     <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -49,12 +49,15 @@ export default function RiskChart({ data, color = 'rgba(178,34,34,1)', label = '
             </defs>
             <CartesianGrid stroke={gridStroke} strokeDasharray="3 4" vertical={false} />
             <XAxis dataKey="year" stroke={axisColor} tick={{ fontSize: 12, fill: axisColor, fontWeight: 600 }} tickLine={false} axisLine={{ stroke: axisLine }} />
-            <YAxis stroke={axisColor} tick={{ fontSize: 12, fill: axisColor, fontWeight: 600 }} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}%`} domain={[0, 'dataMax + 4']} />
+            <YAxis stroke={axisColor} allowDecimals={false} tick={{ fontSize: 12, fill: axisColor, fontWeight: 600 }} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}%`} domain={[0, 'dataMax + 4']} />
             <Tooltip content={<CustomTooltip color={color} isDark={isDark} theme={theme} />} cursor={{ stroke: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(8,145,178,0.2)', strokeWidth: 1, strokeDasharray: '3 3' }} />
+            {/*
             {threshold !== null && (
               <ReferenceLine y={threshold} stroke={refColor} strokeDasharray="4 4"
                 label={{ value: thresholdLabel, position: 'insideTopRight', fill: refLabel, fontSize: 11, fontWeight: 700 }} />
             )}
+
+            */}
             <Area type="monotone" dataKey="risk" stroke={color} strokeWidth={3} fill={`url(#${gradId})`}
               dot={{ fill: color, strokeWidth: 0, r: 5 }}
               activeDot={{ r: 7, strokeWidth: 2, stroke: isDark ? 'white' : theme.palette.background.paper }}

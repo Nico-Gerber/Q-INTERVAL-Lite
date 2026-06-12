@@ -96,10 +96,22 @@ def build_prompt(data: ExplainRequest) -> str:
         "any concerning findings — do not downplay results or over-reassure."
     )
 
+    strict_audience_rule = (
+        ""
+        if data.audience == "clinician"
+        else
+        "- CRITICAL: You are speaking to a PATIENT. NEVER use view names such as "
+        "'craniocaudal', 'mediolateral oblique', 'L-CC', 'R-CC', 'L-MLO', 'R-MLO', "
+        "or any imaging plane terminology. You MUST refer only to 'the left breast' or "
+        "'the right breast'. Violating this rule makes the response unusable."
+    )
+
     return f"""You are a clinical decision support assistant explaining AI mammogram analysis results.
 {audience_instruction}
 
 STRICT RULES:
+{strict_audience_rule}
+
 - Do NOT diagnose the patient
 - Do NOT recommend specific treatments
 - Do NOT go beyond what the results show
@@ -110,11 +122,13 @@ STRICT RULES:
 - AFTER the per-view findings, add one short sentence comparing the Classical and Quantum composite future-risk scores. If a score is NOT APPLICABLE, say future-risk scoring was withheld rather than giving a number. Keep this as background context — never make risk the main point.
 - End with a reminder to consult a qualified clinician.
 
+
+
+
 MODEL CONTEXT:
 - Classical CNN (ResNet50):
 - Quantum ML (VQC):
 
-- Use the view names exactly as given. Do NOT expand, reinterpret, or invent meanings for any abbreviation or term.
 - Describe what the model CLASSIFIED each view as. Do NOT assert that lesions, masses, or abnormalities are actually present — the model outputs classifications, not findings.
 - Asymmetry between left and right is expected and is not a contradiction. Only flag disagreement when two views of the SAME breast diverge, or when confidence is low (e.g. a "Malignant" label below ~50%).
 - The patient malignant score and the Quantum "% malignant" are the models' CONFIDENCE in a malignant classification — they are NOT a cancer-risk percentage. Never call either a "risk" or an "overall risk", and never present them as a risk figure.

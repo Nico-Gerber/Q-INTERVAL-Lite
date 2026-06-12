@@ -36,19 +36,19 @@ export default function ComparisonRiskChart({
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
 
-  const cardBg      = isDark ? 'rgba(255,255,255,0.03)' : theme.palette.background.paper;
-  const cardBorder  = isDark ? '1px solid rgba(255,255,255,0.09)' : '1px solid rgba(8,145,178,0.2)';
-  const headingColor = isDark ? 'rgba(255,255,255,0.5)'  : '#4a6070';
-  const legendColor  = isDark ? 'rgba(255,255,255,0.75)' : theme.palette.text.primary;
-  const gridStroke   = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(8,145,178,0.08)';
-  const axisColor    = isDark ? 'rgba(255,255,255,0.45)' : '#5a7080';
-  const axisLine     = isDark ? 'rgba(255,255,255,0.1)'  : 'rgba(8,145,178,0.15)';
-  const divider      = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(8,145,178,0.15)';
-  const footerLabel  = isDark ? 'rgba(255,255,255,0.5)'  : '#4a6070';
-  const footerValue  = isDark ? 'rgba(255,255,255,0.9)'  : theme.palette.text.primary;
-  const refColor     = isDark ? 'rgba(229,255,0,0.45)'   : 'rgba(180,140,0,0.6)';
-  const refLabel     = isDark ? 'rgba(229,255,0,0.75)'   : 'rgba(150,110,0,0.9)';
-  const refText      = thresholdLabel ?? `Elevated Threshold ${threshold}%`;
+  const cardBg = isDark ? 'rgba(255,255,255,0.03)' : theme.palette.background.paper;
+  const cardBorder = isDark ? '1px solid rgba(255,255,255,0.09)' : '1px solid rgba(8,145,178,0.2)';
+  const headingColor = isDark ? 'rgba(255,255,255,0.5)' : '#4a6070';
+  const legendColor = isDark ? 'rgba(255,255,255,0.75)' : theme.palette.text.primary;
+  const gridStroke = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(8,145,178,0.08)';
+  const axisColor = isDark ? 'rgba(255,255,255,0.45)' : '#5a7080';
+  const axisLine = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(8,145,178,0.15)';
+  const divider = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(8,145,178,0.15)';
+  const footerLabel = isDark ? 'rgba(255,255,255,0.5)' : '#4a6070';
+  const footerValue = isDark ? 'rgba(255,255,255,0.9)' : theme.palette.text.primary;
+  const refColor = isDark ? 'rgba(229,255,0,0.45)' : 'rgba(180,140,0,0.6)';
+  const refLabel = isDark ? 'rgba(229,255,0,0.75)' : 'rgba(150,110,0,0.9)';
+  const refText = thresholdLabel ?? `Elevated Threshold ${threshold}%`;
 
   const merged = classicalData.map((c, i) => ({ year: c.year, classical: c.risk, quantum: quantumData[i]?.risk ?? null }));
 
@@ -75,13 +75,18 @@ export default function ComparisonRiskChart({
           <ComposedChart data={merged} margin={{ top: 20, right: 40, left: 0, bottom: 10 }}>
             <CartesianGrid stroke={gridStroke} strokeDasharray="3 4" vertical={false} />
             <XAxis dataKey="year" stroke={axisColor} tick={{ fontSize: 12, fill: axisColor, fontWeight: 600 }} tickLine={false} axisLine={{ stroke: axisLine }} />
-            <YAxis stroke={axisColor} tick={{ fontSize: 12, fill: axisColor, fontWeight: 600 }} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}%`} domain={[0, 'dataMax + 4']} />
+            <YAxis stroke={axisColor} allowDecimals={false} tick={{ fontSize: 12, fill: axisColor, fontWeight: 600 }} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}%`} domain={[0, 'dataMax + 4']} />
             <Tooltip content={<CustomTooltip classicalColor={classicalColor} quantumColor={quantumColor} isDark={isDark} />}
               cursor={{ stroke: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(8,145,178,0.2)', strokeWidth: 1, strokeDasharray: '3 3' }} />
+
+            { /*
+
             {threshold !== null && (
               <ReferenceLine y={threshold} stroke={refColor} strokeDasharray="4 4"
                 label={{ value: refText, position: 'insideTopRight', fill: refLabel, fontSize: 11, fontWeight: 700 }} />
             )}
+
+          */}
             <Line type="monotone" dataKey="classical" stroke={classicalColor} strokeWidth={3}
               dot={{ fill: classicalColor, strokeWidth: 0, r: 5 }}
               activeDot={{ r: 7, strokeWidth: 2, stroke: isDark ? 'white' : theme.palette.background.paper }}
@@ -94,7 +99,8 @@ export default function ComparisonRiskChart({
         </ResponsiveContainer>
       </Box>
 
-      {/* Footer */}
+      {/* Footer 
+      
       {(classicalCrossYears !== null || quantumCrossYears !== null) && (
         <Box sx={{ pt: 2, mt: 2, borderTop: `1px solid ${divider}`, display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
           {classicalCrossYears !== null && (
@@ -111,6 +117,7 @@ export default function ComparisonRiskChart({
           )}
         </Box>
       )}
+        */}
     </Box>
   );
 }
