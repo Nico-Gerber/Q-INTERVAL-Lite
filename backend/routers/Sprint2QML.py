@@ -147,10 +147,6 @@ def render_lime(pil_gray: Image.Image, heat16: np.ndarray,
 
 def lime_map(arr16: np.ndarray, target_idx: int,
              num_samples: int = 300) -> np.ndarray:
-    """
-    Drop-in replacement for occlusion_map.
-    Returns a (16, 16) importance array in the same format.
-    """
 
     # LIME needs (H, W, 3) RGB
     image_rgb = np.stack([arr16] * 3, axis=-1)

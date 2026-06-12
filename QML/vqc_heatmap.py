@@ -14,7 +14,7 @@ from skimage.transform import resize as sk_resize
 from lime import lime_image
 
 # Config
-VQC_MODEL_PATH   = "QML/vqc_4500_pca8_multiclass_best.joblib"
+VQC_MODEL_PATH   = "backend/dataset/vqc_15000_pca8_multiclass_improved.joblib"
 PCA_MODEL_PATH   = "QML/8pca/pcaObj.joblib"
 SCALER_PATH      = "QML/8pca/scalerObj.joblib"
 
