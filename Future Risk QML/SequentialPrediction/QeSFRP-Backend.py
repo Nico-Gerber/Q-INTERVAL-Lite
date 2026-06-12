@@ -46,9 +46,9 @@ MODERATE_IMPACT_THRESHOLD_5Y = 3.0        # percentage points
 # These are only a prototype adjustment, not clinically validated.
 AGE_MULTIPLIERS = {
     "Under 30": 0.70,
-    "30-39": 1.04,
-    "40-49": 0.97,
-    "50-59": 1.04,
+    "30-39": 1.02,
+    "40-49": 1.04,
+    "50-59": 1.08,
     "60-69": 1.15,
     "70-79": 1.25,
     "80+": 1.50,

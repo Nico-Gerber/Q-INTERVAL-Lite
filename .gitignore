@@ -26,3 +26,5 @@ backend/models/cancer_v5_explainable.pth
 backend/models/density_v2_explainable.pth
 backend-dev-8000.log
 backend-dev-8000.err.log
+frontend-dev-3000.err.log
+frontend-dev-3000.log
