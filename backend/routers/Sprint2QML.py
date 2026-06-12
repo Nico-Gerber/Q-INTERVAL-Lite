@@ -16,7 +16,7 @@ from fastapi.responses import JSONResponse
 BASE_DIR = Path(__file__).parent.parent  # points to backend/
 PCA_PATH = BASE_DIR / "dataset/pcaObj.joblib"
 SCALER_PATH = BASE_DIR / "dataset/scalerObj.joblib"
-MODEL_PATH = BASE_DIR / "dataset/vqc_4500_pca8_multiclass_v1.joblib"
+MODEL_PATH = BASE_DIR / "dataset/vqc_15000_pca8_multiclass_improved.joblib"
 
 RESIZE_TO = (16, 16)        # model input resolution
 DISPLAY_SIZE = 224          # output heatmap resolution sent to the frontend
@@ -55,33 +55,19 @@ print(f"Best epoch: {model_data['best_epoch']} | Best test acc: {model_data['bes
 # =========================
 dev = qml.device("default.qubit", wires=n_qubits)
 
-def variational_layer(layer_weights, x):
-    """
-    Matches the training circuit exactly:
-    - Data re-uploading with per-layer learnable scale (layer_weights[:, 2])
-    - Trainable RY/RZ rotations
-    - Brick-layer CNOT entanglement (even pairs, then odd pairs)
-    """
-    # re-upload with per-layer learnable scale
-    for i in range(n_qubits):
-        qml.RY(layer_weights[i, 2] * x[i], wires=i)
-        qml.RZ(layer_weights[i, 2] * x[(i + 1) % len(x)], wires=i)
-
-    # trainable rotations
-    for i in range(n_qubits):
-        qml.RY(layer_weights[i, 0], wires=i)
-        qml.RZ(layer_weights[i, 1], wires=i)
-
-    # brick-layer entanglement
-    for i in range(0, n_qubits - 1, 2):
-        qml.CNOT(wires=[i, i + 1])
-    for i in range(1, n_qubits - 1, 2):
-        qml.CNOT(wires=[i, i + 1])
-
 @qml.qnode(dev)
 def circuit(x, w):
     for layer in range(n_layers):
-        variational_layer(w[layer], x)
+        # data re-upload at every layer
+        for i in range(n_qubits):
+            qml.RY(x[i], wires=i)
+            qml.RZ(x[i], wires=i)
+
+        # variational layer
+        qml.templates.StronglyEntanglingLayers(
+            w[layer:layer + 1],
+            wires=range(n_qubits)
+        )
     return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
 
 # =========================
