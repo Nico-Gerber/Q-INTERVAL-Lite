@@ -1,4 +1,4 @@
-from lime_heatmap import load_artifacts, run_explanation
+from qrf_heatmap import load_artifacts, run_explanation
 
 IMAGE_PATH   = "QML/image/Malignant_3.jpg"
 Y_TRUE       = 2   # 0=normal, 1=benign, 2=malignant

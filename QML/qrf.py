@@ -12,13 +12,13 @@ import joblib
 # CONFIG
 # ============================================================
 
-CSV_PATH        = "QML/8pca/qml_4500_pca8_multiclass.csv"
+CSV_PATH        = "QML/8pca/qml_15000_pca8_multiclass.csv"
 LABEL_COLUMN    = "label"
 FEATURE_COLUMNS = [f"pc{i}" for i in range(1, 9)]
 RANDOM_SEED     = 42
 TEST_SIZE       = 0.2
 N_QUBITS        = 8
-N_LAYERS        = 6
+N_LAYERS        = 4
 MODEL_SAVE_PATH = "quantum_random_forest_v2.joblib"
 LABEL_NAMES     = {0: "normal", 1: "benign", 2: "malignant"}
 
@@ -105,7 +105,15 @@ for seed in range(20):
     X_test_q  = extract_quantum_features(X_test,  circuit)
 
     clf_trial = RandomForestClassifier(
-        n_estimators=100, max_depth=6, random_state=42, n_jobs=-1
+        n_estimators=100,
+        max_depth=5,
+        min_samples_leaf=20,
+        max_features="sqrt",
+        criterion="entropy",
+        bootstrap=True,
+        class_weight="balanced",
+        random_state=42,
+        n_jobs=-1,
     )
     clf_trial.fit(X_train_q, y_train)
     acc = accuracy_score(y_test, clf_trial.predict(X_test_q))

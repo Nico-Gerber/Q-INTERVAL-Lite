@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 # CONFIG
 # ============================================================
 
-CSV_PATH          = "QML/8pca/qml_4500_pca8_multiclass.csv"
+CSV_PATH          = "QML/8pca/qml_15000_pca8_multiclass.csv"
 LABEL_COLUMN      = "label"
 FEATURE_COLUMNS   = [f"pc{i}" for i in range(1, 9)]
 
@@ -25,8 +25,8 @@ BATCH_SIZE        = 16
 LEARNING_RATE     = 0.003
 PATIENCE          = 10      # early stopping
 
-MODEL_SAVE_PATH   = "vqc_4500_pca8_multiclass_improved.joblib"
-HISTORY_SAVE_PATH = "vqc_4500_pca8_multiclass_improved_history.joblib"
+MODEL_SAVE_PATH   = "vqc_15000_pca8_multiclass_improved.joblib"
+HISTORY_SAVE_PATH = "vqc_15000_pca8_multiclass_improved_history.joblib"
 
 LABEL_NAMES = {0: "normal", 1: "benign", 2: "malignant"}
 
@@ -276,7 +276,7 @@ plt.ylabel("Loss")
 plt.title("Improved VQC — Loss")
 plt.legend()
 plt.tight_layout()
-plt.savefig("vqc_improved_loss.png")
+plt.savefig("vqc_improve_v2_loss.png")
 plt.show()
 
 plt.figure()
@@ -287,5 +287,5 @@ plt.ylabel("Accuracy")
 plt.title("Improved VQC — Accuracy")
 plt.legend()
 plt.tight_layout()
-plt.savefig("vqc_improved_accuracy.png")
+plt.savefig("vqc_improve_v2_accuracy.png")
 plt.show()

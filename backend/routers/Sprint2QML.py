@@ -9,6 +9,8 @@ from PIL import Image
 from pathlib import Path
 from fastapi import APIRouter, File, UploadFile, HTTPException
 from fastapi.responses import JSONResponse
+from lime import lime_image
+from skimage.segmentation import slic
 
 # =========================
 # SETTINGS
@@ -16,7 +18,7 @@ from fastapi.responses import JSONResponse
 BASE_DIR = Path(__file__).parent.parent  # points to backend/
 PCA_PATH = BASE_DIR / "dataset/pcaObj.joblib"
 SCALER_PATH = BASE_DIR / "dataset/scalerObj.joblib"
-MODEL_PATH = BASE_DIR / "dataset/vqc_4500_pca8_multiclass_v1.joblib"
+MODEL_PATH = BASE_DIR / "dataset/vqc_15000_pca8_multiclass_improved.joblib"
 
 RESIZE_TO = (16, 16)        # model input resolution
 DISPLAY_SIZE = 224          # output heatmap resolution sent to the frontend
@@ -55,33 +57,19 @@ print(f"Best epoch: {model_data['best_epoch']} | Best test acc: {model_data['bes
 # =========================
 dev = qml.device("default.qubit", wires=n_qubits)
 
-def variational_layer(layer_weights, x):
-    """
-    Matches the training circuit exactly:
-    - Data re-uploading with per-layer learnable scale (layer_weights[:, 2])
-    - Trainable RY/RZ rotations
-    - Brick-layer CNOT entanglement (even pairs, then odd pairs)
-    """
-    # re-upload with per-layer learnable scale
-    for i in range(n_qubits):
-        qml.RY(layer_weights[i, 2] * x[i], wires=i)
-        qml.RZ(layer_weights[i, 2] * x[(i + 1) % len(x)], wires=i)
-
-    # trainable rotations
-    for i in range(n_qubits):
-        qml.RY(layer_weights[i, 0], wires=i)
-        qml.RZ(layer_weights[i, 1], wires=i)
-
-    # brick-layer entanglement
-    for i in range(0, n_qubits - 1, 2):
-        qml.CNOT(wires=[i, i + 1])
-    for i in range(1, n_qubits - 1, 2):
-        qml.CNOT(wires=[i, i + 1])
-
 @qml.qnode(dev)
 def circuit(x, w):
     for layer in range(n_layers):
-        variational_layer(w[layer], x)
+        # data re-upload at every layer
+        for i in range(n_qubits):
+            qml.RY(x[i], wires=i)
+            qml.RZ(x[i], wires=i)
+
+        # variational layer
+        qml.templates.StronglyEntanglingLayers(
+            w[layer:layer + 1],
+            wires=range(n_qubits)
+        )
     return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
 
 # =========================
@@ -123,64 +111,83 @@ def preprocess_image(image_bytes: bytes) -> np.ndarray:
     pil = Image.open(io.BytesIO(image_bytes)).convert("L")
     return arr16_to_features(image_to_arr16(pil))
 
-
-def occlusion_map(arr16: np.ndarray, target_idx: int,
-                  patch: int = OCC_PATCH, stride: int = OCC_STRIDE,
-                  fill: float = OCC_FILL) -> np.ndarray:
-
-    H, W = arr16.shape
-    heat = np.zeros((H, W), dtype=np.float32)
-    counts = np.zeros((H, W), dtype=np.float32)
-
-    # baseline probability for the class we're attributing
-    s0 = predict_probs(arr16_to_features(arr16))[target_idx]
-
-    for y in range(0, H - patch + 1, stride):
-        for x in range(0, W - patch + 1, stride):
-            occ = arr16.copy()
-            occ[y:y + patch, x:x + patch] = fill
-            s = predict_probs(arr16_to_features(occ))[target_idx]
-            heat[y:y + patch, x:x + patch] += (s0 - s)   # drop = importance
-            counts[y:y + patch, x:x + patch] += 1.0
-
-    # average overlapping contributions
-    heat /= np.maximum(counts, 1.0)
-    return heat
-
 # =========================
-# RENDERING (mirrors the CNN grad-cam output format)
+# RENDERING
 # =========================
 def _to_b64(arr: np.ndarray) -> str:
     buf = io.BytesIO()
     Image.fromarray(arr).save(buf, format="PNG")
     return base64.b64encode(buf.getvalue()).decode("utf-8")
 
-def render_occlusion(pil_gray: Image.Image, heat16: np.ndarray,
+def render_lime(pil_gray: Image.Image, heat16: np.ndarray,
                      size: int = DISPLAY_SIZE, alpha: float = 0.5):
-
     # Base image at display resolution, as RGB
     base_gray = np.array(pil_gray.resize((size, size), Image.Resampling.LANCZOS))
-    base_rgb = cv2.cvtColor(base_gray, cv2.COLOR_GRAY2RGB)
+    base_rgb  = cv2.cvtColor(base_gray, cv2.COLOR_GRAY2RGB)
 
-    # Keep only regions that supported the class, normalize to [0, 1]
+    # Normalise to [0, 1]
     heat = np.clip(heat16, 0, None)
     if heat.max() > 0:
         heat = heat / heat.max()
 
-    # Upsample + blur so the coarse grid takes on the smooth grad-cam look
+    # Upsample + blur for smooth grad-cam look
     heat_big = cv2.resize(heat, (size, size), interpolation=cv2.INTER_CUBIC)
     heat_big = cv2.GaussianBlur(heat_big, (0, 0), sigmaX=size / 32.0)
     heat_big = np.clip(heat_big, 0, 1)
 
-    # Colormap — same JET as the CNN path so the two views match
+    # JET colormap — matches CNN GradCAM
     heat_uint8 = np.uint8(255 * heat_big)
-    heat_color = cv2.cvtColor(cv2.applyColorMap(heat_uint8, cv2.COLORMAP_JET),
-                              cv2.COLOR_BGR2RGB)
+    heat_color = cv2.cvtColor(
+        cv2.applyColorMap(heat_uint8, cv2.COLORMAP_JET),
+        cv2.COLOR_BGR2RGB
+    )
 
-    # Real blended overlay (the CNN currently ships the bare heatmap here)
     overlay = cv2.addWeighted(base_rgb, 1 - alpha, heat_color, alpha, 0)
-
     return base_rgb, heat_color, overlay
+
+def lime_map(arr16: np.ndarray, target_idx: int,
+             num_samples: int = 300) -> np.ndarray:
+    """
+    Drop-in replacement for occlusion_map.
+    Returns a (16, 16) importance array in the same format.
+    """
+
+    # LIME needs (H, W, 3) RGB
+    image_rgb = np.stack([arr16] * 3, axis=-1)
+
+    # predict function LIME calls with perturbed images
+    def predict_fn(images):
+        gray     = images[..., 0]
+        flat     = gray.reshape(len(images), -1).astype(np.float32)
+        pca_feat = pca.transform(flat)
+        scaled   = scaler.transform(pca_feat).astype(np.float64)
+        return np.array([
+            predict_probs(x) for x in scaled
+        ], dtype=np.float64)
+
+    explainer   = lime_image.LimeImageExplainer(random_state=42)
+    explanation = explainer.explain_instance(
+        image_rgb,
+        predict_fn,
+        top_labels=3,
+        num_samples=num_samples,
+        segmentation_fn=lambda img: slic(
+            img, n_segments=20, compactness=5, sigma=0.5
+        ),
+    )
+
+    # build continuous heatmap from LIME weights
+    segments   = explanation.segments
+    weight_map = dict(explanation.local_exp[target_idx])
+    heat16     = np.zeros(segments.shape, dtype=np.float32)
+    for seg_id, weight in weight_map.items():
+        heat16[segments == seg_id] = weight
+
+    # keep only positive contributions (pushed toward target class)
+    # this matches how render_occlusion clips negatives
+    heat16 = np.clip(heat16, 0, None)
+
+    return heat16
 
 # =========================
 # INFERENCE
@@ -214,8 +221,8 @@ def run_inference(image_bytes: bytes, with_occlusion: bool = True,
         # attribute_to_malignant=True to always explain the malignant score.
         target_idx = (MALIGNANT_IDX if attribute_to_malignant and MALIGNANT_IDX is not None
                       else pred_id)
-        heat16 = occlusion_map(arr16, target_idx)
-        base_rgb, heat_rgb, overlay_rgb = render_occlusion(pil, heat16)
+        heat16 = lime_map(arr16, target_idx)
+        base_rgb, heat_rgb, overlay_rgb = render_lime(pil, heat16)
         result["gradcam"] = {
             "heatmap_base64": _to_b64(heat_rgb),
             "base_image_base64": _to_b64(base_rgb),

@@ -12,7 +12,7 @@ from skimage.transform import resize as sk_resize
 from lime import lime_image
 
 # Config
-QRF_MODEL_PATH   = "QML/quantum_random_forest_v2.joblib"
+QRF_MODEL_PATH   = "quantum_random_forest_v2.joblib"
 PCA_MODEL_PATH   = "QML/8pca/pcaObj.joblib"
 SCALER_PATH      = "QML/8pca/scalerObj.joblib"
 
