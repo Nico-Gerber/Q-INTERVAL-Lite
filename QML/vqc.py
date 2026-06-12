@@ -23,7 +23,7 @@ N_CLASSES         = 3
 EPOCHS            = 60
 BATCH_SIZE        = 16
 LEARNING_RATE     = 0.003
-PATIENCE          = 10      # early stopping
+PATIENCE          = 10 
 
 MODEL_SAVE_PATH   = "vqc_15000_pca8_multiclass_improved.joblib"
 HISTORY_SAVE_PATH = "vqc_15000_pca8_multiclass_improved_history.joblib"
@@ -77,7 +77,6 @@ def circuit(x, weights):
             wires=range(N_QUBITS)
         )
 
-    # proper expectation value outputs — not qml.probs
     return [qml.expval(qml.PauliZ(i)) for i in range(N_QUBITS)]
 
 
@@ -157,7 +156,6 @@ for epoch in range(EPOCHS):
 
         weights = opt.step(lambda w: cost(w, X_batch, y_batch), weights)
 
-        # Fix 4: only print every 50 batches — reduces noise and speeds up training
         if batch_num % 50 == 0:
             batch_loss = float(cost(weights, X_batch, y_batch))
             print(f"  Batch {batch_num}/{num_batches} - Loss: {batch_loss:.4f}")
