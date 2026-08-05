@@ -607,11 +607,11 @@ export default function Analysis() {
                   <>
                     {analysisMode === 'classification' && (
                       <>
-                        <ModelSelect selectedModel={modelMode} onModelSelect={setModelMode} />
+
                         <Container maxWidth="xl">
                           <ClassificationResults
                             analyisedImage={preview} reset={handleReset}
-                            currentModel={modelMode} results={result}
+                            currentModel={modelMode} results={result} onModelSelect={setModelMode}
                           />
                           <MammoRiskResults results={result}
                             reset={handleReset} currentModel={modelMode} />
