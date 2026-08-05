@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Button, Container, Slider, useTheme } from '@mui/material';
+import { Box, Typography, Slider, Paper, useTheme } from '@mui/material';
 import Tooltip from './Tooltip';
-import ViewSelect from './ViewSelector';
+
 
 function AnimatedBar({ value, color, delay = 0, trackColor }) {
     const [width, setWidth] = useState(0);
@@ -10,12 +10,10 @@ function AnimatedBar({ value, color, delay = 0, trackColor }) {
         return () => clearTimeout(t);
     }, [value, delay]);
     return (
-        <Box sx={{ height: 3, backgroundColor: trackColor, borderRadius: 99, overflow: 'hidden', mt: 1 }}>
+        <Box sx={{ height: 3, backgroundColor: trackColor, borderRadius: 99, overflow: 'hidden', flex: 1 }}>
             <Box sx={{
-                width: `${width}%`,
-                height: '100%',
-                backgroundColor: color,
-                borderRadius: 99,
+                width: `${width}%`, height: '100%',
+                backgroundColor: color, borderRadius: 99,
                 transition: 'width 1.2s cubic-bezier(0.16, 1, 0.3, 1)',
             }} />
         </Box>
@@ -23,23 +21,7 @@ function AnimatedBar({ value, color, delay = 0, trackColor }) {
 }
 
 const MONO = { fontFamily: 'monospace' };
-
-function MetricCell({ label, value, color, borderRight = true, borderColor, labelColor, defaultValueColor }) {
-    return (
-        <Box sx={{
-            p: 2,
-            background: 'transparent',
-            borderRight: borderRight ? `1px solid ${borderColor}` : 'none',
-        }}>
-            <Typography sx={{ ...MONO, fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: labelColor, mb: 0.75 }}>
-                {label}
-            </Typography>
-            <Typography sx={{ ...MONO, fontSize: 20, fontWeight: 500, color: color ?? defaultValueColor, lineHeight: 1 }}>
-                {value}
-            </Typography>
-        </Box>
-    );
-}
+const VIEWS = ['L-CC', 'L-MLO', 'R-CC', 'R-MLO'];
 
 export default function ClassificationResults({ analyisedImage, reset, currentModel, results }) {
     const theme = useTheme();
@@ -47,32 +29,23 @@ export default function ClassificationResults({ analyisedImage, reset, currentMo
 
     const [mounted, setMounted] = useState(false);
     const [heatmapOpacity, setHeatmapOpacity] = useState(0);
-    const [currentView, setCurrentView] = useState("L-CC");
+    const [currentView, setCurrentView] = useState('L-CC');
 
     const cnnResult = results?.resultFile?.cnn;
     const qmlResult = results?.resultFile?.qml;
     const activeResult = currentModel === 'Quantum' ? qmlResult : cnnResult;
     const activeView = activeResult?.views?.[currentView];
-    const aggregated = activeResult?.aggregated;
 
-    // ── Theme tokens ──────────────────────────────────────────
-    const cardBorderColor = isDark ? 'rgba(255,255,255,0.07)' : theme.palette.divider;
+    /* ── Tokens ── */
+    const border = isDark ? 'rgba(255,255,255,0.07)' : theme.palette.divider;
     const cardBg = isDark ? 'rgba(255,255,255,0.02)' : theme.palette.background.paper;
-    const metricLabelColor = isDark ? 'rgba(255,255,255,0.35)' : theme.palette.text.disabled;
-    const defaultValueColor = isDark ? 'white' : theme.palette.text.primary;
-    const subheadColor = isDark ? 'rgba(255,255,255,0.35)' : theme.palette.text.disabled;
-    const classLabelColor = isDark ? 'rgba(255,255,255,0.7)' : theme.palette.text.primary;
-    const legendLabelColor = isDark ? 'rgba(255,255,255,0.35)' : theme.palette.text.secondary;
-    const barTrackColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.07)';
-    const dividerColor = isDark ? 'rgba(255,255,255,0.06)' : theme.palette.divider;
-    const footerColor = isDark ? 'rgba(255,255,255,0.18)' : theme.palette.text.disabled;
-    const opacityLabelColor = isDark ? 'rgba(255,255,255,0.35)' : theme.palette.text.secondary;
-    const opacityValueColor = isDark ? 'rgba(255,255,255,0.4)' : theme.palette.text.secondary;
-
-    const cardBorder = {
-        border: `1px solid ${cardBorderColor}`,
-        borderRadius: 2,
-    };
+    const muted = isDark ? 'rgba(255,255,255,0.35)' : theme.palette.text.disabled;
+    const body = isDark ? 'rgba(255,255,255,0.7)' : theme.palette.text.primary;
+    const trackColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.07)';
+    const footerC = isDark ? 'rgba(255,255,255,0.18)' : theme.palette.text.disabled;
+    const legendC = isDark ? 'rgba(255,255,255,0.35)' : theme.palette.text.secondary;
+    const valColor = isDark ? 'white' : theme.palette.text.primary;
+    const opacityC = isDark ? 'rgba(255,255,255,0.35)' : theme.palette.text.secondary;
 
     useEffect(() => {
         setMounted(false);
@@ -83,290 +56,288 @@ export default function ClassificationResults({ analyisedImage, reset, currentMo
 
     if (!activeResult || !activeView) return null;
 
-    const resultColor = activeView?.result === 'Malignant'
-        ? '#e05252'
-        : activeView?.result === 'Benign'
-            ? '#d4a017'
-            : '#3fcf8e';
+    const getColor = (r) => r === 'Malignant' ? '#e05252' : r === 'Benign' ? '#d4a017' : '#3fcf8e';
+    const resultColor = getColor(activeView?.result);
 
-    const verdictColor = qmlResult?.views?.[currentView]?.result === cnnResult?.views?.[currentView]?.result
-        ? '#3fcf8e' : '#e05252';
+    const verdictMatch = qmlResult?.views?.[currentView]?.result === cnnResult?.views?.[currentView]?.result;
+    const verdictColor = verdictMatch ? '#3fcf8e' : '#e05252';
+    const verdictText = verdictMatch ? 'Models agree' : 'Models disagree';
 
-    const verdictText = qmlResult?.views?.[currentView]?.result === cnnResult?.views?.[currentView]?.result
-        ? 'Models agree' : 'Models disagree';
-
-    const MalignantColor = '#e05252';
-    const BenignColor = '#d4a017';
-    const NormalColor = '#3fcf8e';
+    const MC = '#e05252', BC = '#d4a017', NC = '#3fcf8e';
 
     const classifications = [
-        { label: 'Malignant', value: (activeView?.class_probabilities?.Malignant * 100).toFixed(2), color: MalignantColor },
-        { label: 'Benign', value: (activeView?.class_probabilities?.Benign * 100).toFixed(2), color: BenignColor },
-        { label: 'Normal', value: (activeView?.class_probabilities?.Normal * 100).toFixed(2), color: NormalColor },
+        { label: 'Malignant', value: (activeView?.class_probabilities?.Malignant * 100).toFixed(2), color: MC },
+        { label: 'Benign', value: (activeView?.class_probabilities?.Benign * 100).toFixed(2), color: BC },
+        { label: 'Normal', value: (activeView?.class_probabilities?.Normal * 100).toFixed(2), color: NC },
     ];
 
-    const comparisonClassifications = [
+    const compClassifications = [
         {
             label: 'Malignant',
             cnn: ((cnnResult?.views?.[currentView]?.class_probabilities?.Malignant ?? 0) * 100).toFixed(2),
             qml: ((qmlResult?.views?.[currentView]?.class_probabilities?.Malignant ?? 0) * 100).toFixed(2),
-            color: MalignantColor,
+            color: MC,
         },
         {
             label: 'Benign',
             cnn: ((cnnResult?.views?.[currentView]?.class_probabilities?.Benign ?? 0) * 100).toFixed(2),
             qml: ((qmlResult?.views?.[currentView]?.class_probabilities?.Benign ?? 0) * 100).toFixed(2),
-            color: BenignColor,
+            color: BC,
         },
         {
             label: 'Normal',
             cnn: ((cnnResult?.views?.[currentView]?.class_probabilities?.Normal ?? 0) * 100).toFixed(2),
             qml: ((qmlResult?.views?.[currentView]?.class_probabilities?.Normal ?? 0) * 100).toFixed(2),
-            color: NormalColor,
+            color: NC,
         },
     ];
 
-    const getResultColor = (result) =>
-        result === 'Malignant' ? '#e05252' : result === 'Benign' ? '#d4a017' : '#3fcf8e';
 
     return (
         <Box sx={{
             width: '100%',
-            maxWidth: 1100,
+            maxWidth: 960,
             mx: 'auto',
-            py: 4,
+            py: 3,
             opacity: mounted ? 1 : 0,
-            transform: mounted ? 'none' : 'translateY(16px)',
-            transition: 'opacity 0.6s ease, transform 0.6s ease',
+            transform: mounted ? 'none' : 'translateY(12px)',
+            transition: 'opacity 0.5s ease, transform 0.5s ease',
         }}>
+            <Paper elevation={0} sx={{
+                border: `1px solid ${border}`,
+                borderRadius: 3,
+                background: cardBg,
+                p: { xs: 2, md: 3 },
+                overflow: 'hidden',
+            }}>
 
-            {/* ── Header ── */}
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2.5, flexWrap: 'wrap', gap: 1 }}>
-                <Box>
-                    <Typography variant="h4" sx={{ fontWeight: 700, color: 'text.primary', mb: 0.5 }}>
-                        Classification Results
-                    </Typography>
-                    <Typography sx={{ ...MONO, fontSize: 11, letterSpacing: '0.06em', color: subheadColor }}>
-                        {currentModel.toUpperCase()} MODEL · {currentView}
-                    </Typography>
-                </Box>
+                {/* ── Top bar: title + badge left, view tabs right ── */}
                 <Box sx={{
-                    display: 'inline-flex', alignItems: 'center', gap: 1,
-                    px: 1.5, py: 0.75, borderRadius: 999,
-                    border: `1px solid ${resultColor}40`,
-                    background: `${resultColor}12`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    mb: 2, flexWrap: 'wrap', gap: 1,
                 }}>
-                    <Box sx={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: resultColor }} />
-                    <Typography sx={{ ...MONO, fontSize: 11, fontWeight: 500, color: resultColor }}>
-                        {activeView?.result}
-                    </Typography>
-                </Box>
-            </Box>
-
-            {/* ── View selector ── */}
-            <Box>
-                <ViewSelect selectedView={currentView} onViewSelect={setCurrentView} />
-            </Box>
-
-            {/* ── Metric cells ── */}
-            {currentModel === 'Both' ? (
-                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0,1fr))', ...cardBorder, background: cardBg, overflow: 'hidden', mb: 2 }}>
-                    <MetricCell
-                        label="Classical result"
-                        value={cnnResult?.views?.[currentView]?.result}
-                        color={getResultColor(cnnResult?.views?.[currentView]?.result)}
-                        borderColor={cardBorderColor}
-                        labelColor={metricLabelColor}
-                        defaultValueColor={defaultValueColor}
-                    />
-                    <MetricCell
-                        label="Quantum result"
-                        value={qmlResult?.views?.[currentView]?.result}
-                        color={getResultColor(qmlResult?.views?.[currentView]?.result)}
-                        borderColor={cardBorderColor}
-                        labelColor={metricLabelColor}
-                        defaultValueColor={defaultValueColor}
-                    />
-                    <MetricCell
-                        label="Verdict"
-                        value={verdictText}
-                        color={verdictColor}
-                        borderRight={false}
-                        borderColor={cardBorderColor}
-                        labelColor={metricLabelColor}
-                        defaultValueColor={defaultValueColor}
-                    />
-                </Box>
-            ) : (
-                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0,1fr))', ...cardBorder, background: cardBg, overflow: 'hidden', mb: 2 }}>
-                    <MetricCell
-                        label="Result"
-                        value={activeView.result}
-                        color={resultColor}
-                        borderColor={cardBorderColor}
-                        labelColor={metricLabelColor}
-                        defaultValueColor={defaultValueColor}
-                    />
-                    <MetricCell
-                        label="Confidence"
-                        value={`${(activeView.score * 100).toFixed(2)}%`}
-                        borderColor={cardBorderColor}
-                        labelColor={metricLabelColor}
-                        defaultValueColor={defaultValueColor}
-                    />
-                    <MetricCell
-                        label="Model"
-                        value={currentModel}
-                        borderRight={false}
-                        borderColor={cardBorderColor}
-                        labelColor={metricLabelColor}
-                        defaultValueColor={defaultValueColor}
-                    />
-                </Box>
-            )}
-
-            {/* ── Main content: image + classifications ── */}
-            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-
-                {/* Image panel */}
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                    <Box sx={{
-                        ...cardBorder,
-                        overflow: 'hidden',
-                        position: 'relative',
-                        background: '#000',
-                        minHeight: 360,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}>
-                        <Box sx={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Box
-                                component="img"
-                                src={cnnResult?.views?.[currentView]?.gradcam?.base_image_base64
-                                    ? `data:image/png;base64,${cnnResult.views[currentView].gradcam.base_image_base64}`
-                                    : analyisedImage}
-                                alt="Analysed mammogram"
-                                sx={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
-                            />
-                            <Box
-                                component="img"
-                                src={`data:image/png;base64,${activeResult?.views?.[currentView].gradcam?.heatmap_base64}`}
-                                alt="Grad-CAM heatmap"
-                                sx={{
-                                    position: 'absolute', top: 0, left: 0,
-                                    width: '100%', height: '100%',
-                                    objectFit: 'contain',
-                                    opacity: heatmapOpacity / 100,
-                                    mixBlendMode: 'multiply',
-                                    pointerEvents: 'none',
-                                    transition: 'opacity 0.2s ease',
-                                }}
-                            />
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Typography variant="h6" sx={{ fontWeight: 700, color: 'text.primary', lineHeight: 1.2 }}>
+                            Classification Results
+                        </Typography>
+                        {/* Result badge */}
+                        <Box sx={{
+                            display: 'inline-flex', alignItems: 'center', gap: 0.6,
+                            px: 1.25, py: 0.3, borderRadius: 999,
+                            border: `1px solid ${resultColor}40`, background: `${resultColor}12`,
+                        }}>
+                            <Box sx={{ width: 5, height: 5, borderRadius: '50%', backgroundColor: resultColor }} />
+                            <Typography sx={{ ...MONO, fontSize: 10, fontWeight: 600, color: resultColor }}>
+                                {activeView?.result}
+                            </Typography>
                         </Box>
-
-                        {/* Corner brackets */}
-                        {[
-                            { top: 10, left: 10, borderTop: `1px solid ${resultColor}60`, borderLeft: `1px solid ${resultColor}60` },
-                            { top: 10, right: 10, borderTop: `1px solid ${resultColor}60`, borderRight: `1px solid ${resultColor}60` },
-                            { bottom: 10, left: 10, borderBottom: `1px solid ${resultColor}60`, borderLeft: `1px solid ${resultColor}60` },
-                            { bottom: 10, right: 10, borderBottom: `1px solid ${resultColor}60`, borderRight: `1px solid ${resultColor}60` },
-                        ].map((style, i) => (
-                            <Box key={i} sx={{ position: 'absolute', width: 16, height: 16, ...style }} />
-                        ))}
                     </Box>
 
-                    {/* Grad-CAM slider */}
-                    <Box sx={{ ...cardBorder, p: 2, background: cardBg }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <Typography sx={{ ...MONO, fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: opacityLabelColor }}>
+                    {/* Inline view tabs */}
+                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                        {VIEWS.map(v => {
+                            const sel = currentView === v;
+                            return (
+                                <Box key={v} onClick={() => setCurrentView(v)} sx={{
+                                    px: 1.5, py: 0.5, borderRadius: 1.5, cursor: 'pointer',
+                                    border: sel ? '1.5px solid #64B5F6' : `1.5px solid ${border}`,
+                                    background: sel ? 'rgba(100,181,246,0.15)' : 'transparent',
+                                    transition: 'all 0.15s ease',
+                                    '&:hover': { borderColor: 'rgba(100,181,246,0.4)', background: 'rgba(100,181,246,0.05)' },
+                                }}>
+                                    <Typography sx={{
+                                        ...MONO, fontSize: 11, fontWeight: 700, lineHeight: 1,
+                                        color: sel ? '#64B5F6' : (isDark ? 'rgba(255,255,255,0.45)' : theme.palette.text.secondary),
+                                    }}>
+                                        {v}
+                                    </Typography>
+                                </Box>
+                            );
+                        })}
+                    </Box>
+                </Box>
+
+                {/* ── Main grid: image left | data right ── */}
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2.5 }}>
+
+                    {/* ── LEFT — mammogram + slider ── */}
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        <Box sx={{
+                            border: `1px solid ${border}`, borderRadius: 2,
+                            overflow: 'hidden', position: 'relative', background: '#000',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                            <Box sx={{ position: 'relative', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Box
+                                    component="img"
+                                    src={cnnResult?.views?.[currentView]?.gradcam?.base_image_base64
+                                        ? `data:image/png;base64,${cnnResult.views[currentView].gradcam.base_image_base64}`
+                                        : analyisedImage}
+                                    alt="Analysed mammogram"
+                                    sx={{ width: '100%', height: 'auto', maxHeight: 380, objectFit: 'contain', display: 'block' }}
+                                />
+                                <Box
+                                    component="img"
+                                    src={`data:image/png;base64,${activeResult?.views?.[currentView]?.gradcam?.heatmap_base64}`}
+                                    alt="Heatmap overlay"
+                                    sx={{
+                                        position: 'absolute', inset: 0,
+                                        width: '100%', height: '100%', objectFit: 'contain',
+                                        opacity: heatmapOpacity / 100,
+                                        mixBlendMode: 'multiply', pointerEvents: 'none',
+                                        transition: 'opacity 0.2s ease',
+                                    }}
+                                />
+                            </Box>
+
+                            {/* Corner brackets */}
+                            {[
+                                { top: 8, left: 8, borderTop: `1px solid ${resultColor}50`, borderLeft: `1px solid ${resultColor}50` },
+                                { top: 8, right: 8, borderTop: `1px solid ${resultColor}50`, borderRight: `1px solid ${resultColor}50` },
+                                { bottom: 8, left: 8, borderBottom: `1px solid ${resultColor}50`, borderLeft: `1px solid ${resultColor}50` },
+                                { bottom: 8, right: 8, borderBottom: `1px solid ${resultColor}50`, borderRight: `1px solid ${resultColor}50` },
+                            ].map((s, i) => (
+                                <Box key={i} sx={{ position: 'absolute', width: 14, height: 14, ...s }} />
+                            ))}
+                        </Box>
+
+                        {/* Grad-CAM slider — single row */}
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexShrink: 0 }}>
+                                <Typography sx={{ ...MONO, fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: opacityC, whiteSpace: 'nowrap' }}>
                                     {currentModel === 'Classical' ? 'Grad-CAM Opacity' : 'Occlusion Sensitivity Opacity'}
                                 </Typography>
-                                <Tooltip text="Grad-CAM highlights which regions most influenced the model's prediction." />
+                                <Tooltip text="Highlights regions that most influenced the prediction." />
                             </Box>
-                            <Typography sx={{ ...MONO, fontSize: 11, color: opacityValueColor }}>
+                            <Slider
+                                value={heatmapOpacity}
+                                onChange={(_, val) => setHeatmapOpacity(val)}
+                                min={0} max={100} size="small"
+                                sx={{ flex: 1 }}
+                                aria-label="Heatmap opacity"
+                            />
+                            <Typography sx={{ ...MONO, fontSize: 10, color: opacityC, minWidth: 28, textAlign: 'right' }}>
                                 {heatmapOpacity}%
                             </Typography>
                         </Box>
-                        <Slider
-                            value={heatmapOpacity}
-                            onChange={(e, val) => setHeatmapOpacity(val)}
-                            min={0} max={100}
-                            aria-label="Heatmap opacity"
-                        />
                     </Box>
-                </Box>
 
-                {/* Classifications panel */}
-                <Box sx={{
-                    ...cardBorder,
-                    background: cardBg,
-                    p: 3,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                }}>
-                    <Box>
-                        <Typography sx={{ ...MONO, fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: subheadColor, mb: 2.5 }}>
-                            {currentModel === 'Both' ? 'All classifications — both models' : 'All classifications'}
+                    {/* ── RIGHT — result summary + classifications ── */}
+                    <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+
+                        {/* Metrics row */}
+                        {currentModel === 'Both' ? (
+                            <Box sx={{ display: 'flex', gap: 3, mb: 2.5, flexWrap: 'wrap' }}>
+                                <Box>
+                                    <Typography sx={{ ...MONO, fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: muted, mb: 0.5 }}>
+                                        Classical Result
+                                    </Typography>
+                                    <Typography sx={{ ...MONO, fontSize: 16, fontWeight: 600, color: getColor(cnnResult?.views?.[currentView]?.result) }}>
+                                        {cnnResult?.views?.[currentView]?.result}
+                                    </Typography>
+                                </Box>
+                                <Box>
+                                    <Typography sx={{ ...MONO, fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: muted, mb: 0.5 }}>
+                                        Quantum Result
+                                    </Typography>
+                                    <Typography sx={{ ...MONO, fontSize: 16, fontWeight: 600, color: getColor(qmlResult?.views?.[currentView]?.result) }}>
+                                        {qmlResult?.views?.[currentView]?.result}
+                                    </Typography>
+                                </Box>
+                                <Box>
+                                    <Typography sx={{ ...MONO, fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: muted, mb: 0.5 }}>
+                                        Verdict
+                                    </Typography>
+                                    <Typography sx={{ ...MONO, fontSize: 16, fontWeight: 600, color: verdictColor }}>
+                                        {verdictText}
+                                    </Typography>
+                                </Box>
+                            </Box>
+                        ) : (
+                            <Box sx={{ display: 'flex', gap: 3, mb: 2.5, flexWrap: 'wrap' }}>
+                                <Box>
+                                    <Typography sx={{ ...MONO, fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: muted, mb: 0.5 }}>
+                                        Result
+                                    </Typography>
+                                    <Typography sx={{ ...MONO, fontSize: 16, fontWeight: 600, color: resultColor }}>
+                                        {activeView.result}
+                                    </Typography>
+                                </Box>
+                                <Box>
+                                    <Typography sx={{ ...MONO, fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: muted, mb: 0.5 }}>
+                                        Confidence
+                                    </Typography>
+                                    <Typography sx={{ ...MONO, fontSize: 16, fontWeight: 600, color: valColor }}>
+                                        {(activeView.score * 100).toFixed(2)}%
+                                    </Typography>
+                                </Box>
+                                <Box>
+                                    <Typography sx={{ ...MONO, fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: muted, mb: 0.5 }}>
+                                        Model
+                                    </Typography>
+                                    <Typography sx={{ ...MONO, fontSize: 16, fontWeight: 600, color: valColor }}>
+                                        {currentModel}
+                                    </Typography>
+                                </Box>
+                            </Box>
+                        )}
+
+                        {/* Divider */}
+                        <Box sx={{ height: '1px', background: border, mb: 2 }} />
+
+                        {/* Classification bars */}
+                        <Typography sx={{ ...MONO, fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: muted, mb: 1.5 }}>
+                            {currentModel === 'Both' ? 'All Classifications — Both Models' : 'All Classifications'}
                         </Typography>
 
-                        {/* Both model legend */}
                         {currentModel === 'Both' && (
-                            <Box sx={{ display: 'flex', gap: 2, mb: 2.5 }}>
-                                {[{ color: '#3fcf8e', label: 'Classical' }, { color: 'rgba(202,77,255,1)', label: 'Quantum' }].map(({ color, label }) => (
-                                    <Box key={label} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                                        <Box sx={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: color }} />
-                                        <Typography sx={{ ...MONO, fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: legendLabelColor }}>
-                                            {label}
-                                        </Typography>
+                            <Box sx={{ display: 'flex', gap: 2, mb: 1.5 }}>
+                                {[{ c: '#3fcf8e', l: 'Classical' }, { c: 'rgba(202,77,255,1)', l: 'Quantum' }].map(({ c, l }) => (
+                                    <Box key={l} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                        <Box sx={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: c }} />
+                                        <Typography sx={{ ...MONO, fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase', color: legendC }}>{l}</Typography>
                                     </Box>
                                 ))}
                             </Box>
                         )}
 
                         {currentModel === 'Both'
-                            ? comparisonClassifications.map(({ label, cnn, qml, color }, i) => (
-                                <Box key={label} sx={{ mb: i < comparisonClassifications.length - 1 ? 3 : 0 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                        <Box sx={{ width: 5, height: 5, borderRadius: '50%', backgroundColor: color, flexShrink: 0 }} />
-                                        <Typography sx={{ color: classLabelColor, fontSize: 14, fontWeight: 500 }}>{label}</Typography>
+                            ? compClassifications.map(({ label, cnn, qml, color }, i) => (
+                                <Box key={label} sx={{ mb: i < compClassifications.length - 1 ? 2 : 0 }}>
+                                    <Typography sx={{ color: body, fontSize: 13, fontWeight: 500, mb: 0.5 }}>{label}</Typography>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <Typography sx={{ ...MONO, fontSize: 10, color: '#3fcf8e', minWidth: 52 }}>Classical</Typography>
+                                        <AnimatedBar value={cnn} color="#3fcf8e" delay={i * 150} trackColor={trackColor} />
+                                        <Typography sx={{ ...MONO, fontSize: 10, color: '#3fcf8e', minWidth: 40, textAlign: 'right' }}>{cnn}%</Typography>
                                     </Box>
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <Typography sx={{ ...MONO, fontSize: 11, color: '#3fcf8e' }}>Classical</Typography>
-                                        <Typography sx={{ ...MONO, fontSize: 11, color: '#3fcf8e' }}>{cnn}%</Typography>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                                        <Typography sx={{ ...MONO, fontSize: 10, color: 'rgba(202,77,255,1)', minWidth: 52 }}>Quantum</Typography>
+                                        <AnimatedBar value={qml} color="rgba(202,77,255,1)" delay={i * 150 + 75} trackColor={trackColor} />
+                                        <Typography sx={{ ...MONO, fontSize: 10, color: 'rgba(202,77,255,1)', minWidth: 40, textAlign: 'right' }}>{qml}%</Typography>
                                     </Box>
-                                    <AnimatedBar value={cnn} color="#3fcf8e" delay={i * 150} trackColor={barTrackColor} />
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.75 }}>
-                                        <Typography sx={{ ...MONO, fontSize: 11, color: 'rgba(202,77,255,1)' }}>Quantum</Typography>
-                                        <Typography sx={{ ...MONO, fontSize: 11, color: 'rgba(202,77,255,1)' }}>{qml}%</Typography>
-                                    </Box>
-                                    <AnimatedBar value={qml} color="rgba(202,77,255,1)" delay={i * 150 + 75} trackColor={barTrackColor} />
                                 </Box>
                             ))
                             : classifications.map(({ label, value, color }, i) => (
-                                <Box key={label} sx={{ mb: i < classifications.length - 1 ? 3 : 0 }}>
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                            <Box sx={{ width: 5, height: 5, borderRadius: '50%', backgroundColor: color, flexShrink: 0 }} />
-                                            <Typography sx={{ color: classLabelColor, fontSize: 14, fontWeight: 500 }}>{label}</Typography>
-                                        </Box>
-                                        <Typography sx={{ ...MONO, fontSize: 12, color, fontWeight: 500 }}>{value}%</Typography>
+                                <Box key={label} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: i < classifications.length - 1 ? 1.5 : 0 }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, minWidth: 75 }}>
+                                        <Box sx={{ width: 5, height: 5, borderRadius: '50%', backgroundColor: color, flexShrink: 0 }} />
+                                        <Typography sx={{ color: body, fontSize: 13, fontWeight: 500 }}>{label}</Typography>
                                     </Box>
-                                    <AnimatedBar value={value} color={color} delay={i * 150} trackColor={barTrackColor} />
+                                    <AnimatedBar value={value} color={color} delay={i * 150} trackColor={trackColor} />
+                                    <Typography sx={{ ...MONO, fontSize: 11, color, fontWeight: 500, minWidth: 48, textAlign: 'right' }}>{value}%</Typography>
                                 </Box>
                             ))
                         }
                     </Box>
-
-                    <Box sx={{ mt: 3, pt: 2.5, borderTop: `1px solid ${dividerColor}` }}>
-                        <Typography sx={{ ...MONO, fontSize: 10, letterSpacing: '0.06em', color: footerColor, textTransform: 'uppercase' }}>
-                            Research prototype · Not for clinical use
-                        </Typography>
-                    </Box>
                 </Box>
-            </Box>
+
+                {/* Footer */}
+                <Box sx={{ mt: 2, pt: 1.5, borderTop: `1px solid ${border}`, textAlign: 'right' }}>
+                    <Typography sx={{ ...MONO, fontSize: 9, letterSpacing: '0.06em', color: footerC, textTransform: 'uppercase' }}>
+                        Research prototype · Not for clinical use
+                    </Typography>
+                </Box>
+            </Paper>
         </Box>
     );
 }
