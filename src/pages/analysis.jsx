@@ -627,12 +627,13 @@ export default function Analysis() {
 
                     {analysisMode === 'future-risk' && (
                       <>
-                        <ModelSelect selectedModel={modelMode} onModelSelect={setModelMode} />
+
                         <Container maxWidth="xl">
                           <FutureRiskResults
                             analyisedImage={preview} reset={handleReset}
                             currentModel={modelMode} results={result}
                             uploadedFiles={examFiles}
+                            onModelSelect={setModelMode}
                           />
                         </Container>
                       </>
