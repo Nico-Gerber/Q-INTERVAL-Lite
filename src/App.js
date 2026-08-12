@@ -228,6 +228,8 @@ function App() {
       return next;
     }),
   }), [mode]);
+  
+  const location = useLocation();
 
   return (
     <ColorModeContext.Provider value={colorMode}>
@@ -240,7 +242,7 @@ function App() {
             <Route path="/"         element={<Home />} />
             <Route path="/Models"   element={<Models />} />
             <Route path="/OurTeam"  element={<OurTeam />} />
-            <Route path="/Analysis" element={<Analysis />} />
+            <Route path="/Analysis" element={<Analysis key={location.key} />} />
           </Routes>
           <Footer />
         </div>
