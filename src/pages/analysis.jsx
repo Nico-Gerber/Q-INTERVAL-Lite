@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, } from 'react';
+import React, { useState, useEffect, } from 'react';
 import { Box, Chip, Container, Typography, Alert, Button, Drawer, TextField } from '@mui/material';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Sidebar, Menu, MenuItem, SubMenu } from 'react-pro-sidebar';
@@ -12,6 +12,7 @@ import ModelSelect from '../Components/Results/ModelResultSelect';
 import ClassificationResults from '../Components/Results/ClassificationResults';
 import FutureRiskResults from '../Components/Results/FutureRiskResults';
 import MammoRiskResults from '../Components/Results/MammoRiskResults';
+import ScanningLoader from '../Components/Results/ScanningLoader';
 import NeuralCanvas from '../Components/Results/NeuralCanvas';
 import MultiImageUploadDated from '../Components/ImageUpload/FutureRiskUpload';
 import MultiViewUpload from '../Components/ImageUpload/SessionAnalysisUpload';
@@ -20,7 +21,7 @@ import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import AssistantIcon from '@mui/icons-material/Assistant';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import { Atom, ThreeDot } from 'react-loading-indicators';
+import { ThreeDot } from 'react-loading-indicators';
 
 const API_BASE = 'http://localhost:8000';
 
@@ -51,11 +52,6 @@ const LOADING_MESSAGES = [
   { text: "Finalising analysis results...", duration: 800 },
   { text: "Almost there...", duration: 3000 },
 ];
-
-
-
-
-
 
 
 export default function Analysis() {
@@ -100,9 +96,6 @@ export default function Analysis() {
   const [activeStep, setActiveStep] = useState(0);
 
 
-  const targetRef = useRef(null);
-  const targetRef1 = useRef(null);
-
 
   const [views, setViews] = useState({
     "L-CC": null, "L-MLO": null,
@@ -119,15 +112,30 @@ export default function Analysis() {
       return;
     }
 
+    let cancelled = false;
+    let timeoutId;
+
     const advance = (index) => {
-      if (index >= LOADING_MESSAGES.length) return;
+      if (cancelled || index >= LOADING_MESSAGES.length) return;
       setLoadingText(LOADING_MESSAGES[index].text);
       setMsgIndex(index);
-      setTimeout(() => advance(index + 1), LOADING_MESSAGES[index].duration);
+      timeoutId = setTimeout(() => advance(index + 1), LOADING_MESSAGES[index].duration);
     };
 
     advance(0);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
   }, [loading]);
+
+  // Once past step 0 the hero/stepper are compact, so a plain scroll-to-top
+  // is enough to bring each new step into view — no centering math needed.
+  useEffect(() => {
+    if (activeStep === 0) return;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [activeStep]);
 
 
 
@@ -478,28 +486,41 @@ export default function Analysis() {
 
 
 
-        {/* ── Hero — fades in on mount ── */}
+        {/* ── Hero — one persistent element that smoothly shrinks past step 0, ──
+             instead of swapping between two separate trees (which read as a
+             jump-cut rather than an actual shrink). Chip + title stay put;
+             only the descriptive subtitle collapses away. */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: 'easeOut' }}
           style={{ position: 'relative', zIndex: 1 }}
         >
-          <Box sx={{ pt: { xs: 5, md: 8 }, pb: 0, px: 2, textAlign: 'center' }}>
+          <Box sx={{
+            pt: activeStep === 0 ? { xs: 5, md: 8 } : { xs: 3.5, md: 4.5 },
+            pb: 0, px: 2, textAlign: 'center',
+            transition: 'padding-top 0.45s cubic-bezier(0.4,0,0.2,1)',
+          }}>
             <Chip
               label="RESEARCH PROTOTYPE · NOT FOR CLINICAL USE"
               size="small"
               sx={{
-                mb: 2.5,
+                mb: activeStep === 0 ? 2.5 : 1.5,
                 bgcolor: (theme) => `${theme.palette.error.main}18`,
                 color: 'error.main',
                 letterSpacing: '0.08em', fontSize: '0.65rem', fontWeight: 700,
                 border: '1px solid',
                 borderColor: (theme) => `${theme.palette.error.main}35`,
                 borderRadius: '999px',
+                transition: 'margin-bottom 0.45s cubic-bezier(0.4,0,0.2,1)',
               }}
             />
-            <Typography variant="h3" sx={{ fontWeight: 700, mb: 1.5, letterSpacing: '-0.02em', color: 'text.primary', fontSize: { xs: '2rem', md: '2.75rem' } }}>
+            <Typography variant="h3" sx={{
+              fontWeight: 700, letterSpacing: '-0.02em', color: 'text.primary',
+              mb: activeStep === 0 ? 1.5 : 0.5,
+              fontSize: activeStep === 0 ? { xs: '2rem', md: '2.75rem' } : { xs: '1.6rem', md: '2.1rem' },
+              transition: 'font-size 0.45s cubic-bezier(0.4,0,0.2,1), margin-bottom 0.45s cubic-bezier(0.4,0,0.2,1)',
+            }}>
               Mammo
               <Box component="span" sx={{
                 color: 'primary.main',
@@ -508,13 +529,28 @@ export default function Analysis() {
                 Analysis
               </Box>
             </Typography>
-            <Typography variant="body1" sx={{
-              color: 'text.secondary', fontWeight: 400,
-              maxWidth: 680, mx: 'auto', lineHeight: 1.7,
-              fontSize: '0.95rem',
-            }}>
-              Upload mammogram imaging for automated classification, composite risk scoring, and side-by-side classical vs quantum model comparison.
-            </Typography>
+
+            <AnimatePresence initial={false}>
+              {activeStep === 0 && (
+                <motion.div
+                  key="hero-subtitle"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.4, ease: 'easeInOut' }}
+                  style={{ overflow: 'hidden' }}
+                >
+                  <Typography variant="body1" sx={{
+                    color: 'text.secondary', fontWeight: 400,
+                    maxWidth: 680, mx: 'auto', lineHeight: 1.7,
+                    fontSize: '0.95rem', pb: 0.5,
+                  }}>
+                    Upload mammogram imaging for automated classification, composite risk scoring, and side-by-side classical vs quantum model comparison.
+                  </Typography>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {status && !status.ok && (
               <Container maxWidth="sm" sx={{ mt: 2 }}>
                 <Alert severity="error">{status.msg}</Alert>
@@ -547,16 +583,18 @@ export default function Analysis() {
               exit="exit"
             >
               {activeStep === 0 && (
-                <ModeSelect
-                  selectedMode={analysisMode}
-                  onModeSelect={setAnalysisMode}
-                  setActiveStep={setActiveStep}
-                />
+                <Container maxWidth="md" sx={{ mt: { xs: 3, md: 4.5 } }}>
+                  <ModeSelect
+                    selectedMode={analysisMode}
+                    onModeSelect={setAnalysisMode}
+                    setActiveStep={setActiveStep}
+                  />
+                </Container>
               )}
 
               {activeStep === 1 && (
                 analysisMode === 'classification' ? (
-                  <Container maxWidth="md" sx={{ mt: 1 }}>
+                  <Container maxWidth="md" sx={{ mt: { xs: 3, md: 4.5 } }}>
                     <MultiViewUpload
                       views={views} setViews={setViews}
                       setActiveStep={setActiveStep}
@@ -566,7 +604,7 @@ export default function Analysis() {
                   </Container>
 
                 ) : analysisMode === 'future-risk' ? (
-                  <Container maxWidth="md" sx={{ mt: 1 }}>
+                  <Container maxWidth="md" sx={{ mt: { xs: 3, md: 4.5 } }}>
 
 
 
@@ -583,63 +621,52 @@ export default function Analysis() {
               )}
 
               {activeStep === 2 && (
-                loading ? (
-                  <Box sx={{
-                    mt: 8,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 2
-                  }}>
-                    <Atom color='#22D3EE' />
-                    <Typography sx={{
-                      fontFamily: 'monospace',
-                      fontSize: 12,
-                      letterSpacing: '0.08em',
-                      color: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.45)' : 'rgba(8,145,178,0.7)',
-                      textTransform: 'uppercase',
+                <Box sx={{ minHeight: loading ? '55vh' : 'auto' }}>
+                  {loading ? (
+                    <Box sx={{
+                      minHeight: '55vh', display: 'flex',
+                      alignItems: 'center', justifyContent: 'center',
                     }}>
-                      {loadingText}
-                    </Typography>
-                  </Box>
-                ) : (
-                  <>
-                    {analysisMode === 'classification' && (
-                      <>
+                      <ScanningLoader message={loadingText} />
+                    </Box>
+                  ) : (
+                    <>
+                      {analysisMode === 'classification' && (
+                        <>
 
-                        <Container maxWidth="xl">
-                          <ClassificationResults
-                            analyisedImage={preview} reset={handleReset}
-                            currentModel={modelMode} results={result} onModelSelect={setModelMode}
-                          />
-                          <MammoRiskResults results={result}
-                            reset={handleReset} currentModel={modelMode} />
-
+                          <Container maxWidth="xl">
+                            <ClassificationResults
+                              analyisedImage={preview} reset={handleReset}
+                              currentModel={modelMode} results={result} onModelSelect={setModelMode}
+                            />
+                            <MammoRiskResults results={result}
+                              reset={handleReset} currentModel={modelMode} />
 
 
 
-                        </Container>
-                      </>
-                    )}
+
+                          </Container>
+                        </>
+                      )}
 
 
 
-                    {analysisMode === 'future-risk' && (
-                      <>
+                      {analysisMode === 'future-risk' && (
+                        <>
 
-                        <Container maxWidth="xl">
-                          <FutureRiskResults
-                            analyisedImage={preview} reset={handleReset}
-                            currentModel={modelMode} results={result}
-                            uploadedFiles={examFiles}
-                            onModelSelect={setModelMode}
-                          />
-                        </Container>
-                      </>
-                    )}
-                  </>
-                )
+                          <Container maxWidth="xl">
+                            <FutureRiskResults
+                              analyisedImage={preview} reset={handleReset}
+                              currentModel={modelMode} results={result}
+                              uploadedFiles={examFiles}
+                              onModelSelect={setModelMode}
+                            />
+                          </Container>
+                        </>
+                      )}
+                    </>
+                  )}
+                </Box>
               )}
 
             </motion.div>

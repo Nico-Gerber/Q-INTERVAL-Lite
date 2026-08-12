@@ -167,7 +167,7 @@ const RoutedRow = ({ cfg, item, proof, onRemove }) => {
     ? `Matched "${proof.sideProof}" → ${proof.side === 'L' ? 'Left' : 'Right'}, "${proof.viewProof}" → ${proof.view}${!proof.adjacent ? ' (tokens not adjacent — double-check)' : ''}`
     : proof?.manual ? 'Placed manually' : cfg.label;
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.9, px: 1, py: 0.6, borderRadius: 1.5, backgroundColor: 'background.default', border: '1px solid', borderColor: 'divider' }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.25, py: 0.9, borderRadius: 1.5, backgroundColor: 'background.default', border: '1px solid', borderColor: 'divider' }}>
       <Box component="img" src={item.preview} alt={cfg.label} sx={{ width: 34, height: 34, objectFit: 'cover', borderRadius: 1, flexShrink: 0, border: '1px solid', borderColor: (t) => `${t.palette.primary.main}40` }} />
       <Tooltip arrow placement="top" title={tipText}>
         <Box sx={{ flexShrink: 0, px: 0.85, py: 0.3, borderRadius: '999px', cursor: 'help', backgroundColor: (t) => `${t.palette.primary.main}18`, border: '1px solid', borderColor: (t) => `${t.palette.primary.main}50`, display: 'flex', alignItems: 'center', gap: 0.4 }}>
@@ -326,8 +326,10 @@ export default function MultiViewUpload({ views, setViews, setActiveStep, handle
           </Typography>
         </Box>
 
-        {/* ── Panel body ── */}
-        <Box sx={{ p: 1.5 }}>
+        {/* ── Panel body — min-height matches the tallest state (Manual grid);
+             content is vertically centered so shorter states (Smart-filled)
+             don't leave dead space stuck at the bottom ── */}
+        <Box sx={{ p: 1.5, minHeight: 304, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <AnimatePresence mode="wait">
 
             {/* ─── MANUAL: 2×2 grid ─── */}
@@ -387,7 +389,7 @@ export default function MultiViewUpload({ views, setViews, setActiveStep, handle
 
                 {/* Routed rows — compact, proof on pill hover */}
                 {filledCount > 0 && (
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mt: hasSmartContent && filledCount < 4 ? 1 : 0 }}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: hasSmartContent && filledCount < 4 ? 1.25 : 0 }}>
                     <AnimatePresence>
                       {VIEW_CONFIG.filter((c) => views[c.key]).map((cfg) => (
                         <motion.div key={cfg.key} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 6 }} transition={{ duration: 0.16 }}>

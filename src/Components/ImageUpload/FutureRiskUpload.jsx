@@ -154,7 +154,7 @@ const RoutedRow = ({ cfg, item, proof, onRemove }) => {
   const sp = proof && !proof.manual;
   const tip = sp ? `Matched "${proof.sideProof}" → ${sideName(proof.side)}, "${proof.viewProof}" → ${proof.view}${!proof.adjacent ? ' (not adjacent — verify)' : ''}` : proof?.manual ? 'Placed manually' : cfg.label;
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.9, px: 1, py: 0.55, borderRadius: 1.5, backgroundColor: 'background.default', border: '1px solid', borderColor: 'divider' }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.25, py: 0.9, borderRadius: 1.5, backgroundColor: 'background.default', border: '1px solid', borderColor: 'divider' }}>
       <Box component="img" src={item.preview} alt={cfg.label} sx={{ width: 32, height: 32, objectFit: 'cover', borderRadius: 1, flexShrink: 0, border: '1px solid', borderColor: (t) => `${t.palette.primary.main}40` }} />
       <Tooltip arrow placement="top" title={tip}>
         <Box sx={{ flexShrink: 0, px: 0.85, py: 0.25, borderRadius: '999px', cursor: 'help', backgroundColor: (t) => `${t.palette.primary.main}18`, border: '1px solid', borderColor: (t) => `${t.palette.primary.main}50`, display: 'flex', alignItems: 'center', gap: 0.4 }}>
@@ -349,7 +349,7 @@ export default function FutureRiskUpload({ sessions, setSessions, setActiveStep,
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
             <ArrowBtn dir="left" onClick={() => goTo(activeIdx - 1)} disabled={activeIdx === 0} />
 
-            <Box sx={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+            <Box sx={{ flex: 1, minWidth: 0, overflow: 'hidden', minHeight: 240, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
               <AnimatePresence mode="wait" custom={slideDir.current}>
                 <motion.div key={`${sid}-${isSmrt ? 's' : 'm'}`} custom={slideDir.current} variants={slideVariants} initial="enter" animate="center" exit="exit">
                   {!isSmrt ? (
@@ -383,7 +383,7 @@ export default function FutureRiskUpload({ sessions, setSessions, setActiveStep,
                       </AnimatePresence>
 
                       {filledCount > 0 && (
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mt: hasSmartContent && filledCount < 4 ? 1 : 0 }}>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: hasSmartContent && filledCount < 4 ? 1.25 : 0 }}>
                           <AnimatePresence>
                             {VIEW_CONFIG.filter(c => currentSession?.views[c.key]).map(cfg => (
                               <motion.div key={cfg.key} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 6 }} transition={{ duration: 0.16 }}>
