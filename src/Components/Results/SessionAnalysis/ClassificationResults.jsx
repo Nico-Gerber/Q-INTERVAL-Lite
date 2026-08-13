@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Box, Typography, Slider, useTheme } from '@mui/material';
-import Tooltip from './Tooltip';
 
 const MONO = { fontFamily: 'monospace' };
 const VIEWS = ['L-CC', 'L-MLO', 'R-CC', 'R-MLO'];
@@ -317,7 +316,7 @@ export default function ClassificationResults({
                                         ? 'Overlay opacity · both'
                                         : currentModel === 'Quantum' ? 'Occlusion opacity' : 'Grad-CAM opacity'}
                                 </Label>
-                                <Tooltip text="Highlights the regions that most influenced the prediction." />
+                            
                             </Box>
                             <Slider
                                 value={opacity} onChange={(_, v) => setOpacity(v)}

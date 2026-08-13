@@ -1,12 +1,10 @@
 import React, { useMemo } from 'react';
 import { Box, Typography, useTheme } from '@mui/material';
 
-// Same data typeface used for readouts on the results screens (percentages,
-// tags, view codes) — keeps the loading message visually tied to what's
-// about to render, instead of the browser's generic `monospace` fallback.
+
 const DATA_FONT = "'JetBrains Mono', 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
 
-/** Colour-shifts the outline per pipeline stage, read straight off the message text. */
+
 function useStage(message, theme) {
     return useMemo(() => {
         const m = (message || '').toLowerCase();
@@ -17,12 +15,6 @@ function useStage(message, theme) {
     }, [message, theme]);
 }
 
-/**
- * Minimal loading indicator — an outlined square with a sweeping scan line.
- * Sized to be the visual centrepiece of the loading state (not a small inline
- * spinner), with the message set in the same data font used for readouts on
- * the results screens.
- */
 export default function ScanningLoader({ message, size = 108 }) {
     const theme = useTheme();
     const color = useStage(message, theme);
