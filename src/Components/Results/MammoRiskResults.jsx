@@ -1,308 +1,382 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Chip, Container, Button, useTheme } from '@mui/material';
-import AnimatedRiskGauge from './AnimatedRiskGauge';
+import { Box, Typography, useTheme } from '@mui/material';
 
-// ─── helpers ────────────────────────────────────────────────
-const getRiskColor = s => s >= 67 ? 'rgba(178,34,34,1)' : s >= 34 ? 'rgba(210,140,0,1)' : 'rgba(34,170,100,1)';
-const getRiskLvlClr = s => s >= 67 ? '#e05252' : s >= 34 ? '#d4a017' : '#3fcf8e';
+const MONO = { fontFamily: 'monospace' };
+const LOW = '#4fd1a1', MID = '#f5c451', HIGH = '#ff7a7a';
+const CNN_C = '#5cc8f5', QML_C = '#c07ae0';
 
-function extractSummary(data) {
-    const isMalignant =
-        data?.status === 'Malignant detected' ||
-        data?.predicted_cancer_class === 'Malignant' ||
-        data?.risk_level === 'Not Applicable';
-    const isSingle = data?.number_of_images == null;
-    const imageResults = data?.image_level_results ?? [];
-    const densityOrder = ['A', 'B', 'C', 'D'];
-    const classification = isMalignant ? 'Malignant'
-        : isSingle ? (data?.predicted_cancer_class ?? '—')
-        : (data?.final_predicted_class ?? '—');
-    const highestDensity = isSingle ? (data?.predicted_density ?? '—')
-        : imageResults.length ? imageResults.reduce((best, r) =>
-            densityOrder.indexOf(r.predicted_density) > densityOrder.indexOf(best) ? r.predicted_density : best, 'A') : '—';
-    const highestBirads = isSingle ? (data?.predicted_birads ?? '—')
-        : imageResults.length ? Math.max(...imageResults.map(r => r.predicted_birads)) : '—';
-    return {
-        isMalignant,
-        riskScore: data?.future_risk_score ?? null,
-        riskLevel: data?.risk_level ?? 'N/A',
-        feedback: data?.feedback ?? '',
-        classification, highestDensity, highestBirads,
-        numImages: isSingle ? 1 : (data?.number_of_images ?? 1),
-    };
-}
+const WEIGHTS = [
+    { key: 'cnn', label: 'CNN score', weight: 0.6 },
+    { key: 'birads', label: 'BI-RADS', weight: 0.25 },
+    { key: 'density', label: 'Density', weight: 0.15 },
+];
 
-// ─── shared token hook ───────────────────────────────────────
-function useTokens() {
-    const theme = useTheme();
-    const isDark = theme.palette.mode === 'dark';
-    return {
-        isDark, theme,
-        // Text
-        heading:       theme.palette.text.primary,
-        body:          theme.palette.text.primary,
-        secondary:     isDark ? 'rgba(255,255,255,0.65)' : theme.palette.text.secondary,
-        muted:         isDark ? 'rgba(255,255,255,0.45)' : '#4a6070',
-        caption:       isDark ? 'rgba(255,255,255,0.4)'  : '#5a7080',
-        footer:        isDark ? 'rgba(255,255,255,0.28)' : '#6a8090',
-        // Surfaces
-        cardBg:        isDark ? 'rgba(255,255,255,0.03)' : theme.palette.background.paper,
-        rowAltBg:      isDark ? 'rgba(255,255,255,0.02)' : 'rgba(8,145,178,0.03)',
-        headerBg:      isDark ? 'rgba(255,255,255,0.05)' : 'rgba(8,145,178,0.06)',
-        // Borders
-        border:        isDark ? 'rgba(255,255,255,0.09)' : 'rgba(8,145,178,0.2)',
-        divider:       isDark ? 'rgba(255,255,255,0.07)' : 'rgba(8,145,178,0.15)',
-        // Feedback bg
-        feedbackBg:    isDark ? 'rgba(255,255,255,0.03)' : 'rgba(8,145,178,0.04)',
-    };
-}
+const bandColor = (s) => (s >= 66 ? HIGH : s >= 33 ? MID : LOW);
+const bandName = (s) => (s >= 66 ? 'High risk' : s >= 33 ? 'Medium risk' : 'Low risk');
+const severityColor = (s) => (s === 'Malignant' ? HIGH : s === 'Benign' ? MID : LOW);
 
-// ─── MetricCell ──────────────────────────────────────────────
-function MetricCell({ label, value, color, last, tokens }) {
+function Label({ children, sx }) {
     return (
-        <Box sx={{
-            p: 2.5,
-            background: tokens.cardBg,
-            borderRight: last ? 'none' : `1px solid ${tokens.border}`,
-        }}>
-            <Typography sx={{
-                fontFamily: 'monospace', fontSize: 10, letterSpacing: '0.12em',
-                textTransform: 'uppercase', fontWeight: 700,
-                color: tokens.muted, mb: 1,
-            }}>
-                {label}
-            </Typography>
-            <Typography sx={{
-                fontFamily: 'monospace', fontSize: 22, fontWeight: 700,
-                color: color ?? tokens.body, lineHeight: 1,
-            }}>
-                {value}
-            </Typography>
+        <Typography sx={{
+            ...MONO, fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase',
+            lineHeight: 1.2, ...sx,
+        }}>{children}</Typography>
+    );
+}
+
+function Bar({ value, max = 100, color, track, delay = 0, height = 4 }) {
+    const [w, setW] = useState(0);
+    useEffect(() => {
+        const id = setTimeout(() => setW(Math.max(0, Math.min(100, (value / max) * 100))), 100 + delay);
+        return () => clearTimeout(id);
+    }, [value, max, delay]);
+    return (
+        <Box sx={{ flex: 1, height, borderRadius: 99, backgroundColor: track, overflow: 'hidden' }}>
+            <Box sx={{
+                width: `${w}%`, height: '100%', borderRadius: 99, backgroundColor: color,
+                transition: 'width 1.1s cubic-bezier(0.16,1,0.3,1)',
+            }} />
         </Box>
     );
 }
 
-// ─── BothView ────────────────────────────────────────────────
-function BothView({ cnnResult, qmlResult, mounted }) {
-    const t = useTokens();
-    const cnn = extractSummary(cnnResult);
-    const qml = extractSummary(qmlResult);
+/** Low / Medium / High track with a marker at `score`. Hatched when score is null. */
+function BandScale({ score, tokens, height = 12, mounted }) {
+    const na = score === null || score === undefined;
+    if (na) {
+        return (
+            <Box sx={{
+                height, borderRadius: 1,
+                background: `repeating-linear-gradient(135deg, ${tokens.track} 0 8px, ${tokens.card} 8px 16px)`,
+            }} />
+        );
+    }
+    const c = bandColor(score);
+    return (
+        <Box sx={{ position: 'relative', height }}>
+            <Box sx={{ position: 'absolute', inset: 0, display: 'flex', gap: '3px' }}>
+                <Box sx={{ flex: 33, borderRadius: '3px 0 0 3px', background: 'rgba(79,209,161,0.22)' }} />
+                <Box sx={{ flex: 33, background: 'rgba(245,196,81,0.22)' }} />
+                <Box sx={{ flex: 34, borderRadius: '0 3px 3px 0', background: 'rgba(255,122,122,0.22)' }} />
+            </Box>
+            <Box sx={{
+                position: 'absolute', top: -5, bottom: -5, width: 3, borderRadius: 1,
+                background: c, boxShadow: `0 0 0 4px ${c}29`,
+                left: `${mounted ? Math.max(0, Math.min(100, score)) : 0}%`,
+                transition: 'left 1.1s cubic-bezier(0.16,1,0.3,1)',
+            }} />
+        </Box>
+    );
+}
 
-    const rows = [
-        { label: 'Highest Severity', cnn: cnn.classification, qml: qml.classification },
-        { label: 'Risk level',       cnn: cnn.riskLevel,      qml: qml.riskLevel },
-        { label: 'Risk score',       cnn: cnn.riskScore != null ? `${cnn.riskScore}` : '—', qml: qml.riskScore != null ? `${qml.riskScore}` : '—' },
-        { label: 'Highest density',  cnn: cnn.highestDensity, qml: qml.highestDensity },
-        { label: 'Highest BI-RADS',  cnn: String(cnn.highestBirads), qml: String(qml.highestBirads) },
-    ];
+function pickRisk(src) {
+    if (!src) return null;
+    const v = src.future_risk_score ?? src.composite_risk_score ?? src.risk_score ?? null;
+    return typeof v === 'number' ? v : null;
+}
 
-    const cellColor = (val, field) => {
-        if (field === 'Highest Severity') return val === 'Malignant' ? '#e05252' : '#3fcf8e';
-        if (field === 'Risk level') {
-            if (val === 'High Risk')    return '#e05252';
-            if (val === 'Medium Risk')  return '#d4a017';
-            if (val === 'Low Risk')     return '#3fcf8e';
-            return t.secondary;
-        }
-        if (field === 'Risk score') {
-            const n = parseFloat(val);
-            return isNaN(n) ? t.secondary : getRiskLvlClr(n);
-        }
-        return t.body;
+/**
+ * Risk Assessment — composite score card, sits directly under ClassificationResults.
+ *  Classical / Quantum : inputs rail + band scale + score composition
+ *  Comparison ("Both") : metric table + a band scale per model
+ */
+export default function MammoRiskResults({ currentModel, results }) {
+    const theme = useTheme();
+    const isDark = theme.palette.mode === 'dark';
+    const [mounted, setMounted] = useState(false);
+
+    const t = isDark ? {
+        shell: '#0a1728', panel: '#08131f', card: '#0c1c2e', line: '#17304d',
+        text: '#eaf4ff', body: '#c3d8ec', muted: '#5f7fa6', dim: '#8fabc9',
+        track: '#132840', footer: '#3f5d7d',
+    } : {
+        shell: theme.palette.background.paper, panel: theme.palette.background.default,
+        card: theme.palette.background.paper, line: theme.palette.divider,
+        text: theme.palette.text.primary, body: theme.palette.text.primary,
+        muted: theme.palette.text.secondary, dim: theme.palette.text.secondary,
+        track: 'rgba(0,0,0,0.08)', footer: theme.palette.text.disabled,
     };
 
-    const agree = cnn.riskScore != null && qml.riskScore != null
-        ? Math.abs(cnn.riskScore - qml.riskScore) <= 10 : null;
+    const cnn = results?.resultFile?.CRcnn;
+    const qml = results?.resultFile?.CRqml;
+    const isBoth = currentModel === 'Both';
+    const active = currentModel === 'Quantum' ? qml : cnn;
 
-    return (
-        <Box sx={{ opacity: mounted ? 1 : 0, transform: mounted ? 'none' : 'translateY(16px)', transition: 'opacity 0.6s ease, transform 0.6s ease', width: '100%' }}>
-            {/* Header */}
-            <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5, mb: 3 }}>
-                <Box>
-                    <Typography variant="h4" sx={{ fontWeight: 700, color: t.heading, mb: 0.5 }}>Model Comparison</Typography>
-                    <Typography sx={{ fontFamily: 'monospace', fontSize: 11, letterSpacing: '0.08em', fontWeight: 600, color: t.muted }}>
-                        CNN (RESNET-50) vs QUANTUM (QML) · SIDE BY SIDE
-                    </Typography>
-                </Box>
-                <Chip
-                    label={agree === null ? 'Comparison' : agree ? 'Models agree' : 'Models diverge'}
-                    size="small"
-                    sx={{
-                        backgroundColor: agree === null ? t.headerBg : agree ? 'rgba(34,170,100,0.12)' : 'rgba(210,140,0,0.12)',
-                        color: agree === null ? t.secondary : agree ? '#3fcf8e' : '#d4a017',
-                        border: `1px solid ${agree === null ? t.border : agree ? 'rgba(34,170,100,0.35)' : 'rgba(210,140,0,0.35)'}`,
-                        fontWeight: 700, fontSize: 11,
-                    }}
+    useEffect(() => {
+        setMounted(false);
+        const id = setTimeout(() => setMounted(true), 60);
+        return () => clearTimeout(id);
+    }, [currentModel, results]);
+
+    if (!cnn && !qml) return null;
+
+    const SEVERITY_RANK = { Malignant: 3, Benign: 2, Normal: 1 };
+
+    const readModel = (src) => {
+        const images = src?.image_level_results ?? [];
+
+        /* worst finding across the four views */
+        const severity = src?.highest_severity_classification
+            ?? src?.overall_classification
+            ?? images.reduce((worst, im) => {
+                const c = im?.predicted_cancer_class;
+                return (SEVERITY_RANK[c] ?? 0) > (SEVERITY_RANK[worst] ?? 0) ? c : worst;
+            }, null)
+            ?? '—';
+
+        const densityLetters = images.map((im) => im?.predicted_density).filter(Boolean).sort();
+        const density = densityLetters.length ? densityLetters[densityLetters.length - 1]
+            : (src?.highest_density ?? '—');
+
+        const biradsVals = images.map((im) => Number(im?.predicted_birads)).filter((n) => !Number.isNaN(n) && n > 0);
+        const birads = biradsVals.length ? Math.max(...biradsVals) : (src?.highest_birads ?? '—');
+
+        const level = src?.risk_level ?? null;
+        const notApplicable = typeof level === 'string' && /not\s*applicable|n\/a/i.test(level);
+        const flagged = /malignant/i.test(src?.status ?? '');
+        const malignant = severity === 'Malignant' || notApplicable || flagged;
+
+        const score = pickRisk(src);
+
+        return {
+            score: malignant ? null : score,
+            severity,
+            malignant,
+            level: level ?? (malignant ? 'Not applicable' : score !== null ? bandName(score) : '—'),
+            density,
+            birads: birads === 0 ? '—' : birads,
+            images: src?.number_of_images ?? images.length ?? 4,
+            feedback: src?.feedback ?? null,
+        };
+    };
+
+    const C = readModel(cnn);
+    const Q = readModel(qml);
+    const A = currentModel === 'Quantum' ? Q : C;
+
+    const cardSx = {
+        width: '100%', my: 2, borderRadius: 3.5, overflow: 'hidden',
+        background: t.shell, border: `1px solid ${t.line}`,
+        opacity: mounted ? 1 : 0,
+        transform: mounted ? 'none' : 'translateY(12px)',
+        transition: 'opacity 0.45s ease, transform 0.45s ease',
+    };
+
+    const TopBar = ({ subtitle, right }) => (
+        <Box sx={{
+            minHeight: 58, px: 2.75, py: 1, display: 'flex', alignItems: 'center', gap: 2.75,
+            flexWrap: 'wrap', background: t.panel, borderBottom: `1px solid ${t.line}`,
+        }}>
+            <Typography sx={{ fontSize: 16, fontWeight: 700, color: t.text, whiteSpace: 'nowrap' }}>
+                Risk Assessment
+            </Typography>
+            <Label sx={{ color: t.muted }}>{subtitle}</Label>
+            {right}
+        </Box>
+    );
+
+    /* ── Comparison ───────────────────────────────────────── */
+    if (isBoth) {
+        const rows = [
+            { k: 'Highest severity', c: C.severity, q: Q.severity, cc: severityColor(C.severity), qc: severityColor(Q.severity) },
+            { k: 'Risk level', c: C.level, q: Q.level, cc: C.malignant ? t.dim : bandColor(C.score ?? 0), qc: Q.malignant ? t.dim : bandColor(Q.score ?? 0) },
+            { k: 'Highest density', c: C.density, q: Q.density, cc: t.text, qc: t.text },
+            { k: 'Highest BI-RADS', c: C.birads, q: Q.birads, cc: t.text, qc: t.text },
+        ];
+        const disagree = C.severity !== Q.severity;
+
+        return (
+            <Box sx={cardSx}>
+                <TopBar
+                    subtitle="Both models · CNN vs Quantum"
+                    right={
+                        <Typography sx={{ ...MONO, fontSize: 12, color: disagree ? HIGH : LOW, whiteSpace: 'nowrap' }}>
+                            {disagree ? 'Models disagree' : 'Models agree'}
+                        </Typography>
+                    }
                 />
-            </Box>
-
-            {/* Table */}
-            <Box sx={{ border: `1px solid ${t.border}`, borderRadius: 2, overflow: 'hidden', mb: 2.5 }}>
-                {/* Column headers */}
-                <Box sx={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', borderBottom: `1px solid ${t.border}` }}>
-                    {['Metric', 'Classical (CNN)', 'Quantum (QML)'].map((h, i) => (
-                        <Box key={h} sx={{ p: '12px 16px', background: t.headerBg, borderRight: i < 2 ? `1px solid ${t.border}` : 'none' }}>
-                            <Typography sx={{ fontFamily: 'monospace', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700, color: t.muted }}>
-                                {h}
-                            </Typography>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap' }}>
+                    <Box sx={{ flex: 1, minWidth: 380, p: '20px 24px', display: 'flex', flexDirection: 'column', gap: 1.75 }}>
+                        <Box sx={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: 2, px: 0.5 }}>
+                            <Label sx={{ color: t.muted }}>Metric</Label>
+                            <Label sx={{ color: CNN_C }}>Classical</Label>
+                            <Label sx={{ color: QML_C }}>Quantum</Label>
                         </Box>
-                    ))}
-                </Box>
-                {rows.map((row, i) => (
-                    <Box key={row.label} sx={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', borderBottom: i < rows.length - 1 ? `1px solid ${t.divider}` : 'none' }}>
-                        <Box sx={{ p: '14px 16px', borderRight: `1px solid ${t.border}`, background: t.rowAltBg }}>
-                            <Typography sx={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 600, color: t.caption, letterSpacing: '0.04em' }}>
-                                {row.label}
-                            </Typography>
-                        </Box>
-                        {[row.cnn, row.qml].map((val, j) => (
-                            <Box key={j} sx={{ p: '14px 16px', borderRight: j === 0 ? `1px solid ${t.border}` : 'none', background: t.cardBg }}>
-                                <Typography sx={{ fontFamily: 'monospace', fontSize: 17, fontWeight: 700, color: cellColor(val, row.label), lineHeight: 1 }}>
-                                    {val}
-                                </Typography>
+                        {rows.map(({ k, c, q, cc, qc }) => (
+                            <Box key={k} sx={{
+                                display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: 2, alignItems: 'center',
+                                p: '12px 14px', borderRadius: 2.5, background: t.card, border: `1px solid ${t.line}`,
+                            }}>
+                                <Typography sx={{ fontSize: 13, color: t.body }}>{k}</Typography>
+                                <Typography sx={{ ...MONO, fontSize: 14, color: cc }}>{c}</Typography>
+                                <Typography sx={{ ...MONO, fontSize: 14, color: qc }}>{q}</Typography>
                             </Box>
                         ))}
                     </Box>
-                ))}
-            </Box>
 
-            {/* Dual gauges */}
-            {(cnn.riskScore != null || qml.riskScore != null) && (
-                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 2 }}>
-                    {[{ label: 'CNN Risk Index', data: cnn }, { label: 'Quantum Risk Index', data: qml }].map(({ label, data: d }) => (
-                        <Box key={label} sx={{ border: `1px solid ${t.border}`, borderRadius: 2, p: 3, background: t.cardBg }}>
-                            <Typography sx={{ fontFamily: 'monospace', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700, color: t.muted, mb: 1.5 }}>
-                                {label}
-                            </Typography>
-                            {d.riskScore != null
-                                ? <AnimatedRiskGauge targetValue={d.riskScore} color={getRiskColor(d.riskScore)} label={label} isVisible={mounted} duration={1.2} insideText="Risk Index" />
-                                : <Typography sx={{ fontFamily: 'monospace', fontSize: 14, fontWeight: 600, color: t.secondary }}>N/A</Typography>
-                            }
-                        </Box>
-                    ))}
+                    <Box sx={{
+                        width: 520, flexGrow: 1, borderLeft: `1px solid ${t.line}`, background: t.panel,
+                        p: 2.5, display: 'flex', flexDirection: 'column', gap: 2.25,
+                    }}>
+                        {[{ m: C, name: 'Classical', c: CNN_C }, { m: Q, name: 'Quantum', c: QML_C }].map(({ m, name, c }, i) => (
+                            <React.Fragment key={name}>
+                                {i === 1 && <Box sx={{ height: '1px', background: t.line }} />}
+                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 2 }}>
+                                        <Label sx={{ color: c }}>{name} risk index</Label>
+                                        <Typography sx={{ ...MONO, fontSize: 22, color: m.score === null ? t.dim : bandColor(m.score) }}>
+                                            {m.score === null ? 'N/A' : m.score.toFixed(2)}
+                                        </Typography>
+                                    </Box>
+                                    <BandScale score={m.score} tokens={t} height={10} mounted={mounted} />
+                                    {m.score === null ? (
+                                        <Box sx={{
+                                            display: 'flex', alignItems: 'flex-start', gap: 1.25,
+                                            p: '13px 15px', borderRadius: 2.5,
+                                            background: 'rgba(255,122,122,0.10)', border: `1px solid ${HIGH}55`,
+                                        }}>
+                                            <Typography sx={{ ...MONO, fontSize: 13, color: HIGH }}>!</Typography>
+                                            <Typography sx={{ fontSize: 13, color: t.body, lineHeight: 1.55 }}>
+                                                {m.feedback ?? 'A malignant finding was detected in at least one image. Future cancer risk estimation is not applicable because the case is already classified as cancer-suspicious. Please seek medical review.'}
+                                            </Typography>
+                                        </Box>
+                                    ) : (
+                                        <Label sx={{ color: bandColor(m.score) }}>{bandName(m.score)}</Label>
+                                    )}
+                                </Box>
+                            </React.Fragment>
+                        ))}
+                        <Label sx={{ mt: 'auto', color: t.footer, letterSpacing: '0.1em' }}>
+                            Research prototype · Not for clinical use
+                        </Label>
+                    </Box>
                 </Box>
-            )}
-        </Box>
-    );
-}
-
-// ─── main export ─────────────────────────────────────────────
-export default function MammoRiskResults({ reset, currentModel, results }) {
-    const t = useTokens();
-    const [mounted, setMounted] = useState(false);
-    const [barWidth, setBarWidth] = useState(0);
-
-    const cnnResult = results?.resultFile?.CRcnn;
-    const qmlResult = results?.resultFile?.CRqml;
-    const data = currentModel === 'Quantum' ? qmlResult : cnnResult;
-
-    const isMalignant = data?.status === 'Malignant detected' || data?.predicted_cancer_class === 'Malignant' || data?.risk_level === 'Not Applicable';
-    const riskScore   = data?.future_risk_score ?? null;
-    const riskLevel   = data?.risk_level ?? 'N/A';
-    const feedback    = data?.feedback ?? '';
-    const isSingle    = data?.number_of_images == null;
-    const numImages   = isSingle ? 1 : (data?.number_of_images ?? '—');
-    const densityOrder = ['A', 'B', 'C', 'D'];
-    const imageResults = data?.image_level_results ?? [];
-
-    const classification = isMalignant ? 'Malignant'
-        : isSingle ? (data?.predicted_cancer_class ?? 'Benign')
-        : (data?.final_predicted_class ?? 'Benign');
-
-    const highestDensity = isSingle ? (data?.predicted_density ?? '—')
-        : imageResults.length ? imageResults.reduce((best, r) =>
-            densityOrder.indexOf(r.predicted_density) > densityOrder.indexOf(best) ? r.predicted_density : best, 'A') : '—';
-
-    const highestBirads = isSingle ? (data?.predicted_birads ?? '—')
-        : imageResults.length ? Math.max(...imageResults.map(r => r.predicted_birads)) : '—';
-
-    const riskColor   = getRiskColor(riskScore);
-    const riskLvlColor = getRiskLvlClr(riskScore);
-
-    useEffect(() => { const t = setTimeout(() => setMounted(true), 50); return () => clearTimeout(t); }, []);
-    useEffect(() => {
-        if (mounted && !isMalignant && riskScore != null) {
-            const timer = setTimeout(() => setBarWidth(riskScore), 200);
-            return () => clearTimeout(timer);
-        }
-    }, [mounted, isMalignant, riskScore]);
-
-    if (currentModel === 'Both') {
-        return (
-            <Box sx={{ opacity: mounted ? 1 : 0, transform: mounted ? 'none' : 'translateY(16px)', transition: 'opacity 0.6s ease, transform 0.6s ease', width: '100%' }}>
-                <BothView cnnResult={cnnResult} qmlResult={qmlResult} mounted={mounted} />
-                <Container sx={{ padding: 4, display: 'flex', justifyContent: 'center' }}>
-                    <Button variant="contained" onClick={() => reset()}>Reset</Button>
-                </Container>
             </Box>
         );
     }
 
-    const metricCells = [
-        { label: 'Highest Severity Classification', value: classification,     color: isMalignant ? '#e05252' : '#3fcf8e' },
-        { label: 'Risk level',                       value: riskLevel,          color: isMalignant ? t.secondary : riskLvlColor },
-        ...(!isMalignant
-            ? [
-                { label: 'Highest density',  value: highestDensity,        color: t.body },
-                { label: 'Highest BI-RADS',  value: String(highestBirads), color: t.body },
-              ]
-            : [{ label: 'Future risk score', value: '—', color: t.secondary }]
-        ),
-    ];
+    /* ── Single model ─────────────────────────────────────── */
+    const score = A.score;
+    const c = score === null ? t.dim : bandColor(score);
 
     return (
-        <Box sx={{ opacity: mounted ? 1 : 0, transform: mounted ? 'none' : 'translateY(16px)', transition: 'opacity 0.6s ease, transform 0.6s ease', width: '100%' }}>
-
-            {/* Header */}
-            <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5, mb: 3 }}>
-                <Box>
-                    <Typography variant="h4" sx={{ fontWeight: 700, color: t.heading, mb: 0.5 }}>Risk Assessment</Typography>
-                    <Typography sx={{ fontFamily: 'monospace', fontSize: 11, letterSpacing: '0.08em', fontWeight: 600, color: t.muted, mb: 0.25 }}>
-                        {numImages} IMAGE{numImages !== 1 ? 'S' : ''} ANALYSED · MAMMO-BENCH MODEL
-                    </Typography>
-                    <Typography sx={{ fontFamily: 'monospace', fontSize: 10, letterSpacing: '0.06em', fontWeight: 600, color: t.caption }}>
-                        SCORE = 0.6 × CNN + 0.25 × BI-RADS + 0.15 × DENSITY
-                    </Typography>
-                </Box>
-                {isMalignant
-                    ? <Chip label="Malignant detected"    size="small" sx={{ backgroundColor: 'rgba(226,75,74,0.12)', color: '#e05252', border: '1px solid rgba(226,75,74,0.35)', fontWeight: 700, fontSize: 11 }} />
-                    : <Chip label="No malignancy detected" size="small" sx={{ backgroundColor: 'rgba(34,170,100,0.12)', color: '#3fcf8e', border: '1px solid rgba(34,170,100,0.35)', fontWeight: 700, fontSize: 11 }} />
-                }
-            </Box>
-
-            {/* Metric cells */}
-            <Box sx={{ display: 'grid', gridTemplateColumns: `repeat(${metricCells.length}, minmax(0,1fr))`, border: `1px solid ${t.border}`, borderRadius: 2, overflow: 'hidden', mb: 2.5 }}>
-                {metricCells.map((item, i) => (
-                    <MetricCell key={item.label} label={item.label} value={item.value} color={item.color} last={i === metricCells.length - 1} tokens={t} />
-                ))}
-            </Box>
-
-            {/* Malignant warning */}
-            {isMalignant && (
-                <Box sx={{ border: '1px solid rgba(226,75,74,0.3)', borderRadius: 2, backgroundColor: 'rgba(226,75,74,0.07)', p: 2.5, display: 'flex', gap: 1.5, alignItems: 'flex-start', mb: 2 }}>
-                    <Typography sx={{ fontSize: 18, color: '#e05252', mt: '1px', flexShrink: 0 }}>⚠</Typography>
-                    <Typography variant="body2" sx={{ color: t.body, lineHeight: 1.75, fontWeight: 500, fontSize: 14 }}>{feedback}</Typography>
-                </Box>
-            )}
-
-            {/* Risk gauge + feedback */}
-            {!isMalignant && riskScore != null && (
-                <>
-                    <AnimatedRiskGauge targetValue={riskScore} color={riskColor} label="Composite Risk Index" isVisible={mounted} duration={1.2} insideText="Risk Index" />
-                    <Box sx={{ border: `1px solid ${t.border}`, borderRadius: 2, backgroundColor: t.feedbackBg, p: 2.5, mt: 2, display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
-                        <Typography sx={{ fontSize: 18, color: riskLvlColor, mt: '1px', flexShrink: 0 }}>♥</Typography>
-                        <Typography variant="body2" sx={{ color: t.body, lineHeight: 1.75, fontWeight: 500, fontSize: 14 }}>{feedback}</Typography>
+        <Box sx={cardSx}>
+            <TopBar
+                subtitle={`${currentModel} model · ${A.images} images · Mammo-Bench`}
+                right={
+                    <Box sx={{
+                        ml: 'auto', display: 'inline-flex', alignItems: 'center', gap: 1,
+                        px: 1.5, py: 0.75, borderRadius: 999,
+                        border: `1px solid ${A.malignant ? HIGH : LOW}55`,
+                        background: `${A.malignant ? HIGH : LOW}1a`,
+                    }}>
+                        <Box sx={{ width: 6, height: 6, borderRadius: '50%', background: A.malignant ? HIGH : LOW }} />
+                        <Typography sx={{ ...MONO, fontSize: 11, color: A.malignant ? HIGH : LOW, whiteSpace: 'nowrap' }}>
+                            {A.malignant ? 'Malignant detected' : 'No malignancy detected'}
+                        </Typography>
                     </Box>
-                </>
-            )}
+                }
+            />
 
-            <Typography sx={{ fontFamily: 'monospace', fontSize: 10, letterSpacing: '0.1em', fontWeight: 600, color: t.footer, textTransform: 'uppercase', mt: 3, textAlign: 'center' }}>
-                Research prototype · Not for clinical use
-            </Typography>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap' }}>
+                {/* inputs */}
+                <Box sx={{
+                    width: 232, flex: 'none', p: '18px 16px', borderRight: `1px solid ${t.line}`,
+                    display: 'flex', flexDirection: 'column', gap: 2,
+                }}>
+                    <Label sx={{ color: t.muted }}>Inputs</Label>
+                    {[
+                        { k: 'Highest severity', v: A.severity, c: severityColor(A.severity) },
+                        { k: 'Highest density', v: A.density, c: t.text },
+                        { k: 'Highest BI-RADS', v: A.birads, c: t.text },
+                    ].map(({ k, v, c: vc }) => (
+                        <Box key={k} sx={{ display: 'flex', flexDirection: 'column', gap: 0.4 }}>
+                            <Label sx={{ color: t.muted }}>{k}</Label>
+                            <Typography sx={{ ...MONO, fontSize: 18, color: vc }}>{v}</Typography>
+                        </Box>
+                    ))}
+                    <Box sx={{ mt: 'auto', display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                        <Label sx={{ color: t.muted }}>Images used</Label>
+                        <Typography sx={{ ...MONO, fontSize: 13, color: t.body }}>
+                            {A.images} views · L/R CC + MLO
+                        </Typography>
+                    </Box>
+                </Box>
 
-            <Container sx={{ padding: 4, display: 'flex', justifyContent: 'center' }}>
-                <Button variant="contained" onClick={() => reset()}>Reset</Button>
-            </Container>
+                {/* index + band */}
+                <Box sx={{ flex: 1, minWidth: 380, p: '20px 24px', display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 2.5 }}>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                            <Label sx={{ color: t.muted }}>Composite risk index</Label>
+                            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.25, flexWrap: 'wrap' }}>
+                                <Typography sx={{ ...MONO, fontSize: 56, lineHeight: 1, color: c }}>
+                                    {score === null ? '—' : score.toFixed(1)}
+                                </Typography>
+                                <Typography sx={{ ...MONO, fontSize: 20, color: c }}>{A.level}</Typography>
+                            </Box>
+                        </Box>
+                        <Label sx={{ color: t.muted }}>Scale 0—100</Label>
+                    </Box>
+
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+                        <BandScale score={score} tokens={t} mounted={mounted} />
+                        <Box sx={{ display: 'flex' }}>
+                            <Label sx={{ flex: 33, color: score !== null && score < 33 ? LOW : t.muted }}>Low 0—33</Label>
+                            <Label sx={{ flex: 33, color: score !== null && score >= 33 && score < 66 ? MID : t.muted }}>Medium 33—66</Label>
+                            <Label sx={{ flex: 34, textAlign: 'right', color: score !== null && score >= 66 ? HIGH : t.muted }}>High 66—100</Label>
+                        </Box>
+                    </Box>
+
+                    <Box sx={{
+                        display: 'flex', alignItems: 'flex-start', gap: 1.25, p: '14px 16px', borderRadius: 2.5,
+                        background: A.malignant ? 'rgba(255,122,122,0.10)' : t.card,
+                        border: `1px solid ${A.malignant ? `${HIGH}55` : t.line}`,
+                    }}>
+                        <Typography sx={{ ...MONO, fontSize: 13, color: A.malignant ? HIGH : c }}>!</Typography>
+                        <Typography sx={{ fontSize: 13, color: t.body, lineHeight: 1.55 }}>
+                            {A.feedback
+                                ? A.feedback
+                                : A.malignant
+                                    ? 'A malignant finding was detected in at least one image. Future cancer risk estimation is not applicable because the case is already classified as cancer-suspicious. Please seek medical review.'
+                                    : score !== null && score >= 33
+                                        ? 'Some areas may need further review. A follow-up consultation with a healthcare professional is recommended.'
+                                        : 'No areas of concern were flagged across the four views. Continue routine screening.'}
+                        </Typography>
+                    </Box>
+                </Box>
+
+                {/* composition */}
+                <Box sx={{
+                    width: 352, flexGrow: 1, p: 2.25, borderLeft: `1px solid ${t.line}`, background: t.panel,
+                    display: 'flex', flexDirection: 'column', gap: 2,
+                }}>
+                    <Label sx={{ color: t.muted }}>How the score is built</Label>
+                    {WEIGHTS.map(({ key, label, weight }, i) => (
+                        <Box key={key} sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                                <Typography sx={{ fontSize: 13, color: t.body }}>{label}</Typography>
+                                <Typography sx={{ ...MONO, fontSize: 12, color: CNN_C }}>×{weight.toFixed(2)}</Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Bar value={weight * 100} color={CNN_C} track={t.track} delay={i * 110} />
+                                <Typography sx={{ ...MONO, fontSize: 11, color: t.dim, width: 44, textAlign: 'right' }}>
+                                    {score === null ? '—' : (score * weight).toFixed(1)}
+                                </Typography>
+                            </Box>
+                        </Box>
+                    ))}
+                    <Box sx={{ height: '1px', background: t.line }} />
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                        <Label sx={{ color: t.muted }}>Total</Label>
+                        <Typography sx={{ ...MONO, fontSize: 16, color: c }}>
+                            {score === null ? 'N/A' : score.toFixed(2)}
+                        </Typography>
+                    </Box>
+                    <Label sx={{ mt: 'auto', color: t.footer, letterSpacing: '0.1em' }}>
+                        Research prototype · Not for clinical use
+                    </Label>
+                </Box>
+            </Box>
         </Box>
     );
 }
