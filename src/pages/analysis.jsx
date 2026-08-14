@@ -210,6 +210,8 @@ export default function Analysis() {
         return;
       }
 
+      setActiveStep(2);
+
       // UI slot names use hyphens; the endpoint expects underscores
       const slotMap = { 'L-CC': 'L_CC', 'R-CC': 'R_CC', 'L-MLO': 'L_MLO', 'R-MLO': 'R_MLO' };
       const viewKeys = ['L-CC', 'R-CC', 'L-MLO', 'R-MLO'];
@@ -328,6 +330,8 @@ export default function Analysis() {
       }
       return;
     } else {
+      setActiveStep(2);
+
       const formData = new FormData();
       formData.append('l_cc', views['L-CC'].file);
       formData.append('l_mlo', views['L-MLO'].file);

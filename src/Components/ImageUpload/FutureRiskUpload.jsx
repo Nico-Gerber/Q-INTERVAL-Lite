@@ -190,6 +190,7 @@ export default function FutureRiskUpload({ sessions, setSessions, setActiveStep,
   const [pendings, setPendings] = useState({});
   const [dateProofs, setDateProofs] = useState({});
   const [smartErrs, setSmartErrs] = useState({});
+  const [ageTouched, setAgeTouched] = useState(false);
   const slideDir = useRef(1);
 
   const goTo = (i) => {
@@ -210,6 +211,7 @@ export default function FutureRiskUpload({ sessions, setSessions, setActiveStep,
   const sessionComplete = (s) => s.scanDate !== '' && Object.values(s.views).every(v => v !== null);
   const completedCount = sessions.filter(sessionComplete).length;
   const canContinue = sessions.length >= MIN_SESSIONS && sessions.every(sessionComplete);
+  const ageValid = patientAge !== '' && Number(patientAge) >= 18 && Number(patientAge) <= 100;
   const isSmrt = uploadMode === 'smart';
   const freeSlots = VIEW_CONFIG.filter(c => !currentSession?.views[c.key]);
 
@@ -456,13 +458,51 @@ export default function FutureRiskUpload({ sessions, setSessions, setActiveStep,
 
           {/* Patient Age — centred between the nav buttons */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.75 }}>
-            <Typography variant="caption" sx={{ fontWeight: 700, fontSize: '0.7rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'text.secondary', whiteSpace: 'nowrap' }}>Patient Age</Typography>
-            <TextField type="number" size="small" value={patientAge} onChange={e => setPatientAge(e.target.value)} inputProps={{ min: 18, max: 100 }}
-              sx={{ width: 90, '& .MuiInputBase-root': { fontSize: '0.78rem', height: 30, backgroundColor: patientAge ? (t) => `${t.palette.primary.main}10` : (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(8,145,178,0.04)', borderRadius: 1 }, '& .MuiOutlinedInput-notchedOutline': { borderColor: patientAge ? (t) => `${t.palette.primary.main}60` : (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(8,145,178,0.25)' }, '& input': { color: 'text.primary', px: 1, py: 0 } }}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
+              <Typography variant="caption" sx={{ fontWeight: 700, fontSize: '0.7rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: ageTouched && !ageValid ? 'error.main' : 'text.secondary', whiteSpace: 'nowrap' }}>
+                Patient Age
+              </Typography>
+              <Box sx={{
+                width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
+                backgroundColor: 'primary.main',
+                boxShadow: (t) => `0 0 6px ${t.palette.primary.main}BB`,
+              }} />
+            </Box>
+            <TextField
+              type="number" size="small" value={patientAge}
+              onChange={e => { setPatientAge(e.target.value); if (ageTouched) setAgeTouched(false); }}
+              inputProps={{ min: 18, max: 100 }}
+              error={ageTouched && !ageValid}
+              helperText={ageTouched && !ageValid ? 'Required, 18–100' : undefined}
+              FormHelperTextProps={{ sx: { position: 'absolute', top: '100%', mt: 0.4, fontSize: '0.65rem', mx: 0, whiteSpace: 'nowrap' } }}
+              sx={{
+                width: 108, position: 'relative',
+                '& .MuiInputBase-root': {
+                  fontSize: '0.78rem', height: 30, borderRadius: 1,
+                  backgroundColor: (t) => ageTouched && !ageValid
+                    ? `${t.palette.error.main}10`
+                    : patientAge ? `${t.palette.primary.main}10` : t.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(8,145,178,0.04)',
+                },
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: (t) => ageTouched && !ageValid
+                    ? t.palette.error.main
+                    : patientAge ? `${t.palette.primary.main}60` : t.palette.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(8,145,178,0.25)',
+                },
+                '& input': { color: 'text.primary', px: 1, py: 0 },
+              }}
             />
           </Box>
 
-          <Button variant="contained" disabled={!canContinue} onClick={() => { setActiveStep(p => p + 1); handleAnalyse(); }} sx={{ px: 3, fontWeight: 700 }}>Analyse →</Button>
+          <Button
+            variant="contained" disabled={!canContinue}
+            onClick={() => {
+              if (!ageValid) { setAgeTouched(true); return; }
+              handleAnalyse();
+            }}
+            sx={{ px: 3, fontWeight: 700 }}
+          >
+            Analyse →
+          </Button>
         </Box>
       </motion.div>
     </Box>
