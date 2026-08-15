@@ -75,11 +75,7 @@ function pickRisk(src) {
     return typeof v === 'number' ? v : null;
 }
 
-/**
- * Risk Assessment — composite score card, sits directly under ClassificationResults.
- *  Classical / Quantum : inputs rail + band scale + score composition
- *  Comparison ("Both") : metric table + a band scale per model
- */
+
 export default function MammoRiskResults({ currentModel, results, sessionId }) {
     const theme = useTheme();
     const isDark = theme.palette.mode === 'dark';
@@ -142,7 +138,7 @@ export default function MammoRiskResults({ currentModel, results, sessionId }) {
             score: malignant ? null : score,
             severity,
             malignant,
-            level: level ?? (malignant ? 'Not applicable' : score !== null ? bandName(score) : '—'),
+            level: malignant ? 'N/A' : (level ?? (score !== null ? bandName(score) : '—')),
             density,
             birads: birads === 0 ? '—' : birads,
             images: src?.number_of_images ?? images.length ?? 4,
@@ -153,32 +149,69 @@ export default function MammoRiskResults({ currentModel, results, sessionId }) {
     const C = readModel(cnn);
     const Q = readModel(qml);
     const A = currentModel === 'Quantum' ? Q : C;
+    const disagree = C.severity !== Q.severity;
 
     const cardSx = {
-        width: '100%', my: 2, borderRadius: 3.5, overflow: 'hidden',
+        width: '100%', my: 2, borderRadius: 1.5, overflow: 'hidden',
         background: t.shell, border: `1px solid ${t.line}`,
         opacity: mounted ? 1 : 0,
         transform: mounted ? 'none' : 'translateY(12px)',
         transition: 'opacity 0.45s ease, transform 0.45s ease',
     };
 
-    const TopBar = ({ subtitle, right }) => (
-        <Box sx={{
-            minHeight: 58, px: 2.75, py: 1, display: 'flex', alignItems: 'center', gap: 2.75,
-            flexWrap: 'wrap', background: t.panel, borderBottom: `1px solid ${t.line}`,
-        }}>
-            <Typography sx={{ fontSize: 16, fontWeight: 700, color: t.text, whiteSpace: 'nowrap' }}>
-                Risk Assessment
-            </Typography>
-            <Label sx={{ color: t.muted }}>{subtitle}</Label>
-            {sessionId && (
-                <Label sx={{ color: t.dim, whiteSpace: 'nowrap' }}>
-                    ID: {sessionId}
-                </Label>
-            )}
-            {right}
-        </Box>
-    );
+    const TopBar = () => {
+        const badgeColor = isBoth ? (disagree ? HIGH : LOW) : (A.malignant ? HIGH : LOW);
+        const badgeText = isBoth
+            ? (disagree ? 'Models Disagree' : 'Models Agree')
+            : (A.malignant ? 'Malignant detected' : 'No malignancy detected');
+
+        return (
+            <Box sx={{
+                minHeight: 58, position: 'relative', pl: 3.5, pr: 2.5, py: 1.5,
+                display: 'flex', alignItems: 'baseline', gap: 2.75, flexWrap: 'wrap',
+                background: t.panel, borderBottom: `1px solid ${t.line}`,
+            }}>
+                <Typography sx={{ fontSize: 20, fontWeight: 800, letterSpacing: '-0.01em', color: t.text, whiteSpace: 'nowrap' }}>
+                    Mammo
+                    <Box component="span" sx={{ color: theme.palette.primary.main, fontStyle: 'italic' }}>
+                        Analysis
+                    </Box>
+                </Typography>
+
+                <Box sx={{ width: '1px', alignSelf: 'stretch', background: t.line, flexShrink: 0 }} />
+
+                <Typography sx={{ fontSize: 15, fontWeight: 700, color: t.text, whiteSpace: 'nowrap' }}>
+                    Risk Assessment
+                </Typography>
+
+               
+                <Box sx={{
+                    position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)',
+                    display: 'flex', alignItems: 'center', gap: 1.25,
+                }}>
+                    <Label sx={{ color: t.muted, whiteSpace: 'nowrap' }}>
+                        {isBoth ? 'Comparison' : `${currentModel} model`}
+                    </Label>
+                    <Box sx={{
+                        display: 'inline-flex', alignItems: 'center', gap: 0.6,
+                        px: 1, py: 0.35, borderRadius: 999,
+                        border: `1px solid ${badgeColor}55`, background: `${badgeColor}1a`,
+                    }}>
+                        <Box sx={{ width: 5, height: 5, borderRadius: '50%', background: badgeColor, flexShrink: 0 }} />
+                        <Typography sx={{ ...MONO, fontSize: 9.5, fontWeight: 700, color: badgeColor, whiteSpace: 'nowrap' }}>
+                            {badgeText}
+                        </Typography>
+                    </Box>
+                </Box>
+
+                {sessionId && (
+                    <Label sx={{ ml: 'auto', color: t.dim, whiteSpace: 'nowrap' }}>
+                        ID: {sessionId}
+                    </Label>
+                )}
+            </Box>
+        );
+    };
 
     /* ── Comparison ───────────────────────────────────────── */
     if (isBoth) {
@@ -192,16 +225,9 @@ export default function MammoRiskResults({ currentModel, results, sessionId }) {
 
         return (
             <Box sx={cardSx}>
-                <TopBar
-                    subtitle="Both models · CNN vs Quantum"
-                    right={
-                        <Typography sx={{ ...MONO, fontSize: 12, color: disagree ? HIGH : LOW, whiteSpace: 'nowrap' }}>
-                            {disagree ? 'Models disagree' : 'Models agree'}
-                        </Typography>
-                    }
-                />
+                <TopBar />
                 <Box sx={{ display: 'flex', flexWrap: 'wrap' }}>
-                    <Box sx={{ flex: 1, minWidth: 380, p: '20px 24px', display: 'flex', flexDirection: 'column', gap: 1.75 }}>
+                    <Box sx={{ flex: 1, minWidth: 380, p: '28px', display: 'flex', flexDirection: 'column', gap: 1.75 }}>
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: 2, px: 0.5 }}>
                             <Label sx={{ color: t.muted }}>Metric</Label>
                             <Label sx={{ color: CNN_C }}>Classical</Label>
@@ -221,7 +247,7 @@ export default function MammoRiskResults({ currentModel, results, sessionId }) {
 
                     <Box sx={{
                         width: 520, flexGrow: 1, borderLeft: `1px solid ${t.line}`, background: t.panel,
-                        p: 2.5, display: 'flex', flexDirection: 'column', gap: 2.25,
+                        p: 3, display: 'flex', flexDirection: 'column', gap: 2.25,
                     }}>
                         {[{ m: C, name: 'Classical', c: CNN_C }, { m: Q, name: 'Quantum', c: QML_C }].map(({ m, name, c }, i) => (
                             <React.Fragment key={name}>
@@ -251,7 +277,7 @@ export default function MammoRiskResults({ currentModel, results, sessionId }) {
                                 </Box>
                             </React.Fragment>
                         ))}
-                        <Label sx={{ mt: 'auto', color: t.footer, letterSpacing: '0.1em' }}>
+                        <Label sx={{ mt: 'auto', color: HIGH, letterSpacing: '0.08em', fontWeight: 700, fontSize: 9.5, whiteSpace: 'nowrap' }}>
                             Research prototype · Not for clinical use
                         </Label>
                     </Box>
@@ -266,27 +292,12 @@ export default function MammoRiskResults({ currentModel, results, sessionId }) {
 
     return (
         <Box sx={cardSx}>
-            <TopBar
-                subtitle={`${currentModel} model · ${A.images} images · Mammo-Bench`}
-                right={
-                    <Box sx={{
-                        ml: 'auto', display: 'inline-flex', alignItems: 'center', gap: 1,
-                        px: 1.5, py: 0.75, borderRadius: 999,
-                        border: `1px solid ${A.malignant ? HIGH : LOW}55`,
-                        background: `${A.malignant ? HIGH : LOW}1a`,
-                    }}>
-                        <Box sx={{ width: 6, height: 6, borderRadius: '50%', background: A.malignant ? HIGH : LOW }} />
-                        <Typography sx={{ ...MONO, fontSize: 11, color: A.malignant ? HIGH : LOW, whiteSpace: 'nowrap' }}>
-                            {A.malignant ? 'Malignant detected' : 'No malignancy detected'}
-                        </Typography>
-                    </Box>
-                }
-            />
+            <TopBar />
 
             <Box sx={{ display: 'flex', flexWrap: 'wrap' }}>
                 {/* inputs */}
                 <Box sx={{
-                    width: 232, flex: 'none', p: '18px 16px', borderRight: `1px solid ${t.line}`,
+                    width: 232, flex: 'none', p: '28px 20px', borderRight: `1px solid ${t.line}`,
                     display: 'flex', flexDirection: 'column', gap: 2,
                 }}>
                     <Label sx={{ color: t.muted }}>Inputs</Label>
@@ -309,15 +320,17 @@ export default function MammoRiskResults({ currentModel, results, sessionId }) {
                 </Box>
 
                 {/* index + band */}
-                <Box sx={{ flex: 1, minWidth: 800, p: '20px 24px', display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                <Box sx={{ flex: 1, minWidth: 800, p: '28px', display: 'flex', flexDirection: 'column', gap: 2.75 }}>
                     <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 2.5 }}>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.6 }}>
                             <Label sx={{ color: t.muted }}>Composite risk index</Label>
-                            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.25, flexWrap: 'wrap' }}>
-                                <Typography sx={{ ...MONO, fontSize: 56, lineHeight: 1, color: c }}>
-                                    {score === null ? '—' : score.toFixed(1)}
+                            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 2.5, flexWrap: 'wrap' }}>
+                                <Typography sx={{ ...MONO, fontSize: 48, lineHeight: 1, color: c }}>
+                                    {score === null ? 'N/A' : score.toFixed(1)}
                                 </Typography>
-                                <Typography sx={{ ...MONO, fontSize: 20, color: c }}>{A.level}</Typography>
+                                {score !== null && (
+                                    <Typography sx={{ ...MONO, fontSize: 18, color: c }}>{A.level}</Typography>
+                                )}
                             </Box>
                         </Box>
                         <Label sx={{ color: t.muted }}>Scale 0—100</Label>
@@ -352,7 +365,7 @@ export default function MammoRiskResults({ currentModel, results, sessionId }) {
 
                 {/* composition */}
                 <Box sx={{
-                    width: 352, flexGrow: 1, p: 2.25, borderLeft: `1px solid ${t.line}`, background: t.panel,
+                    width: 352, flexGrow: 1, p: 3, borderLeft: `1px solid ${t.line}`, background: t.panel,
                     display: 'flex', flexDirection: 'column', gap: 2,
                 }}>
                     <Label sx={{ color: t.muted }}>How the score is built</Label>
@@ -377,7 +390,7 @@ export default function MammoRiskResults({ currentModel, results, sessionId }) {
                             {score === null ? 'N/A' : score.toFixed(2)}
                         </Typography>
                     </Box>
-                    <Label sx={{ mt: 'auto', color: t.footer, letterSpacing: '0.1em' }}>
+                    <Label sx={{ mt: 'auto', color: HIGH, letterSpacing: '0.08em', fontWeight: 700, fontSize: 9.5, whiteSpace: 'nowrap' }}>
                         Research prototype · Not for clinical use
                     </Label>
                 </Box>
