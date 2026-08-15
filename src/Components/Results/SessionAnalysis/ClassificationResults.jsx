@@ -113,7 +113,7 @@ export default function ClassificationResults({
     const qmlView = qml?.views?.[currentView];
     const agree = cnnView?.result === qmlView?.result;
     const verdictColor = agree ? NC : MC;
-    const verdictText = agree ? 'Models agree' : 'Models disagree';
+    const verdictText = agree ? 'Agree' : 'Disagree';
 
     const baseSrc = (v) => {
         const b64 = cnn?.views?.[v]?.gradcam?.base_image_base64 ?? qml?.views?.[v]?.gradcam?.base_image_base64;
@@ -189,7 +189,7 @@ export default function ClassificationResults({
             }}>
                 {/* ── top bar ── */}
                 <Box sx={{
-                    flex: 'none', minHeight: 58, px: 3.5, py: 1.5,
+                    flex: 'none', minHeight: 58, pl: 3.5, pr: 2.5, py: 1.5,
                     display: 'flex', alignItems: 'baseline', gap: 2.75, flexWrap: 'wrap',
                     background: t.panel, borderBottom: `1px solid ${t.line}`,
                 }}>
@@ -242,7 +242,7 @@ export default function ClassificationResults({
                 {/* ── body ── */}
                 <Box sx={{ flex: 1, minHeight: 0, display: 'flex' }}>
 
-            
+                  
                     <Box sx={{
                         width: 148, flex: 'none', position: 'relative',
                         px: 2, pt: 3.5, pb: 2.5, borderRight: `1px solid ${t.line}`,
@@ -296,7 +296,7 @@ export default function ClassificationResults({
                     {/* reader */}
                     <Box sx={{ flex: 1, minWidth: 0, p: 3.5, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                         {isBoth ? (
-                            <Box sx={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'stretch', gap: 1.75 }}>
+                            <Box sx={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'stretch', gap: 1.75, px: 2 }}>
                                 <ImagePane
                                     model="Classical" title="Classical · Grad-CAM"
                                     titleColor={CNN_C} borderColor="#24506f"
@@ -365,7 +365,7 @@ export default function ClassificationResults({
                                 <Typography sx={{ ...MONO, fontSize: 18, color: getColor(qmlView?.result) }}>
                                     {qmlView?.result ?? '—'}
                                 </Typography>
-                                <Typography sx={{ ...MONO, fontSize: 13, fontWeight: 700, color: verdictColor }}>
+                                <Typography sx={{ ...MONO, fontSize: 18, color: verdictColor }}>
                                     {verdictText}
                                 </Typography>
                             </Box>
@@ -429,16 +429,28 @@ export default function ClassificationResults({
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
                             <Label sx={{ color: t.muted }}>{isBoth ? 'Agreement by view' : 'Per-view summary'}</Label>
                             {perView.map((v) => (
-                                <Box key={v.id} sx={{ display: 'flex', justifyContent: 'space-between', gap: 1 }}>
+                                <Box key={v.id} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1 }}>
                                     <Typography sx={{ ...MONO, fontSize: 13, color: t.dim }}>{v.id}</Typography>
-                                    <Typography sx={{
-                                        fontSize: 13, textAlign: 'right',
-                                        color: isBoth ? (v.agree ? NC : MC) : getColor(v.result),
-                                    }}>
-                                        {isBoth
-                                            ? (v.agree ? `${v.cnnResult ?? '—'} · both` : `${v.cnnResult ?? '—'} vs ${v.qmlResult ?? '—'}`)
-                                            : `${v.result ?? '—'} ${v.score.toFixed(2)}%`}
-                                    </Typography>
+                                    {isBoth ? (
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
+                                            <Typography sx={{ ...MONO, fontSize: 11, fontWeight: 700, color: v.agree ? NC : MC }}>
+                                                {v.agree ? '=' : '≠'}
+                                            </Typography>
+                                            <Typography sx={{ fontSize: 13, textAlign: 'right' }}>
+                                                <Box component="span" sx={{ color: getColor(v.cnnResult) }}>{v.cnnResult ?? '—'}</Box>
+                                                {!v.agree && (
+                                                    <>
+                                                        <Box component="span" sx={{ color: t.dim }}> vs </Box>
+                                                        <Box component="span" sx={{ color: getColor(v.qmlResult) }}>{v.qmlResult ?? '—'}</Box>
+                                                    </>
+                                                )}
+                                            </Typography>
+                                        </Box>
+                                    ) : (
+                                        <Typography sx={{ fontSize: 13, textAlign: 'right', color: getColor(v.result) }}>
+                                            {`${v.result ?? '—'} ${v.score.toFixed(2)}%`}
+                                        </Typography>
+                                    )}
                                 </Box>
                             ))}
                         </Box>
