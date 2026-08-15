@@ -742,6 +742,9 @@ export default function Analysis() {
                             <ClassificationResults
                               analyisedImage={preview} reset={handleReset} sessionId={sessionId}
                               currentModel={modelMode} results={result} onModelSelect={setModelMode}
+                              summary={summary} LLMloading={LLMloading} audience={audience}
+                              setAudience={setAudience} onGenerateExplanation={handleExplain}
+                              onOpenFullExplanation={() => setCollapsed(false)}
                             />
                             <MammoRiskResults results={result} sessionId={sessionId}
                               reset={handleReset} currentModel={modelMode} />
