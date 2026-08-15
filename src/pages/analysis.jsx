@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Box, Chip, Container, Typography, Alert, Button, Drawer, TextField } from '@mui/material';
+import { Box, Chip, Container, Typography, Alert, Button, Drawer, TextField, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Sidebar, Menu, MenuItem, SubMenu } from 'react-pro-sidebar';
-import exportSessionPDF from '../Components/Results/Shared/ExportSession.js';
+import exportSessionPDF from '../Components/Results/Shared/ExportSession';
 import DownloadIcon from '@mui/icons-material/Download';
 
 
@@ -147,6 +147,7 @@ export default function Analysis() {
 
 
   const [collapsed, setCollapsed] = useState(true);
+  const [pdfConfirmOpen, setPdfConfirmOpen] = useState(false);
 
 
   const [audience, setAudience] = useState("clinician")
@@ -500,6 +501,22 @@ export default function Analysis() {
     }
   };
 
+  // Fast path for anyone who already generated an explanation — exports
+  // immediately. Otherwise gives a chance to bail out and go generate one
+  // first, rather than silently shipping a PDF missing that section.
+  const handleDownloadPdfClick = () => {
+    if (summary?.explanation) {
+      exportSessionPDF({ sessionId, analysisMode, currentModel: modelMode, result, summary, patientAge, sessions });
+    } else {
+      setPdfConfirmOpen(true);
+    }
+  };
+
+  const confirmDownloadWithoutExplanation = () => {
+    setPdfConfirmOpen(false);
+    exportSessionPDF({ sessionId, analysisMode, currentModel: modelMode, result, summary, patientAge, sessions });
+  };
+
 
 
 
@@ -716,7 +733,7 @@ export default function Analysis() {
                               </Typography>
                               <Button
                                 size="small" variant="outlined" startIcon={<DownloadIcon sx={{ fontSize: 16 }} />}
-                                onClick={() => exportSessionPDF({ sessionId, analysisMode, currentModel: modelMode, result, summary, patientAge, sessions })}
+                                onClick={handleDownloadPdfClick}
                                 sx={{ fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5 }}
                               >
                                 Download PDF
@@ -752,7 +769,7 @@ export default function Analysis() {
                               </Typography>
                               <Button
                                 size="small" variant="outlined" startIcon={<DownloadIcon sx={{ fontSize: 16 }} />}
-                                onClick={() => exportSessionPDF({ sessionId, analysisMode, currentModel: modelMode, result, summary, patientAge, sessions })}
+                                onClick={handleDownloadPdfClick}
                                 sx={{ fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5 }}
                               >
                                 Download PDF
@@ -1026,6 +1043,25 @@ export default function Analysis() {
             </Box>
           </>
         )}
+
+      <Dialog open={pdfConfirmOpen} onClose={() => setPdfConfirmOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.05rem', px: 3, pt: 3, pb: 1 }}>
+          Export without an AI explanation?
+        </DialogTitle>
+        <DialogContent sx={{ px: 3, pt: 0.5 }}>
+          <Typography sx={{ fontSize: '0.9rem', color: 'text.secondary', lineHeight: 1.6 }}>
+            This session doesn't have a generated AI explanation. The PDF will export without one — generate an explanation first if you'd like it included.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3, pt: 1.5 }}>
+          <Button onClick={() => setPdfConfirmOpen(false)} sx={{ textTransform: 'none', fontWeight: 600 }}>
+            Cancel
+          </Button>
+          <Button onClick={confirmDownloadWithoutExplanation} variant="contained" sx={{ textTransform: 'none', fontWeight: 700 }}>
+            Download anyway
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
