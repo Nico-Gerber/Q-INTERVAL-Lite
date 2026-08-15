@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Box, Chip, Container, Typography, Alert, Button, Drawer, TextField } from '@mui/material';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Sidebar, Menu, MenuItem, SubMenu } from 'react-pro-sidebar';
+import exportSessionPDF from '../Components/Results/Shared/ExportSession.js';
+import DownloadIcon from '@mui/icons-material/Download';
 
 
 import AnalysisStepper from '../Components/AnalysisTool/AnalysisStepper';
@@ -96,6 +98,24 @@ const LOADING_MESSAGES = [
   { text: "Almost there...", duration: 3000 },
 ];
 
+// Short, readable per-session identifier — used in the results header, the
+// PDF filename, and the PDF's own footer/title so a downloaded report can
+// always be traced back to the session it came from.
+// Format: QIL-MA-YYYYMMDD-HHMM-XXXX
+//   QIL-MA   — Q-Interval-Lite+ MammoAnalysis
+//   YYYYMMDD-HHMM — date and 24h time down to the minute
+//   XXXX     — 4-char random alphanumeric tiebreaker for same-minute sessions
+const genSessionId = () => {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  const date = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
+  const time = `${pad(d.getHours())}${pad(d.getMinutes())}`;
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let hash = '';
+  for (let i = 0; i < 4; i++) hash += chars[Math.floor(Math.random() * chars.length)];
+  return `QIL-MA-${date}-${time}-${hash}`;
+};
+
 
 export default function Analysis() {
 
@@ -120,6 +140,7 @@ export default function Analysis() {
   const [msgIndex, setMsgIndex] = useState(0);
 
   const [result, setResult] = useState(null);
+  const [sessionId, setSessionId] = useState(null);
 
 
   const [summary, setSummary] = useState(null);
@@ -211,6 +232,7 @@ export default function Analysis() {
       }
 
       setActiveStep(2);
+      setSessionId(genSessionId());
 
       // UI slot names use hyphens; the endpoint expects underscores
       const slotMap = { 'L-CC': 'L_CC', 'R-CC': 'R_CC', 'L-MLO': 'L_MLO', 'R-MLO': 'R_MLO' };
@@ -331,6 +353,7 @@ export default function Analysis() {
       return;
     } else {
       setActiveStep(2);
+      setSessionId(genSessionId());
 
       const formData = new FormData();
       formData.append('l_cc', views['L-CC'].file);
@@ -377,6 +400,7 @@ export default function Analysis() {
     setPreview(null);
     setStatus(null);
     setResult(null);
+    setSessionId(null);
     setActiveStep(0);
     setViews({ "L-CC": null, "L-MLO": null, "R-CC": null, "R-MLO": null });
     setSummary("")
@@ -682,11 +706,27 @@ export default function Analysis() {
                         <>
 
                           <Container maxWidth="xl">
+                            <Box sx={{
+                              display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5,
+                              mb: 1.5, px: 2, py: 1.25, borderRadius: 1,
+                              background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(8,145,178,0.05)',
+                            }}>
+                              <Typography sx={{ fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.06em', color: '#FFFFFF' }}>
+                                SESSION ID: {sessionId}
+                              </Typography>
+                              <Button
+                                size="small" variant="outlined" startIcon={<DownloadIcon sx={{ fontSize: 16 }} />}
+                                onClick={() => exportSessionPDF({ sessionId, analysisMode, currentModel: modelMode, result, summary, patientAge, sessions })}
+                                sx={{ fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5 }}
+                              >
+                                Download PDF
+                              </Button>
+                            </Box>
                             <ClassificationResults
-                              analyisedImage={preview} reset={handleReset}
+                              analyisedImage={preview} reset={handleReset} sessionId={sessionId}
                               currentModel={modelMode} results={result} onModelSelect={setModelMode}
                             />
-                            <MammoRiskResults results={result}
+                            <MammoRiskResults results={result} sessionId={sessionId}
                               reset={handleReset} currentModel={modelMode} />
 
 
@@ -702,6 +742,22 @@ export default function Analysis() {
                         <>
 
                           <Container maxWidth="xl">
+                            <Box sx={{
+                              display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5,
+                              mb: 1.5, px: 2, py: 1.25, borderRadius: 1,
+                              background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(8,145,178,0.05)',
+                            }}>
+                              <Typography sx={{ fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.06em', color: '#FFFFFF' }}>
+                                SESSION ID: {sessionId}
+                              </Typography>
+                              <Button
+                                size="small" variant="outlined" startIcon={<DownloadIcon sx={{ fontSize: 16 }} />}
+                                onClick={() => exportSessionPDF({ sessionId, analysisMode, currentModel: modelMode, result, summary, patientAge, sessions })}
+                                sx={{ fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5 }}
+                              >
+                                Download PDF
+                              </Button>
+                            </Box>
                             <FutureRiskResults
                               analyisedImage={preview} reset={handleReset}
                               currentModel={modelMode} results={result}

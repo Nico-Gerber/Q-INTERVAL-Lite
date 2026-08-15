@@ -55,6 +55,7 @@ export default function ClassificationResults({
     currentModel,
     onModelSelect,
     results,
+    sessionId,
     height = 820,
 }) {
     const theme = useTheme();
@@ -199,6 +200,11 @@ export default function ClassificationResults({
                     <Label sx={{ color: t.muted, whiteSpace: 'nowrap' }}>
                         {isBoth ? 'Both models' : `${currentModel} model`} · {currentView}
                     </Label>
+                    {sessionId && (
+                        <Label sx={{ color: t.dim, whiteSpace: 'nowrap' }}>
+                            ID: {sessionId}
+                        </Label>
+                    )}
                     {isBoth && (
                         <Typography sx={{ ...MONO, fontSize: 12, color: verdictColor, whiteSpace: 'nowrap' }}>
                             {verdictText}

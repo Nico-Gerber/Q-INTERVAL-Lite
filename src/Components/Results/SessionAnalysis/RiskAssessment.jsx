@@ -80,7 +80,7 @@ function pickRisk(src) {
  *  Classical / Quantum : inputs rail + band scale + score composition
  *  Comparison ("Both") : metric table + a band scale per model
  */
-export default function MammoRiskResults({ currentModel, results }) {
+export default function MammoRiskResults({ currentModel, results, sessionId }) {
     const theme = useTheme();
     const isDark = theme.palette.mode === 'dark';
     const [mounted, setMounted] = useState(false);
@@ -171,6 +171,11 @@ export default function MammoRiskResults({ currentModel, results }) {
                 Risk Assessment
             </Typography>
             <Label sx={{ color: t.muted }}>{subtitle}</Label>
+            {sessionId && (
+                <Label sx={{ color: t.dim, whiteSpace: 'nowrap' }}>
+                    ID: {sessionId}
+                </Label>
+            )}
             {right}
         </Box>
     );
@@ -378,5 +383,4 @@ export default function MammoRiskResults({ currentModel, results }) {
                 </Box>
             </Box>
         </Box>
-    );
-}
+    ); }
