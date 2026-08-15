@@ -309,7 +309,7 @@ export default function MammoRiskResults({ currentModel, results, sessionId }) {
                 </Box>
 
                 {/* index + band */}
-                <Box sx={{ flex: 1, minWidth: 380, p: '20px 24px', display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                <Box sx={{ flex: 1, minWidth: 800, p: '20px 24px', display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                     <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 2.5 }}>
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                             <Label sx={{ color: t.muted }}>Composite risk index</Label>
@@ -383,4 +383,5 @@ export default function MammoRiskResults({ currentModel, results, sessionId }) {
                 </Box>
             </Box>
         </Box>
-    ); }
+    );
+}
