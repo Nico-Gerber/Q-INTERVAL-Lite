@@ -149,17 +149,20 @@ export default function ClassificationResults({
                 border: `1px solid ${borderColor ?? t.line}`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-                <Box component="img" src={baseSrc(currentView)} alt={`${currentView} mammogram`}
-                    sx={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', display: 'block' }} />
-                {heatSrc(model, currentView) && (
-                    <Box component="img" src={heatSrc(model, currentView)} alt="" aria-hidden
-                        sx={{
-                            position: 'absolute', inset: 0, width: '100%', height: '100%',
-                            objectFit: 'contain', pointerEvents: 'none',
-                            mixBlendMode: 'multiply', opacity: opacity / 100,
-                            transition: 'opacity 0.2s ease',
-                        }} />
-                )}
+                <Box sx={{ position: 'relative', objectFit: 'contain' }}>
+
+                    <Box component="img" src={baseSrc(currentView)} alt={`${currentView} mammogram`}
+                        sx={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', display: 'block' }} />
+                    {heatSrc(model, currentView) && (
+                        <Box component="img" src={heatSrc(model, currentView)} alt="" aria-hidden
+                            sx={{
+                                position: 'absolute', inset: 0, width: '100%', height: '100%',
+                                objectFit: 'contain', pointerEvents: 'none',
+                                mixBlendMode: 'multiply', opacity: opacity / 100,
+                                transition: 'opacity 0.2s ease',
+                            }} />
+                    )}
+                </Box>
                 {!title && (
                     <Box sx={{ position: 'absolute', top: 14, left: 14, display: 'flex', gap: 1 }}>
                         {[currentView, `${currentModel === 'Quantum' ? 'OCCLUSION' : 'GRAD-CAM'} ${opacity}%`].map((txt, i) => (
@@ -242,7 +245,7 @@ export default function ClassificationResults({
                 {/* ── body ── */}
                 <Box sx={{ flex: 1, minHeight: 0, display: 'flex' }}>
 
-                  
+
                     <Box sx={{
                         width: 148, flex: 'none', position: 'relative',
                         px: 2, pt: 3.5, pb: 2.5, borderRight: `1px solid ${t.line}`,
@@ -267,14 +270,7 @@ export default function ClassificationResults({
                                     }}>
                                         <Box component="img" src={baseSrc(v.id)} alt={v.id}
                                             sx={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
-                                        <Typography sx={{
-                                            ...MONO, position: 'absolute', bottom: 6, right: 6,
-                                            fontSize: 10.5, fontWeight: 700,
-                                            color: isBoth ? (v.agree ? NC : MC) : getColor(v.result),
-                                            background: 'rgba(0,0,0,0.65)', px: 0.85, py: 0.3, borderRadius: 1,
-                                        }}>
-                                            {isBoth ? (v.agree ? '=' : '≠') : `${v.score.toFixed(0)}%`}
-                                        </Typography>
+
                                     </Box>
                                     <Typography sx={{
                                         ...MONO, fontSize: 13, fontWeight: 700, textAlign: 'center',
@@ -285,12 +281,7 @@ export default function ClassificationResults({
                                 </Box>
                             );
                         })}
-                        {isBoth && (
-                            <Box sx={{ flex: 'none', display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-                                <Label sx={{ color: NC, fontSize: 10 }}>= agree</Label>
-                                <Label sx={{ color: MC, fontSize: 10 }}>≠ disagree</Label>
-                            </Box>
-                        )}
+
                     </Box>
 
                     {/* reader */}
@@ -319,6 +310,7 @@ export default function ClassificationResults({
                                 />
                             </Box>
                         ) : (
+
                             <ImagePane model={currentModel} />
                         )}
 
@@ -334,7 +326,7 @@ export default function ClassificationResults({
                                         ? 'Overlay opacity · both'
                                         : currentModel === 'Quantum' ? 'Occlusion opacity' : 'Grad-CAM opacity'}
                                 </Label>
-                            
+
                             </Box>
                             <Slider
                                 value={opacity} onChange={(_, v) => setOpacity(v)}
@@ -389,7 +381,7 @@ export default function ClassificationResults({
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                 <Label sx={{ color: t.muted }}>All classifications · {currentView}</Label>
-                                {isBoth && <Label sx={{ color: t.muted }}>Δ</Label>}
+
                             </Box>
 
                             {classes.map(({ label, color, single, cnn: cv, qml: qv }, i) => (
@@ -433,9 +425,7 @@ export default function ClassificationResults({
                                     <Typography sx={{ ...MONO, fontSize: 13, color: t.dim }}>{v.id}</Typography>
                                     {isBoth ? (
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
-                                            <Typography sx={{ ...MONO, fontSize: 11, fontWeight: 700, color: v.agree ? NC : MC }}>
-                                                {v.agree ? '=' : '≠'}
-                                            </Typography>
+
                                             <Typography sx={{ fontSize: 13, textAlign: 'right' }}>
                                                 <Box component="span" sx={{ color: getColor(v.cnnResult) }}>{v.cnnResult ?? '—'}</Box>
                                                 {!v.agree && (
@@ -460,7 +450,7 @@ export default function ClassificationResults({
                                 <Box sx={{ height: '1px', background: t.line }} />
 
                                 {isBoth ? (
-                                    
+
                                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
                                         <Label sx={{ color: t.muted }}>AI Explanation</Label>
                                         <Typography sx={{ fontSize: 12, color: t.dim, lineHeight: 1.5 }}>
@@ -475,7 +465,7 @@ export default function ClassificationResults({
                                         )}
                                     </Box>
                                 ) : (
-                                    
+
                                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, flex: 1, minHeight: 0 }}>
                                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                             <Label sx={{ color: t.muted }}>

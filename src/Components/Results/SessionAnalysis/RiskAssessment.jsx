@@ -184,7 +184,7 @@ export default function MammoRiskResults({ currentModel, results, sessionId }) {
                     Risk Assessment
                 </Typography>
 
-               
+
                 <Box sx={{
                     position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)',
                     display: 'flex', alignItems: 'center', gap: 1.25,
