@@ -18,9 +18,8 @@ import MultiImageUploadDated from '../Components/ImageUpload/FutureRiskUpload';
 import MultiViewUpload from '../Components/ImageUpload/SessionAnalysisUpload';
 
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import AssistantIcon from '@mui/icons-material/Assistant';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import AssistantIcon from '@mui/icons-material/Assistant';
 import { ThreeDot } from 'react-loading-indicators';
 
 const API_BASE = 'http://localhost:8000';
@@ -147,6 +146,37 @@ export default function Analysis() {
 
 
   const [collapsed, setCollapsed] = useState(true);
+  const [sidebarWidth, setSidebarWidth] = useState(360);
+  const draggingRef = useRef(false);
+  const [dragging, setDragging] = useState(false);
+
+  useEffect(() => {
+    const onMove = (e) => {
+      if (!draggingRef.current) return;
+      const next = Math.min(640, Math.max(300, window.innerWidth - e.clientX));
+      setSidebarWidth(next);
+    };
+    const onUp = () => {
+      draggingRef.current = false;
+      setDragging(false);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+  }, []);
+
+  const startSidebarDrag = (e) => {
+    e.preventDefault();
+    draggingRef.current = true;
+    setDragging(true);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  };
   const [pdfConfirmOpen, setPdfConfirmOpen] = useState(false);
 
 
@@ -799,29 +829,34 @@ export default function Analysis() {
       {activeStep === 2 && !loading && result &&
         (analysisMode === 'classification' || analysisMode === 'future-risk') && (
           <>
-            {/* Floating Toggle */}
+            {/* Floating Toggle — "AI" by default, expands on hover to reveal full label */}
             <Box
               sx={{
                 position: 'fixed',
-                right: collapsed ? 12 : 348,
+                right: collapsed ? 16 : sidebarWidth + 16,
                 top: '50%',
                 transform: 'translateY(-50%)',
                 zIndex: 30,
-                transition: 'right 0.25s ease',
+                transition: dragging ? 'none' : 'right 0.25s ease',
               }}
             >
               <Button
                 onClick={() => setCollapsed(!collapsed)}
                 sx={{
                   minWidth: 0,
-                  width: 52,
-                  height: 52,
-                  borderRadius: '18px',
+                  width: 44,
+                  height: 44,
+                  borderRadius: '14px',
                   backdropFilter: 'blur(14px)',
-                  background: (theme) => theme.palette.mode === 'dark' ? 'rgba(15,23,42,0.85)' : 'rgba(8,145,178,0.90)',
-                  border: (theme) => theme.palette.mode === 'dark' ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(8,145,178,0.3)',
+                  background: (theme) => theme.palette.mode === 'dark' ? 'rgba(15,23,42,0.9)' : 'rgba(8,145,178,0.90)',
+                  border: (theme) => theme.palette.mode === 'dark' ? '1px solid rgba(34,211,238,0.35)' : '1px solid rgba(8,145,178,0.5)',
                   color: '#FFFFFF',
                   boxShadow: '0 8px 30px rgba(0,0,0,0.25)',
+                  '@keyframes aiBreathe': {
+                    '0%, 100%': { boxShadow: '0 8px 30px rgba(0,0,0,0.25), 0 0 0 0 rgba(34,211,238,0.35)' },
+                    '50%': { boxShadow: '0 8px 30px rgba(0,0,0,0.25), 0 0 0 7px rgba(34,211,238,0)' },
+                  },
+                  animation: collapsed ? 'aiBreathe 6s ease-in-out infinite' : 'none',
                   '&:hover': {
                     background: (theme) => theme.palette.mode === 'dark' ? 'rgba(25,35,55,0.95)' : 'rgba(14,116,144,0.95)',
                     transform: 'scale(1.05)',
@@ -832,10 +867,10 @@ export default function Analysis() {
               </Button>
             </Box>
 
-            {/* Sidebar */}
+            {/* Sidebar — draggable via the grip handle on its left edge */}
             <Box
               sx={{
-                width: 360,
+                width: sidebarWidth,
 
                 position: 'fixed',
                 right: 0,
@@ -851,13 +886,38 @@ export default function Analysis() {
                 borderLeft: (theme) => theme.palette.mode === 'dark' ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(8,145,178,0.18)',
 
                 transform: collapsed ? 'translateX(100%)' : 'translateX(0)',
-                transition: 'transform 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
+                transition: dragging ? 'none' : 'transform 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
 
                 overflow: 'hidden',
                 zIndex: 20,
                 px: 2,
               }}
             >
+              {!collapsed && (
+                <Box
+                  onMouseDown={startSidebarDrag}
+                  title="Drag to resize"
+                  sx={{
+                    position: 'absolute', left: 0, top: 0, bottom: 0, width: 10,
+                    cursor: 'col-resize', zIndex: 25,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    '&:hover': { background: (theme) => `${theme.palette.primary.main}26` },
+                    ...(dragging && { background: (theme) => `${theme.palette.primary.main}33` }),
+                  }}
+                >
+                  <Box sx={{
+                    display: 'flex', flexDirection: 'column', gap: '3px',
+                    opacity: dragging ? 1 : 0.55,
+                  }}>
+                    {[0, 1, 2].map((i) => (
+                      <Box key={i} sx={{
+                        width: 3, height: 3, borderRadius: '50%',
+                        background: (theme) => theme.palette.primary.main,
+                      }} />
+                    ))}
+                  </Box>
+                </Box>
+              )}
               {!collapsed && (
                 <Box
                   sx={{
@@ -903,7 +963,7 @@ export default function Analysis() {
                     }}
                   >
 
-                    {summary ? (
+                    {summary && (
                       <Box
                         sx={{
                           display: 'flex',
@@ -922,37 +982,22 @@ export default function Analysis() {
                         }}>
                           Generated Interpretation
                         </Typography>
-
-
                       </Box>
-
-                    ) : (<Container></Container>)
-
-
-
-                    }
+                    )}
 
                     {LLMloading ? (
-
                       <Container sx={{ display: 'flex', justifyContent: 'center' }}>
-
                         <ThreeDot color='#22D3EE' size="small" text="" textColor="" />
-
-                      </Container>) : (
-
-
+                      </Container>
+                    ) : summary ? (
                       <Box
                         sx={{
                           maxHeight: 500,
                           overflowY: 'auto',
                           pr: 1,
 
-                          '&::-webkit-scrollbar': {
-                            width: '6px',
-                          },
-                          '&::-webkit-scrollbar-track': {
-                            background: 'transparent',
-                          },
+                          '&::-webkit-scrollbar': { width: '6px' },
+                          '&::-webkit-scrollbar-track': { background: 'transparent' },
                           '&::-webkit-scrollbar-thumb': {
                             background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.14)' : 'rgba(8,145,178,0.25)',
                             borderRadius: '999px',
@@ -964,12 +1009,19 @@ export default function Analysis() {
                       >
                         <Typography sx={{
                           color: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.78)' : theme.palette.text.secondary,
-                          fontSize: '0.92rem',
-                          lineHeight: 1.85,
+                          fontSize: '0.92rem', lineHeight: 1.85, textAlign: 'justify',
                         }}>
-                          {summary ? summary.explanation : 'Generate a structured explanation of the mammogram analysis results using AI analysis.'}
+                          {summary.explanation}
                         </Typography>
-                      </Box>)}
+                      </Box>
+                    ) : (
+                      <Typography sx={{
+                        color: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.78)' : theme.palette.text.secondary,
+                        fontSize: '0.92rem', lineHeight: 1.85,
+                      }}>
+                        Generate a structured explanation of the mammogram analysis results using AI analysis.
+                      </Typography>
+                    )}
                   </Box>
 
 
