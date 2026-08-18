@@ -77,32 +77,39 @@ export default function ModeSelect({ selectedMode, onModeSelect, setActiveStep }
             >
               <Paper
                 onClick={() => { onModeSelect(mode.id); setStatus(false); }}
-                elevation={isSelected ? 6 : 1}
+                elevation={isSelected ? 6 : 0}
                 sx={{
                   p: 2.5, cursor: 'pointer', borderRadius: 3,
                   border: '2px solid',
                   borderColor: isSelected
                     ? (theme) => theme.palette[pk].main
                     : (theme) => theme.palette.mode === 'dark'
-                      ? 'rgba(255,255,255,0.14)'
-                      : 'rgba(8,145,178,0.30)',
+                      ? 'rgba(255,255,255,0.12)'
+                      : 'rgba(8,145,178,0.25)',
                   backgroundColor: isSelected
                     ? (theme) => theme.palette.mode === 'dark'
                       ? `${theme.palette[pk].main}18`
-                      : `${theme.palette[pk].main}16`
+                      : `${theme.palette[pk].main}14`
                     : (theme) => theme.palette.mode === 'dark'
                       ? 'background.paper'
-                      : `${theme.palette[pk].main}07`,
+                      : '#FFFFFF',
+                  boxShadow: isSelected
+                    ? (theme) => theme.palette.mode === 'dark'
+                      ? `0 0 0 3px ${theme.palette[pk].main}22, 0 8px 28px rgba(0,0,0,0.3)`
+                      : `0 0 0 3px ${theme.palette[pk].main}30, 0 8px 28px rgba(8,145,178,0.18)`
+                    : 'none',
                   transition: 'all 0.22s ease',
                   display: 'flex', flexDirection: 'column', width: '100%',
                   '&:hover': {
-                    borderColor: (theme) => theme.palette[pk].main,
+                    borderColor: (theme) => theme.palette.mode === 'dark'
+                      ? `${theme.palette[pk].main}88`
+                      : theme.palette[pk].main,
                     backgroundColor: (theme) => theme.palette.mode === 'dark'
                       ? `${theme.palette[pk].main}10`
-                      : `${theme.palette[pk].main}12`,
-                    transform: 'translateY(-3px)',
+                      : `${theme.palette[pk].main}0A`,
+                    transform: 'translateY(-2px)',
                     boxShadow: (theme) =>
-                      `0 8px 28px ${theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.35)' : 'rgba(8,145,178,0.15)'}, 0 0 0 1px ${theme.palette[pk].main}30`,
+                      `0 6px 20px ${theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.3)' : 'rgba(8,145,178,0.18)'}`,
                   },
                 }}
               >
@@ -110,14 +117,24 @@ export default function ModeSelect({ selectedMode, onModeSelect, setActiveStep }
                 <Box sx={{
                   width: 48, height: 48, borderRadius: 2, flexShrink: 0,
                   backgroundColor: isSelected
-                    ? (theme) => `${theme.palette[pk].main}22`
-                    : (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(8,145,178,0.08)',
+                    ? (theme) => theme.palette.mode === 'dark'
+                      ? `${theme.palette[pk].main}28`
+                      : theme.palette[pk].main
+                    : (theme) => theme.palette.mode === 'dark'
+                      ? 'rgba(255,255,255,0.06)'
+                      : 'rgba(8,145,178,0.08)',
                   border: '1.5px solid',
                   borderColor: isSelected
-                    ? (theme) => `${theme.palette[pk].main}55`
-                    : (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.10)' : 'rgba(8,145,178,0.25)',
+                    ? (theme) => theme.palette.mode === 'dark'
+                      ? `${theme.palette[pk].main}70`
+                      : theme.palette[pk].dark
+                    : (theme) => theme.palette.mode === 'dark'
+                      ? 'rgba(255,255,255,0.10)'
+                      : 'rgba(8,145,178,0.30)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: isSelected ? (theme) => theme.palette[pk].main : 'text.secondary',
+                  color: isSelected
+                    ? (theme) => theme.palette.mode === 'dark' ? theme.palette[pk].main : '#FFFFFF'
+                    : 'text.secondary',
                   mb: 1.5, transition: 'all 0.22s ease',
                 }}>
                   {mode.icon}

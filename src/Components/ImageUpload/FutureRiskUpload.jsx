@@ -79,7 +79,7 @@ const ModeToggle = ({ mode, setMode }) => (
         <Box key={val} onClick={() => setMode(val)} sx={{
           position: 'relative', cursor: 'pointer', flex: 1,
           display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 1.1,
-          backgroundColor: active ? (t) => t.palette.mode === 'dark' ? 'rgba(34,211,238,0.10)' : 'rgba(8,145,178,0.13)' : 'transparent',
+          backgroundColor: active ? (t) => t.palette.mode === 'dark' ? 'rgba(34,211,238,0.10)' : 'rgba(8,145,178,0.20)' : 'transparent',
           transition: 'background-color 0.18s',
           '&:hover': !active ? { backgroundColor: (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(8,145,178,0.05)' } : {},
           '&::after': active ? { content: '""', position: 'absolute', bottom: -1, left: 0, right: 0, height: 3, background: (t) => t.palette.mode === 'dark' ? 'linear-gradient(90deg,#22D3EE,#0891B2)' : 'linear-gradient(90deg,#0891B2,#0E7490)' } : {},
@@ -119,7 +119,7 @@ const ViewSlot = ({ viewKey, label, fullLabel, description, item, onDrop, onRemo
         <AnimatePresence mode="wait">
           {!item ? (
             <motion.div key="e" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.16 }} style={{ position: 'absolute', inset: 0 }}>
-              <Box {...getRootProps()} sx={{ position: 'absolute', inset: 0, border: '2px dashed', borderRadius: 2, cursor: 'pointer', borderColor: isDragActive ? 'primary.main' : err ? 'error.main' : (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.11)' : 'rgba(8,145,178,0.22)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 0.5, backgroundColor: isDragActive ? (t) => `${t.palette.primary.main}0E` : err ? 'rgba(239,68,68,0.04)' : 'background.default', transition: 'all 0.18s', '&:hover': { borderColor: 'primary.main', backgroundColor: (t) => `${t.palette.primary.main}09` } }}>
+              <Box {...getRootProps()} sx={{ position: 'absolute', inset: 0, border: '2px dashed', borderRadius: 2, cursor: 'pointer', borderColor: isDragActive ? 'primary.main' : err ? 'error.main' : (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.11)' : 'rgba(8,145,178,0.60)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 0.5, backgroundColor: isDragActive ? (t) => `${t.palette.primary.main}0E` : err ? 'rgba(239,68,68,0.04)' : 'background.default', transition: 'all 0.18s', '&:hover': { borderColor: 'primary.main', backgroundColor: (t) => `${t.palette.primary.main}09` } }}>
                 <input {...getInputProps()} />
                 <GalleryIcon sx={{ fontSize: 18, color: isDragActive ? 'primary.main' : 'text.disabled' }} />
                 <Typography variant="caption" sx={{ color: isDragActive ? 'primary.main' : 'text.secondary', fontWeight: 500, fontSize: '0.65rem', textAlign: 'center', px: 0.75 }}>{isDragActive ? 'Drop here' : description}</Typography>
@@ -292,10 +292,10 @@ export default function FutureRiskUpload({ sessions, setSessions, setActiveStep,
   return (
     <Box>
       {/* ── Panel ── */}
-      <Box sx={{ borderRadius: '6px 6px 16px 16px', border: '1px solid', borderColor: (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.11)' : 'rgba(8,145,178,0.2)', backgroundColor: (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.025)' : 'rgba(8,145,178,0.04)', boxShadow: (t) => t.palette.mode === 'dark' ? '0 10px 36px rgba(0,0,0,0.32)' : '0 6px 24px rgba(8,145,178,0.1)', overflow: 'hidden' }}>
+      <Box sx={{ borderRadius: '6px 6px 16px 16px', border: '2px solid', borderColor: (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.11)' : 'rgba(8,145,178,0.55)', backgroundColor: (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.025)' : '#FFFFFF', boxShadow: (t) => t.palette.mode === 'dark' ? '0 10px 36px rgba(0,0,0,0.32)' : '0 4px 20px rgba(8,145,178,0.18)', overflow: 'hidden' }}>
 
         {/* Tab bar */}
-        <Box sx={{ display: 'flex', alignItems: 'stretch', borderBottom: '1px solid', borderColor: 'divider', backgroundColor: (t) => t.palette.mode === 'dark' ? 'rgba(0,0,0,0.22)' : 'rgba(8,145,178,0.07)' }}>
+        <Box sx={{ display: 'flex', alignItems: 'stretch', borderBottom: '1px solid', borderColor: 'divider', backgroundColor: (t) => t.palette.mode === 'dark' ? 'rgba(0,0,0,0.22)' : 'rgba(8,145,178,0.16)' }}>
           <ModeToggle mode={uploadMode} setMode={setUploadMode} />
 
           {/* Sessions-complete counter */}
@@ -310,7 +310,7 @@ export default function FutureRiskUpload({ sessions, setSessions, setActiveStep,
         </Box>
 
         {/* Info / status bar */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.85, px: 1.75, minHeight: 38, borderBottom: '1px solid', borderColor: 'divider', backgroundColor: canContinue ? (t) => t.palette.mode === 'dark' ? 'rgba(34,211,238,0.10)' : 'rgba(8,145,178,0.12)' : (t) => t.palette.mode === 'dark' ? 'rgba(34,211,238,0.06)' : 'rgba(8,145,178,0.07)', transition: 'background-color 0.25s' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.85, px: 1.75, minHeight: 38, borderBottom: '1px solid', borderColor: 'divider', backgroundColor: canContinue ? (t) => t.palette.mode === 'dark' ? 'rgba(34,211,238,0.10)' : 'rgba(8,145,178,0.16)' : (t) => t.palette.mode === 'dark' ? 'rgba(34,211,238,0.06)' : 'rgba(8,145,178,0.16)', transition: 'background-color 0.25s' }}>
           {canContinue ? <CheckIcon sx={{ fontSize: 14, flexShrink: 0, color: 'primary.main' }} /> : <InfoIcon sx={{ fontSize: 14, flexShrink: 0, color: 'primary.main' }} />}
           <Typography variant="caption" sx={{ fontSize: '0.69rem', lineHeight: 1.5, minWidth: 0, fontWeight: canContinue ? 600 : 400, color: canContinue ? 'primary.main' : 'text.secondary' }}>
             {canContinue ? `All ${sessions.length} sessions complete — ready for temporal analysis.`
@@ -328,7 +328,7 @@ export default function FutureRiskUpload({ sessions, setSessions, setActiveStep,
               Session {activeIdx + 1} date
             </Typography>
             <TextField type="date" size="small" value={currentSession?.scanDate ?? ''} onChange={e => updateDate(e.target.value)} inputProps={{ max: TODAY }}
-              sx={{ '& .MuiInputBase-root': { fontSize: '0.7rem', height: 28, backgroundColor: currentSession?.scanDate ? (t) => `${t.palette.primary.main}10` : (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(8,145,178,0.04)', borderRadius: 1 }, '& .MuiOutlinedInput-notchedOutline': { borderColor: currentSession?.scanDate ? (t) => `${t.palette.primary.main}60` : (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(8,145,178,0.25)' }, '& input': { color: 'text.primary', px: 0.75, py: 0 }, '& input::-webkit-calendar-picker-indicator': { filter: (t) => t.palette.mode === 'dark' ? 'invert(0.5)' : 'none', cursor: 'pointer', width: 13 } }}
+              sx={{ '& .MuiInputBase-root': { fontSize: '0.7rem', height: 28, backgroundColor: currentSession?.scanDate ? (t) => `${t.palette.primary.main}10` : (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(8,145,178,0.05)', borderRadius: 1 }, '& .MuiOutlinedInput-notchedOutline': { borderWidth: 2, borderColor: currentSession?.scanDate ? (t) => `${t.palette.primary.main}80` : (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(8,145,178,0.50)' }, '& input': { color: 'text.primary', px: 0.75, py: 0 }, '& input::-webkit-calendar-picker-indicator': { filter: (t) => t.palette.mode === 'dark' ? 'invert(0.5)' : 'none', cursor: 'pointer', width: 13 } }}
             />
             {isSmrt && currentDateProof && (
               <Tooltip arrow title={`Date "${currentDateProof}" detected from filename`}>
@@ -481,12 +481,13 @@ export default function FutureRiskUpload({ sessions, setSessions, setActiveStep,
                   fontSize: '0.78rem', height: 30, borderRadius: 1,
                   backgroundColor: (t) => ageTouched && !ageValid
                     ? `${t.palette.error.main}10`
-                    : patientAge ? `${t.palette.primary.main}10` : t.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(8,145,178,0.04)',
+                    : patientAge ? `${t.palette.primary.main}10` : t.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(8,145,178,0.05)',
                 },
                 '& .MuiOutlinedInput-notchedOutline': {
+                  borderWidth: 2,
                   borderColor: (t) => ageTouched && !ageValid
                     ? t.palette.error.main
-                    : patientAge ? `${t.palette.primary.main}60` : t.palette.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(8,145,178,0.25)',
+                    : patientAge ? `${t.palette.primary.main}80` : t.palette.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(8,145,178,0.50)',
                 },
                 '& input': { color: 'text.primary', px: 1, py: 0 },
               }}

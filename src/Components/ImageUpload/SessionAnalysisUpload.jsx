@@ -108,9 +108,9 @@ const ViewSlot = ({ viewKey, label, fullLabel, description, item, onDrop, onRemo
               <Box {...getRootProps()} sx={{
                 position: 'absolute', inset: 0,
                 border: '2px dashed', borderRadius: 2, cursor: 'pointer',
-                borderColor: isDragActive ? 'primary.main' : err ? 'error.main' : (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.11)' : 'rgba(8,145,178,0.22)',
+                borderColor: isDragActive ? 'primary.main' : err ? 'error.main' : (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.11)' : 'rgba(8,145,178,0.55)',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 0.5,
-                backgroundColor: isDragActive ? (t) => `${t.palette.primary.main}0E` : err ? 'rgba(239,68,68,0.04)' : 'background.default',
+                backgroundColor: isDragActive ? (t) => `${t.palette.primary.main}0E` : err ? 'rgba(239,68,68,0.04)' : (t) => t.palette.mode === 'dark' ? 'background.default' : 'rgba(232,246,250,0.5)',
                 transition: 'all 0.18s',
                 '&:hover': { borderColor: 'primary.main', backgroundColor: (t) => `${t.palette.primary.main}09` },
               }}>
@@ -235,15 +235,15 @@ export default function MultiViewUpload({ views, setViews, setActiveStep, handle
       {/* ── Main panel — square top corners, rounded bottom ── */}
       <Box sx={{
         borderRadius: '6px 6px 16px 16px',       // slight top curve, rounded bottom
-        border: '1px solid',
-        borderColor: (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.11)' : 'rgba(8,145,178,0.2)',
-        backgroundColor: (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.025)' : 'rgba(8,145,178,0.04)',
-        boxShadow: (t) => t.palette.mode === 'dark' ? '0 10px 36px rgba(0,0,0,0.32)' : '0 6px 24px rgba(8,145,178,0.1)',
+        border: '2px solid',
+        borderColor: (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.11)' : 'rgba(8,145,178,0.55)',
+        backgroundColor: (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.025)' : '#FFFFFF',
+        boxShadow: (t) => t.palette.mode === 'dark' ? '0 10px 36px rgba(0,0,0,0.32)' : '0 4px 20px rgba(8,145,178,0.18)',
         overflow: 'hidden',
       }}>
 
         {/* ── Tab bar ── */}
-        <Box sx={{ display: 'flex', alignItems: 'stretch', borderBottom: '1px solid', borderColor: 'divider', backgroundColor: (t) => t.palette.mode === 'dark' ? 'rgba(0,0,0,0.22)' : 'rgba(8,145,178,0.07)' }}>
+        <Box sx={{ display: 'flex', alignItems: 'stretch', borderBottom: '1px solid', borderColor: 'divider', backgroundColor: (t) => t.palette.mode === 'dark' ? 'rgba(0,0,0,0.22)' : 'rgba(8,145,178,0.10)' }}>
           {TABS.map(({ val, Icon, label, blurb }) => {
             const active = uploadMode === val;
             return (
@@ -252,7 +252,7 @@ export default function MultiViewUpload({ views, setViews, setActiveStep, handle
                 display: 'flex', alignItems: 'center', gap: 1, px: 1.75, py: 1.1,
                 // Active tab: noticeably stronger background tint
                 backgroundColor: active
-                  ? (t) => t.palette.mode === 'dark' ? 'rgba(34,211,238,0.10)' : 'rgba(8,145,178,0.13)'
+                  ? (t) => t.palette.mode === 'dark' ? 'rgba(34,211,238,0.10)' : 'rgba(8,145,178,0.18)'
                   : 'transparent',
                 transition: 'background-color 0.18s',
                 '&:hover': !active ? { backgroundColor: (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(8,145,178,0.05)' } : {},
@@ -302,8 +302,8 @@ export default function MultiViewUpload({ views, setViews, setActiveStep, handle
           px: 1.75, minHeight: 38,
           borderBottom: '1px solid', borderColor: 'divider',
           backgroundColor: allFilled
-            ? (t) => t.palette.mode === 'dark' ? 'rgba(34,211,238,0.10)' : 'rgba(8,145,178,0.12)'
-            : (t) => t.palette.mode === 'dark' ? 'rgba(34,211,238,0.06)' : 'rgba(8,145,178,0.07)',
+            ? (t) => t.palette.mode === 'dark' ? 'rgba(34,211,238,0.10)' : 'rgba(8,145,178,0.14)'
+            : (t) => t.palette.mode === 'dark' ? 'rgba(34,211,238,0.06)' : 'rgba(8,145,178,0.09)',
           transition: 'background-color 0.25s',
         }}>
           {allFilled
