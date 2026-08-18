@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Box, Typography, Button, useTheme } from '@mui/material';
+import { Box, Typography, useTheme } from '@mui/material';
 
 const MONO = { fontFamily: 'monospace' };
 const MODELS = [
@@ -38,7 +38,7 @@ function buildExamHistory(uploadedFiles, imageResults) {
 function Label({ children, sx }) {
     return (
         <Typography sx={{
-            ...MONO, fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase',
+            ...MONO, fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase',
             lineHeight: 1.2, ...sx,
         }}>{children}</Typography>
     );
@@ -156,6 +156,8 @@ export default function FutureRiskResults({
     onModelSelect,
     results,
     uploadedFiles,
+    sessionId,
+    onOpenFullExplanation,
     height = 820,
 }) {
     const theme = useTheme();
@@ -200,7 +202,7 @@ export default function FutureRiskResults({
     const qmlExamHistory = useMemo(() => buildExamHistory(uploadedFiles, qmlImageResults), [uploadedFiles, qmlData]);
 
     const riskDiff = Math.abs(cnnRisk5y - qmlRisk5y);
-    const verdictText = riskDiff < 2 ? 'Models agree' : riskDiff < 5 ? 'Models partially agree' : 'Models disagree';
+    const verdictText = riskDiff < 2 ? 'Agree' : riskDiff < 5 ? 'Partially agree' : 'Disagree';
     const verdictColor = riskDiff < 2 ? LOW : riskDiff < 5 ? MID : HIGH;
 
     useEffect(() => {
@@ -235,6 +237,7 @@ export default function FutureRiskResults({
     const span = examHistory.length
         ? `${Math.max(1, examHistory[0].year - examHistory[examHistory.length - 1].year)} years · ${examHistory.length} exams`
         : '—';
+    const maxWeight = examHistory.length ? Math.max(...examHistory.map((e) => e.weight)) : 0;
 
     /* first year the two models pull apart by >5 points */
     const divergeIdx = cnnHorizons.findIndex((d, i) => Math.abs(d.risk - (qmlHorizons[i]?.risk ?? d.risk)) > 5);
@@ -248,31 +251,37 @@ export default function FutureRiskResults({
         }}>
             <Box sx={{
                 height, maxHeight: '86vh', display: 'flex', flexDirection: 'column',
-                borderRadius: 3.5, overflow: 'hidden',
+                borderRadius: 1.5, overflow: 'hidden',
                 background: t.shell, border: `1px solid ${t.line}`,
             }}>
                 {/* ── top bar ── */}
                 <Box sx={{
-                    flex: 'none', minHeight: 58, px: 2.75, py: 1,
-                    display: 'flex', alignItems: 'center', gap: 2.75, flexWrap: 'wrap',
+                    flex: 'none', minHeight: 58, pl: 3.5, pr: 2.5, py: 1.5,
+                    display: 'flex', alignItems: 'baseline', gap: 2.75, flexWrap: 'wrap',
                     background: t.panel, borderBottom: `1px solid ${t.line}`,
                 }}>
-                    <Typography sx={{ fontSize: 16, fontWeight: 700, color: t.text, whiteSpace: 'nowrap' }}>
+                    <Typography sx={{ fontSize: 20, fontWeight: 800, letterSpacing: '-0.01em', color: t.text, whiteSpace: 'nowrap' }}>
+                        Mammo
+                        <Box component="span" sx={{ color: theme.palette.primary.main, fontStyle: 'italic' }}>
+                            Analysis
+                        </Box>
+                    </Typography>
+
+                    <Box sx={{ width: '1px', alignSelf: 'stretch', background: t.line, flexShrink: 0 }} />
+
+                    <Typography sx={{ fontSize: 15, fontWeight: 700, color: t.text, whiteSpace: 'nowrap' }}>
                         Sequential Future Risk
                     </Typography>
-                    <Label sx={{ color: t.muted, whiteSpace: 'nowrap' }}>
-                        {isBoth ? 'Both models' : `${currentModel} model`}
-                        {examHistory.length ? ` · ${examHistory.length} exams · ${examHistory[examHistory.length - 1].year}—${examHistory[0].year}` : ''}
-                    </Label>
-                    {isBoth && (
-                        <Typography sx={{ ...MONO, fontSize: 12, color: verdictColor, whiteSpace: 'nowrap' }}>
-                            {verdictText}
-                        </Typography>
+
+                    {sessionId && (
+                        <Label sx={{ ml: 'auto', color: t.dim, whiteSpace: 'nowrap' }}>
+                            ID: {sessionId}
+                        </Label>
                     )}
 
                     {onModelSelect && (
                         <Box sx={{
-                            ml: 'auto', flexShrink: 0, display: 'flex', gap: 0.4, p: 0.4,
+                            alignSelf: 'center', flexShrink: 0, display: 'flex', gap: 0.4, p: 0.4,
                             background: t.card, border: `1px solid ${t.line}`, borderRadius: 2.25,
                         }}>
                             {MODELS.map(({ id, label }) => {
@@ -300,60 +309,65 @@ export default function FutureRiskResults({
 
                     {/* exam rail */}
                     <Box sx={{
-                        width: 172, flex: 'none', p: '16px 14px', borderRight: `1px solid ${t.line}`,
-                        display: 'flex', flexDirection: 'column', gap: 1.5, overflowY: 'auto',
+                        width: 172, flex: 'none', p: '24px 20px', borderRight: `1px solid ${t.line}`,
+                        display: 'flex', flexDirection: 'column', gap: 1.5,
                     }}>
-                        <Label sx={{ color: t.muted }}>Exam history</Label>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        <Box>
+                            <Label sx={{ color: t.muted }}>Exam history</Label>
+                            <Typography sx={{ ...MONO, fontSize: 11, color: t.dim, mt: 0.4 }}>{span}</Typography>
+                        </Box>
+                        <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', gap: 1, overflowY: 'auto' }}>
                             {examHistory.map((e, i) => {
                                 const q = qmlExamHistory.find((x) => x.filename === e.filename);
+                                const isMaxWeight = !isBoth && examHistory.length > 1 && e.weight === maxWeight;
                                 return (
-                                    <Box key={e.filename} sx={{
-                                        p: '11px 12px', borderRadius: 2.25,
-                                        display: 'flex', flexDirection: 'column', gap: 0.75,
-                                        background: e.isCurrent ? t.selBg : t.card,
-                                        border: `1px solid ${e.isCurrent ? t.selLine : t.line}`,
-                                    }}>
-                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 1 }}>
-                                            <Typography sx={{ ...MONO, fontSize: 14, color: e.isCurrent ? t.text : t.body }}>
-                                                {e.year}
-                                            </Typography>
-                                            <Label sx={{ color: e.isCurrent ? CNN_C : t.muted }}>
-                                                {e.isCurrent ? 'Current' : 'Prior'}
-                                            </Label>
-                                        </Box>
-
-                                        {isBoth ? (
-                                            [{ tag: 'C', v: e.weight, c: CNN_C }, { tag: 'Q', v: q?.weight ?? e.weight, c: QML_C }].map(({ tag, v, c }) => (
-                                                <Box key={tag} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                                                    <Typography sx={{ ...MONO, fontSize: 10, color: c, width: 10 }}>{tag}</Typography>
-                                                    <Bar value={v} color={c} track={t.track} delay={i * 90} height={3} />
-                                                </Box>
-                                            ))
-                                        ) : (
-                                            <>
-                                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                                    <Bar value={e.weight} color={e.isCurrent ? HIGH : t.dim} track={t.track} delay={i * 90} height={3} />
-                                                </Box>
-                                                <Typography sx={{ ...MONO, fontSize: 11, color: t.dim }}>
-                                                    {e.weight.toFixed(0)}% weight
+                                    <Box key={e.filename} sx={{ flex: '1 1 auto', maxHeight: 150, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 0.4 }}>
+                                        <Box sx={{
+                                            flex: 1, minHeight: 0, p: '11px 12px', borderRadius: 2.25,
+                                            display: 'flex', flexDirection: 'column', gap: 0.75, justifyContent: 'center',
+                                            background: e.isCurrent ? t.selBg : t.card,
+                                            border: `1px solid ${e.isCurrent ? t.selLine : t.line}`,
+                                        }}>
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 1 }}>
+                                                <Typography sx={{ ...MONO, fontSize: 14, color: e.isCurrent ? t.text : t.body }}>
+                                                    {e.year}
                                                 </Typography>
-                                            </>
+                                                <Label sx={{ color: e.isCurrent ? CNN_C : t.muted }}>
+                                                    {e.isCurrent ? 'Current' : 'Prior'}
+                                                </Label>
+                                            </Box>
+
+                                            {isBoth ? (
+                                                [{ tag: 'C', v: e.weight, c: CNN_C }, { tag: 'Q', v: q?.weight ?? e.weight, c: QML_C }].map(({ tag, v, c }) => (
+                                                    <Box key={tag} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                                        <Typography sx={{ ...MONO, fontSize: 10, color: c, width: 10 }}>{tag}</Typography>
+                                                        <Bar value={v} color={c} track={t.track} delay={i * 90} height={3} />
+                                                    </Box>
+                                                ))
+                                            ) : (
+                                                <>
+                                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                        <Bar value={e.weight} color={e.isCurrent ? HIGH : t.dim} track={t.track} delay={i * 90} height={3} />
+                                                    </Box>
+                                                    <Typography sx={{ ...MONO, fontSize: 11, color: t.dim }}>
+                                                        {e.weight.toFixed(0)}% weight
+                                                    </Typography>
+                                                </>
+                                            )}
+                                        </Box>
+                                        {isMaxWeight && (
+                                            <Label sx={{ color: HIGH, fontSize: 9, textAlign: 'center' }}>Most weight</Label>
                                         )}
                                     </Box>
                                 );
                             })}
                         </Box>
-                        <Box sx={{ mt: 'auto', display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                            <Label sx={{ color: t.muted }}>Span</Label>
-                            <Typography sx={{ ...MONO, fontSize: 13, color: t.body }}>{span}</Typography>
-                        </Box>
                     </Box>
 
                     {/* chart */}
-                    <Box sx={{ flex: 1, minWidth: 0, p: 2.25, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                    <Box sx={{ flex: 1, minWidth: 0, p: 3.5, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
-                            <Label sx={{ color: CNN_C, letterSpacing: '0.12em', fontSize: 11 }}>
+                            <Label sx={{ color: CNN_C, letterSpacing: '0.12em', fontSize: 12 }}>
                                 {isBoth ? 'Risk over time · both models' : 'Cumulative risk over time'}
                             </Label>
                             {isBoth ? (
@@ -383,47 +397,59 @@ export default function FutureRiskResults({
                             </Box>
                         )}
 
-                        <Box sx={{
-                            flex: 'none', display: 'flex', alignItems: 'center', gap: 2,
-                            px: 2, py: 1.5, borderRadius: 2.5,
-                            background: t.card, border: `1px solid ${t.line}`,
-                        }}>
-                            <Label sx={{ color: t.muted }}>Horizon · {activeHorizons.length || 5} years</Label>
-                            <Typography sx={{ ...MONO, ml: 'auto', fontSize: 11, color: t.muted }}>
-                                {isBoth
-                                    ? (divergeIdx >= 0 ? `Divergence begins year ${cnnHorizons[divergeIdx].year}` : 'Models track together')
-                                    : 'Research prototype · Not for clinical use'}
-                            </Typography>
-                            <Button size="small" onClick={() => reset()} sx={{
-                                ...MONO, fontSize: 11, letterSpacing: '0.1em', color: t.dim, minWidth: 0,
-                                px: 1.5, borderRadius: 1.5, border: `1px solid ${t.line}`,
-                                '&:hover': { color: t.text, borderColor: t.selLine, background: 'transparent' },
-                            }}>RESET</Button>
+                        <Box sx={{ flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, py: 0.75 }}>
+                            <Label sx={{ color: t.muted, fontSize: 14 }}>Horizon · {activeHorizons.length || 5} years</Label>
+
+                            {isBoth && (
+                                <Box sx={{
+                                    display: 'inline-flex', alignItems: 'center', gap: 0.75,
+                                    px: 1.5, py: 0.6, borderRadius: 999,
+                                    border: `1px solid ${divergeIdx >= 0 ? HIGH : LOW}55`,
+                                    background: `${divergeIdx >= 0 ? HIGH : LOW}1a`,
+                                }}>
+                                    <Box sx={{ width: 7, height: 7, borderRadius: '50%', background: divergeIdx >= 0 ? HIGH : LOW, flexShrink: 0 }} />
+                                    <Typography sx={{ ...MONO, fontSize: 13, fontWeight: 700, color: divergeIdx >= 0 ? HIGH : LOW, whiteSpace: 'nowrap' }}>
+                                        {divergeIdx >= 0 ? `Diverges at year ${cnnHorizons[divergeIdx].year}` : 'Models track together'}
+                                    </Typography>
+                                </Box>
+                            )}
                         </Box>
                     </Box>
 
                     {/* breakdown */}
                     <Box sx={{
-                        width: 352, flex: 'none', p: 2.25, borderLeft: `1px solid ${t.line}`,
+                        width: 352, flex: 'none', p: 3, borderLeft: `1px solid ${t.line}`,
                         background: t.panel, display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto',
                     }}>
-                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
-                            {(isBoth
-                                ? [
-                                    { k: 'Classical', v: `${cnnRisk5y.toFixed(2)}%`, c: getRiskColor(cnnRisk5y) },
-                                    { k: 'Quantum', v: `${qmlRisk5y.toFixed(2)}%`, c: getRiskColor(qmlRisk5y) },
-                                ]
-                                : [
+                        {isBoth ? (
+                            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1.5, rowGap: 0.4 }}>
+                                <Label sx={{ color: t.muted }}>Classical</Label>
+                                <Label sx={{ color: t.muted }}>Quantum</Label>
+                                <Label sx={{ color: t.muted }}>Verdict</Label>
+
+                                <Typography sx={{ ...MONO, fontSize: 18, color: getRiskColor(cnnRisk5y) }}>
+                                    {cnnRisk5y.toFixed(2)}%
+                                </Typography>
+                                <Typography sx={{ ...MONO, fontSize: 18, color: getRiskColor(qmlRisk5y) }}>
+                                    {qmlRisk5y.toFixed(2)}%
+                                </Typography>
+                                <Typography sx={{ ...MONO, fontSize: 18, color: verdictColor }}>
+                                    {verdictText}
+                                </Typography>
+                            </Box>
+                        ) : (
+                            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
+                                {[
                                     { k: '5-year risk', v: `${activeRisk.toFixed(2)}%`, c: getRiskColor(activeRisk) },
                                     { k: 'Band', v: riskBand(activeRisk), c: t.text },
-                                ]
-                            ).map(({ k, v, c }) => (
-                                <Box key={k} sx={{ display: 'flex', flexDirection: 'column', gap: 0.4 }}>
-                                    <Label sx={{ color: t.muted }}>{k}</Label>
-                                    <Typography sx={{ ...MONO, fontSize: 18, color: c }}>{v}</Typography>
-                                </Box>
-                            ))}
-                        </Box>
+                                ].map(({ k, v, c }) => (
+                                    <Box key={k} sx={{ display: 'flex', flexDirection: 'column', gap: 0.4 }}>
+                                        <Label sx={{ color: t.muted }}>{k}</Label>
+                                        <Typography sx={{ ...MONO, fontSize: 18, color: c }}>{v}</Typography>
+                                    </Box>
+                                ))}
+                            </Box>
+                        )}
 
                         <Box sx={{ height: '1px', background: t.line }} />
 
@@ -472,10 +498,7 @@ export default function FutureRiskResults({
 
                         <Box sx={{ height: '1px', background: t.line }} />
 
-                        {isBoth ? (
-                            <Box>
-                            </Box>
-                        ) : (
+                        {!isBoth && (
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
                                 <Label sx={{ color: t.muted }}>Exam contribution</Label>
                                 {examHistory.map((e) => (
@@ -491,10 +514,29 @@ export default function FutureRiskResults({
                             </Box>
                         )}
 
-                        <Label sx={{ mt: 'auto', color: t.footer, letterSpacing: '0.1em' }}>
-                            {isBoth
-                                ? 'Research prototype · Not for clinical use'
-                                : examHistory.length ? `Most weight on ${examHistory[0].year} exam` : 'Research prototype'}
+                        {!isBoth && <Box sx={{ height: '1px', background: t.line }} />}
+
+                        {/* AI Explanation — future-risk doesn't have a natural per-item
+                             breakdown the way per-view classification does (each exam
+                             feeds one cumulative score, not four independent reads), so
+                             this always points at the full sidebar explanation rather
+                             than offering a per-item generate feature. */}
+                        {onOpenFullExplanation && (
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                                <Label sx={{ color: t.muted }}>AI Explanation</Label>
+                                <Typography sx={{ fontSize: 12, color: t.dim, lineHeight: 1.5 }}>
+                                    This projection is best explained as a whole session. Open the full AI Explanation panel for a summary covering all exams and models together.
+                                </Typography>
+                                <Box onClick={onOpenFullExplanation} sx={{ cursor: 'pointer', display: 'inline-flex', width: 'fit-content' }}>
+                                    <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: theme.palette.primary.main }}>
+                                        Open AI Explanation →
+                                    </Typography>
+                                </Box>
+                            </Box>
+                        )}
+
+                        <Label sx={{ mt: 'auto', color: HIGH, letterSpacing: '0.08em', fontWeight: 700, fontSize: 9.5, whiteSpace: 'nowrap' }}>
+                            Research prototype · Not for clinical use
                         </Label>
                     </Box>
                 </Box>
