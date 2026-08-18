@@ -793,6 +793,7 @@ def calculate_exam_contributions(metadata, file_bytes_by_name, full_final_risk):
             "5_year", list(out["final_risk"].values())[-1]))
         rows.append({
             "exam_index": i,
+            "exam_id": f"exam_{i + 1}",
             "exam_date": exam["exam_date"],
             "risk_without_exam_5y": round(without_5y, 3),
             "risk_drop_5y": round(full_5y - without_5y, 3),
@@ -898,16 +899,43 @@ async def qml_future_risk_view_aware(
         % (age_group, age_multiplier),
     ]
 
+    image_level_results = []
+    for row in exam_rows:
+        i = row["exam_index"]
+        exam = metadata["exams"][i]
+        pct = row.get("contribution_percent") or 0.0
+        for view_key, filename in exam["views"].items():
+            image_level_results.append({
+                "filename": filename,
+                "exam_index": i,
+                "exam_date": exam["exam_date"],
+                "view": view_key,
+                "image_contribution_percent": pct,
+            })
+
     return {
+            "status": "success",
+            "model": {
+            "name": "EMBED view-aware QML future-risk model",
+            "type": artifacts.get("model_type", "View-aware QML VQC"),
+            "clinically_validated": False,
+            "artifact_path": str(ARTIFACTS_PATH),
+        },
         "patient_summary": {
             "patient_age": float(metadata["patient_age"]),
             "age_group": age_group,
             "number_of_exams": len(metadata["exams"]),
-            "qml_yearly_future_risk": final_risk,
-            "final_patient_qml_5_year_risk_score": round(risk_5y, 2),
+            "yearly_future_risk": final_risk,
+            "5_year_risk_score": round(risk_5y, 2),
             "final_patient_qml_risk_level": inference["risk_level"],
             "highest_risk_year": highest_risk_year_from_dict(final_risk),
             "risk_curve": make_risk_curve_points(final_risk),
+        },
+        "image_level_results": image_level_results, 
+        "future_risk": {
+            "age_adjusted_risk": final_risk,
+            "risk_level": inference["risk_level"],
+            "highest_risk_year": highest_risk_year_from_dict(final_risk),
         },
         "age_adjustment": {
             "age_group": age_group,

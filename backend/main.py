@@ -8,7 +8,8 @@ from routers.quantum_session_analysis.composite_risk_router import router as qua
 
 # --- Future Risk Analysis (longitudinal 5-year projection) ---
 from routers.classical_future_risk.router import router as classical_future_risk_router
-from routers.quantum_future_risk.router import router as quantum_future_risk_router
+
+from routers.future_risk_qml.router import router as quantum_future_risk_router
 
 # --- Shared LLM explanation endpoints ---
 from routers.shared.Explain import (
