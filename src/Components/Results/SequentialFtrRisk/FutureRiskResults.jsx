@@ -169,12 +169,12 @@ export default function FutureRiskResults({
         selLine: '#2f7fb8', selBg: '#0f2740', text: '#eaf4ff', body: '#c3d8ec',
         muted: '#5f7fa6', dim: '#8fabc9', track: '#132840', footer: '#3f5d7d',
     } : {
-        shell: theme.palette.background.paper, panel: theme.palette.background.default,
-        card: theme.palette.background.paper, line: theme.palette.divider,
-        selLine: '#2f7fb8', selBg: 'rgba(92,200,245,0.10)',
-        text: theme.palette.text.primary, body: theme.palette.text.primary,
-        muted: theme.palette.text.secondary, dim: theme.palette.text.secondary,
-        track: 'rgba(0,0,0,0.08)', footer: theme.palette.text.disabled,
+        shell: '#0D1B2E', panel: '#112038', card: '#162840',
+        line: 'rgba(34,211,238,0.18)',
+        selLine: '#22D3EE', selBg: 'rgba(34,211,238,0.12)',
+        text: '#F0F9FF', body: '#CBD8E8',
+        muted: '#6B90AC', dim: '#8BAFC4',
+        track: 'rgba(255,255,255,0.08)', footer: '#4A6A80',
     };
 
     const qmlData = results?.resultFile?.qml;
@@ -289,9 +289,9 @@ export default function FutureRiskResults({
                                 return (
                                     <Box key={id} onClick={() => onModelSelect(id)} sx={{
                                         px: 1.9, py: 0.9, borderRadius: 1.5, cursor: 'pointer',
-                                        background: sel ? '#144063' : 'transparent',
+                                        background: sel ? t.selBg : 'transparent',
                                         transition: 'background 0.15s ease',
-                                        '&:hover': { background: sel ? '#144063' : 'rgba(92,200,245,0.08)' },
+                                        '&:hover': { background: sel ? t.selBg : 'rgba(92,200,245,0.08)' },
                                     }}>
                                         <Typography sx={{
                                             fontSize: 13, lineHeight: 1, whiteSpace: 'nowrap',

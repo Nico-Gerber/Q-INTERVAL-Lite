@@ -76,12 +76,12 @@ export default function ClassificationResults({
         selLine: '#2f7fb8', selBg: '#0f2740', text: '#eaf4ff', body: '#c3d8ec',
         muted: '#5f7fa6', dim: '#8fabc9', track: '#132840', footer: '#3f5d7d',
     } : {
-        shell: theme.palette.background.paper, panel: theme.palette.background.default,
-        card: theme.palette.background.paper, line: theme.palette.divider,
-        selLine: '#2f7fb8', selBg: 'rgba(92,200,245,0.10)',
-        text: theme.palette.text.primary, body: theme.palette.text.primary,
-        muted: theme.palette.text.secondary, dim: theme.palette.text.secondary,
-        track: 'rgba(0,0,0,0.08)', footer: theme.palette.text.disabled,
+        shell: '#0D1B2E', panel: '#112038', card: '#162840',
+        line: 'rgba(34,211,238,0.18)',
+        selLine: '#22D3EE', selBg: 'rgba(34,211,238,0.12)',
+        text: '#F0F9FF', body: '#CBD8E8',
+        muted: '#6B90AC', dim: '#8BAFC4',
+        track: 'rgba(255,255,255,0.08)', footer: '#4A6A80',
     };
 
     useEffect(() => {
@@ -168,8 +168,8 @@ export default function ClassificationResults({
                         {[currentView, `${currentModel === 'Quantum' ? 'OCCLUSION' : 'GRAD-CAM'} ${opacity}%`].map((txt, i) => (
                             <Typography key={txt} sx={{
                                 ...MONO, fontSize: 11, whiteSpace: 'nowrap',
-                                color: `rgba(255,255,255,${i ? 0.55 : 0.78})`,
-                                background: 'rgba(0,0,0,0.45)', px: 1, py: 0.5, borderRadius: 1,
+                                color: `rgba(255,255,255,${i ? 0.65 : 0.88})`,
+                                background: 'rgba(0,0,0,0.55)', px: 1, py: 0.5, borderRadius: 1,
                             }}>{txt}</Typography>
                         ))}
                     </Box>
@@ -225,9 +225,9 @@ export default function ClassificationResults({
                                 return (
                                     <Box key={id} onClick={() => onModelSelect(id)} sx={{
                                         px: 1.9, py: 0.9, borderRadius: 1.5, cursor: 'pointer',
-                                        background: sel ? '#144063' : 'transparent',
+                                        background: sel ? t.selBg : 'transparent',
                                         transition: 'background 0.15s ease',
-                                        '&:hover': { background: sel ? '#144063' : 'rgba(92,200,245,0.08)' },
+                                        '&:hover': { background: sel ? t.selBg : 'rgba(92,200,245,0.08)' },
                                     }}>
                                         <Typography sx={{
                                             fontSize: 13, lineHeight: 1, whiteSpace: 'nowrap',
@@ -477,7 +477,7 @@ export default function ClassificationResults({
                                                     return (
                                                         <Box key={v} onClick={() => setAudience?.(v)} sx={{
                                                             px: 1, py: 0.35, borderRadius: 0.75, cursor: 'pointer',
-                                                            background: activeAud ? '#144063' : 'transparent',
+                                                            background: activeAud ? t.selBg : 'transparent',
                                                             transition: 'background 0.15s ease',
                                                         }}>
                                                             <Typography sx={{ fontSize: 10, fontWeight: 700, color: activeAud ? t.text : t.dim }}>{l}</Typography>
@@ -509,7 +509,7 @@ export default function ClassificationResults({
                                                     onClick={!LLMloading ? onGenerateExplanation : undefined}
                                                     sx={{
                                                         px: 2, py: 0.9, borderRadius: 1.5, cursor: LLMloading ? 'default' : 'pointer',
-                                                        background: '#2f7fb8', opacity: LLMloading ? 0.6 : 1,
+                                                        background: t.selLine, opacity: LLMloading ? 0.6 : 1,
                                                         transition: 'opacity 0.15s ease',
                                                     }}
                                                 >

@@ -86,11 +86,11 @@ export default function MammoRiskResults({ currentModel, results, sessionId }) {
         text: '#eaf4ff', body: '#c3d8ec', muted: '#5f7fa6', dim: '#8fabc9',
         track: '#132840', footer: '#3f5d7d',
     } : {
-        shell: theme.palette.background.paper, panel: theme.palette.background.default,
-        card: theme.palette.background.paper, line: theme.palette.divider,
-        text: theme.palette.text.primary, body: theme.palette.text.primary,
-        muted: theme.palette.text.secondary, dim: theme.palette.text.secondary,
-        track: 'rgba(0,0,0,0.08)', footer: theme.palette.text.disabled,
+        shell: '#0D1B2E', panel: '#112038', card: '#162840',
+        line: 'rgba(34,211,238,0.18)',
+        text: '#F0F9FF', body: '#CBD8E8',
+        muted: '#6B90AC', dim: '#8BAFC4',
+        track: 'rgba(255,255,255,0.08)', footer: '#4A6A80',
     };
 
     const cnn = results?.resultFile?.CRcnn;

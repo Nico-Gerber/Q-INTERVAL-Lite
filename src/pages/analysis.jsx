@@ -50,7 +50,7 @@ function NeuralCanvas() {
           if (dist < CONNECT_DIST) {
             const alpha = (1 - dist / CONNECT_DIST) * 0.12;
             ctx.beginPath(); ctx.moveTo(nodes[i].x, nodes[i].y); ctx.lineTo(nodes[j].x, nodes[j].y);
-            ctx.strokeStyle = `rgba(45,212,191,${alpha})`; ctx.lineWidth = 0.8; ctx.stroke();
+            ctx.strokeStyle = `rgba(34,211,238,${alpha})`; ctx.lineWidth = 0.8; ctx.stroke();
           }
         }
       }
@@ -59,7 +59,7 @@ function NeuralCanvas() {
         if (n.x < 0) n.x = canvas.width; if (n.x > canvas.width) n.x = 0;
         if (n.y < 0) n.y = canvas.height; if (n.y > canvas.height) n.y = 0;
         ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(45,212,191,0.28)'; ctx.fill();
+        ctx.fillStyle = 'rgba(34,211,238,0.28)'; ctx.fill();
       });
       raf = requestAnimationFrame(draw);
     };
@@ -755,24 +755,24 @@ export default function Analysis() {
                           <Container maxWidth="xl">
                             <Box sx={{
                               borderRadius: 2.5, p: { xs: 2, md: 3 },
-                              background: (theme) => theme.palette.mode === 'dark' ? '#060f1c' : '#eef2f4',
-                              border: (theme) => `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : theme.palette.divider}`,
+                              background: (theme) => theme.palette.mode === 'dark' ? '#060f1c' : '#0A1525',
+                              border: (theme) => `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(34,211,238,0.15)'}`,
                               boxShadow: (theme) => theme.palette.mode === 'dark'
                                 ? '0 24px 70px rgba(0,0,0,0.45)'
-                                : '0 24px 70px rgba(15,35,55,0.12)',
+                                : '0 24px 70px rgba(0,0,0,0.35)',
                             }}>
                               <Box sx={{
                                 display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5,
                                 mb: 1.5, px: 2, py: 1.25, borderRadius: 1,
-                                background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(8,145,178,0.05)',
+                                background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(34,211,238,0.08)',
                               }}>
-                                <Typography sx={{ fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.06em', color: '#FFFFFF' }}>
+                                <Typography sx={{ fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.06em', color: (theme) => theme.palette.mode === 'dark' ? '#F0F9FF' : '#CBD8E8' }}>
                                   SESSION ID: {sessionId}
                                 </Typography>
                                 <Button
                                   size="small" variant="outlined" startIcon={<DownloadIcon sx={{ fontSize: 16 }} />}
                                   onClick={handleDownloadPdfClick}
-                                  sx={{ fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5 }}
+                                  sx={{ fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5, color: '#F0F9FF', borderColor: 'rgba(240,249,255,0.35)', '&:hover': { borderColor: '#F0F9FF', backgroundColor: 'rgba(240,249,255,0.08)' } }}
                                 >
                                   Download PDF
                                 </Button>
@@ -790,14 +790,14 @@ export default function Analysis() {
                               <Box sx={{
                                 display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5,
                                 mt: 1.5, px: 2, py: 1.25, borderRadius: 1,
-                                background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(8,145,178,0.05)',
+                                background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(34,211,238,0.08)',
                               }}>
-                                <Typography sx={{ fontSize: '0.85rem', color: 'text.secondary' }}>
+                                <Typography sx={{ fontSize: '0.85rem', color: '#CBD8E8' }}>
                                   Done reviewing? Start a new session to analyse another set of scans.
                                 </Typography>
                                 <Button
                                   size="small" variant="outlined" onClick={handleReset}
-                                  sx={{ fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5 }}
+                                  sx={{ fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5, color: '#F0F9FF', borderColor: 'rgba(240,249,255,0.35)', '&:hover': { borderColor: '#F0F9FF', backgroundColor: 'rgba(240,249,255,0.08)' } }}
                                 >
                                   New Session
                                 </Button>
@@ -815,24 +815,24 @@ export default function Analysis() {
                           <Container maxWidth="xl">
                             <Box sx={{
                               borderRadius: 2.5, p: { xs: 2, md: 3 },
-                              background: (theme) => theme.palette.mode === 'dark' ? '#060f1c' : '#eef2f4',
-                              border: (theme) => `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : theme.palette.divider}`,
+                              background: (theme) => theme.palette.mode === 'dark' ? '#060f1c' : '#0A1525',
+                              border: (theme) => `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(34,211,238,0.15)'}`,
                               boxShadow: (theme) => theme.palette.mode === 'dark'
                                 ? '0 24px 70px rgba(0,0,0,0.45)'
-                                : '0 24px 70px rgba(15,35,55,0.12)',
+                                : '0 24px 70px rgba(0,0,0,0.35)',
                             }}>
                               <Box sx={{
                                 display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5,
                                 mb: 1.5, px: 2, py: 1.25, borderRadius: 1,
-                                background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(8,145,178,0.05)',
+                                background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(34,211,238,0.08)',
                               }}>
-                                <Typography sx={{ fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.06em', color: '#FFFFFF' }}>
+                                <Typography sx={{ fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.06em', color: (theme) => theme.palette.mode === 'dark' ? '#F0F9FF' : '#CBD8E8' }}>
                                   SESSION ID: {sessionId}
                                 </Typography>
                                 <Button
                                   size="small" variant="outlined" startIcon={<DownloadIcon sx={{ fontSize: 16 }} />}
                                   onClick={handleDownloadPdfClick}
-                                  sx={{ fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5 }}
+                                  sx={{ fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5, color: '#F0F9FF', borderColor: 'rgba(240,249,255,0.35)', '&:hover': { borderColor: '#F0F9FF', backgroundColor: 'rgba(240,249,255,0.08)' } }}
                                 >
                                   Download PDF
                                 </Button>
@@ -848,14 +848,14 @@ export default function Analysis() {
                               <Box sx={{
                                 display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5,
                                 mt: 1.5, px: 2, py: 1.25, borderRadius: 1,
-                                background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(8,145,178,0.05)',
+                                background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(34,211,238,0.08)',
                               }}>
-                                <Typography sx={{ fontSize: '0.85rem', color: 'text.secondary' }}>
+                                <Typography sx={{ fontSize: '0.85rem', color: '#CBD8E8' }}>
                                   Done reviewing? Start a new session to analyse another set of scans.
                                 </Typography>
                                 <Button
                                   size="small" variant="outlined" onClick={handleReset}
-                                  sx={{ fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5 }}
+                                  sx={{ fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5, color: '#F0F9FF', borderColor: 'rgba(240,249,255,0.35)', '&:hover': { borderColor: '#F0F9FF', backgroundColor: 'rgba(240,249,255,0.08)' } }}
                                 >
                                   New Session
                                 </Button>
@@ -1130,7 +1130,7 @@ export default function Analysis() {
                                 : 'transparent',
                               boxShadow: active ? '0 4px 14px rgba(8,145,178,0.30)' : 'none',
                               '&:hover': active ? {} : {
-                                background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(8,145,178,0.05)',
+                                background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(34,211,238,0.08)',
                               },
                             }}
                           >
