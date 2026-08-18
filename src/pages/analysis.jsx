@@ -786,6 +786,22 @@ export default function Analysis() {
                               />
                               <MammoRiskResults results={result} sessionId={sessionId}
                                 reset={handleReset} currentModel={modelMode} />
+
+                              <Box sx={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5,
+                                mt: 1.5, px: 2, py: 1.25, borderRadius: 1,
+                                background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(8,145,178,0.05)',
+                              }}>
+                                <Typography sx={{ fontSize: '0.85rem', color: 'text.secondary' }}>
+                                  Done reviewing? Start a new session to analyse another set of scans.
+                                </Typography>
+                                <Button
+                                  size="small" variant="outlined" onClick={handleReset}
+                                  sx={{ fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5 }}
+                                >
+                                  New Session
+                                </Button>
+                              </Box>
                             </Box>
                           </Container>
                         </>
@@ -828,6 +844,22 @@ export default function Analysis() {
                                 onModelSelect={setModelMode}
                                 onOpenFullExplanation={() => setCollapsed(false)}
                               />
+
+                              <Box sx={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5,
+                                mt: 1.5, px: 2, py: 1.25, borderRadius: 1,
+                                background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(8,145,178,0.05)',
+                              }}>
+                                <Typography sx={{ fontSize: '0.85rem', color: 'text.secondary' }}>
+                                  Done reviewing? Start a new session to analyse another set of scans.
+                                </Typography>
+                                <Button
+                                  size="small" variant="outlined" onClick={handleReset}
+                                  sx={{ fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5 }}
+                                >
+                                  New Session
+                                </Button>
+                              </Box>
                             </Box>
                           </Container>
                         </>
