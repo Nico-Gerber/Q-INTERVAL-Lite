@@ -754,34 +754,39 @@ export default function Analysis() {
 
                           <Container maxWidth="xl">
                             <Box sx={{
-                              display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5,
-                              mb: 1.5, px: 2, py: 1.25, borderRadius: 1,
-                              background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(8,145,178,0.05)',
+                              borderRadius: 2.5, p: { xs: 2, md: 3 },
+                              background: (theme) => theme.palette.mode === 'dark' ? '#060f1c' : '#eef2f4',
+                              border: (theme) => `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : theme.palette.divider}`,
+                              boxShadow: (theme) => theme.palette.mode === 'dark'
+                                ? '0 24px 70px rgba(0,0,0,0.45)'
+                                : '0 24px 70px rgba(15,35,55,0.12)',
                             }}>
-                              <Typography sx={{ fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.06em', color: '#FFFFFF' }}>
-                                SESSION ID: {sessionId}
-                              </Typography>
-                              <Button
-                                size="small" variant="outlined" startIcon={<DownloadIcon sx={{ fontSize: 16 }} />}
-                                onClick={handleDownloadPdfClick}
-                                sx={{ fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5 }}
-                              >
-                                Download PDF
-                              </Button>
+                              <Box sx={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5,
+                                mb: 1.5, px: 2, py: 1.25, borderRadius: 1,
+                                background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(8,145,178,0.05)',
+                              }}>
+                                <Typography sx={{ fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.06em', color: '#FFFFFF' }}>
+                                  SESSION ID: {sessionId}
+                                </Typography>
+                                <Button
+                                  size="small" variant="outlined" startIcon={<DownloadIcon sx={{ fontSize: 16 }} />}
+                                  onClick={handleDownloadPdfClick}
+                                  sx={{ fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5 }}
+                                >
+                                  Download PDF
+                                </Button>
+                              </Box>
+                              <ClassificationResults
+                                analyisedImage={preview} reset={handleReset} sessionId={sessionId}
+                                currentModel={modelMode} results={result} onModelSelect={setModelMode}
+                                summary={summary} LLMloading={LLMloading} audience={audience}
+                                setAudience={setAudience} onGenerateExplanation={handleExplain}
+                                onOpenFullExplanation={() => setCollapsed(false)}
+                              />
+                              <MammoRiskResults results={result} sessionId={sessionId}
+                                reset={handleReset} currentModel={modelMode} />
                             </Box>
-                            <ClassificationResults
-                              analyisedImage={preview} reset={handleReset} sessionId={sessionId}
-                              currentModel={modelMode} results={result} onModelSelect={setModelMode}
-                              summary={summary} LLMloading={LLMloading} audience={audience}
-                              setAudience={setAudience} onGenerateExplanation={handleExplain}
-                              onOpenFullExplanation={() => setCollapsed(false)}
-                            />
-                            <MammoRiskResults results={result} sessionId={sessionId}
-                              reset={handleReset} currentModel={modelMode} />
-
-
-
-
                           </Container>
                         </>
                       )}
