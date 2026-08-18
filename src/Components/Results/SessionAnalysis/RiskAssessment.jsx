@@ -363,37 +363,7 @@ export default function MammoRiskResults({ currentModel, results, sessionId }) {
                     </Box>
                 </Box>
 
-                {/* composition */}
-                <Box sx={{
-                    width: 352, flexGrow: 1, p: 3, borderLeft: `1px solid ${t.line}`, background: t.panel,
-                    display: 'flex', flexDirection: 'column', gap: 2,
-                }}>
-                    <Label sx={{ color: t.muted }}>How the score is built</Label>
-                    {WEIGHTS.map(({ key, label, weight }, i) => (
-                        <Box key={key} sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                                <Typography sx={{ fontSize: 13, color: t.body }}>{label}</Typography>
-                                <Typography sx={{ ...MONO, fontSize: 12, color: CNN_C }}>×{weight.toFixed(2)}</Typography>
-                            </Box>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <Bar value={weight * 100} color={CNN_C} track={t.track} delay={i * 110} />
-                                <Typography sx={{ ...MONO, fontSize: 11, color: t.dim, width: 44, textAlign: 'right' }}>
-                                    {score === null ? '—' : (score * weight).toFixed(1)}
-                                </Typography>
-                            </Box>
-                        </Box>
-                    ))}
-                    <Box sx={{ height: '1px', background: t.line }} />
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                        <Label sx={{ color: t.muted }}>Total</Label>
-                        <Typography sx={{ ...MONO, fontSize: 16, color: c }}>
-                            {score === null ? 'N/A' : score.toFixed(2)}
-                        </Typography>
-                    </Box>
-                    <Label sx={{ mt: 'auto', color: HIGH, letterSpacing: '0.08em', fontWeight: 700, fontSize: 9.5, whiteSpace: 'nowrap' }}>
-                        Research prototype · Not for clinical use
-                    </Label>
-                </Box>
+
             </Box>
         </Box>
     );

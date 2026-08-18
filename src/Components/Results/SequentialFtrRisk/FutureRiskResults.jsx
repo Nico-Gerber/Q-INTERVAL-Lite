@@ -149,13 +149,7 @@ function RiskCurve({ series, yMax, tokens, mounted }) {
     );
 }
 
-/**
- * Sequential Future Risk — reader shell matching the Classification screen.
- *  Classical / Quantum : exam rail + risk curve + risk-by-year breakdown
- *  Comparison ("Both") : paired contributions, both curves, C/Q pairs with Δ
- *
- * Pass onModelSelect to render the model tabs in the top bar.
- */
+
 export default function FutureRiskResults({
     reset,
     currentModel,
@@ -436,7 +430,7 @@ export default function FutureRiskResults({
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                 <Label sx={{ color: t.muted }}>Risk by year</Label>
-                                {isBoth && <Label sx={{ color: t.muted }}>Δ</Label>}
+
                             </Box>
 
                             {(isBoth ? cnnHorizons : activeHorizons).map((d, i) => {
@@ -479,16 +473,7 @@ export default function FutureRiskResults({
                         <Box sx={{ height: '1px', background: t.line }} />
 
                         {isBoth ? (
-                            <Box sx={{
-                                p: 1.75, borderRadius: 2.5, background: t.card, border: `1px solid ${t.line}`,
-                                display: 'flex', flexDirection: 'column', gap: 0.75,
-                            }}>
-                                <Label sx={{ color: t.muted }}>Where they diverge</Label>
-                                <Typography sx={{ fontSize: 13, color: t.body, lineHeight: 1.55 }}>
-                                    {divergeIdx >= 0
-                                        ? `Both models track together through year ${divergeIdx > 0 ? cnnHorizons[divergeIdx - 1].year : '—'}. They separate at year ${cnnHorizons[divergeIdx].year}, ending ${riskDiff.toFixed(1)} points apart at 5 years.`
-                                        : `The models stay within ${riskDiff.toFixed(1)} points across the full horizon.`}
-                                </Typography>
+                            <Box>
                             </Box>
                         ) : (
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
