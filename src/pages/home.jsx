@@ -22,6 +22,8 @@ import {
   CastForEducation as CastForEducationIcon,
   RadioOutlined as RadioOutlinedIcon,
   PsychologyOutlined as PsychologyOutlinedIcon,
+  LockOutlined as LockIcon,
+  RefreshOutlined as RefreshIcon,
 } from '@mui/icons-material';
 import { motion, animate, AnimatePresence } from 'framer-motion';
 
@@ -34,12 +36,24 @@ const A = {
   blue:   '#67E8F9',
 };
 
-const TC = {
-  mode:    '#94A3B8',
-  upload:  '#22D3EE',
-  cnn:     '#67E8F9',
-  qml:     '#A78BFA',
-  results: '#FCD34D',
+// Pulled directly from the real product (ClassificationResults.jsx /
+// RiskAssessment.jsx) so the marketing site's flowchart and mock screen
+// use the app's actual colour language instead of invented placeholders.
+const CNN_C  = '#5cc8f5'; // Classical model accent
+const QML_C  = '#c07ae0'; // Quantum model accent
+const RISK_HIGH = '#ff7a7a'; // Malignant
+const RISK_MID  = '#f5c451'; // Benign
+const RISK_LOW  = '#4fd1a1'; // Normal
+const FLOW_NEUTRAL = '#8fabc9'; // matches the app's own "dim" text token
+
+// Flowchart step colours — no longer a separate hardcoded palette, just the
+// real accents above plus the two site-only "mode select" / "results" tones.
+const FLOW = {
+  mode:    FLOW_NEUTRAL,
+  upload:  A.teal,
+  cnn:     CNN_C,
+  qml:     QML_C,
+  results: A.amber,
 };
 
 const NAV_H = 70;
@@ -249,6 +263,302 @@ const ImageSlot = ({ accent, label, ratio = '4/3' }) => (
 </Box>
 );
 
+// ── Fake browser window showing an animated "results screen" preview ───────
+// Styled to match the real ClassificationResults.jsx / RiskAssessment.jsx
+// components: dark navy shell, monospace uppercase labels, thin hairline
+// borders, tight corner radii, and the app's actual class colours.
+const MOCK_VIEWS = ['L-CC', 'L-MLO', 'R-CC', 'R-MLO'];
+const MOCK_MODELS = [
+  { id: 'classical',  label: 'Classical AI', accent: CNN_C },
+  { id: 'quantum',    label: 'Quantum AI',   accent: QML_C },
+  { id: 'comparison', label: 'Comparison',   accent: FLOW_NEUTRAL },
+];
+// Fixed, illustrative class-probability sets per model — deliberately shows
+// the two models disagreeing so the "Comparison" state has something to say.
+const MOCK_CLASS_DATA = {
+  classical:  { Malignant: 8,  Benign: 82, Normal: 10 },
+  quantum:    { Malignant: 61, Benign: 30, Normal: 9 },
+  comparison: { Malignant: 61, Benign: 30, Normal: 9 },
+};
+const MOCK_HEADLINE = {
+  classical: { result: 'Benign',    color: RISK_MID,  confidence: '82.40%' },
+  quantum:   { result: 'Malignant', color: RISK_HIGH, confidence: '91.20%' },
+};
+const CLASS_COLORS = { Malignant: RISK_HIGH, Benign: RISK_MID, Normal: RISK_LOW };
+
+function MockLabel({ children, sx }) {
+  return (
+    <Typography sx={{
+      fontFamily: 'monospace', fontSize: 8, letterSpacing: '0.12em', textTransform: 'uppercase',
+      lineHeight: 1.2, color: FLOW_NEUTRAL, ...sx,
+    }}>
+      {children}
+    </Typography>
+  );
+}
+
+function MockBar({ value, color, track }) {
+  return (
+    <Box sx={{ flex: 1, height: 4, borderRadius: 999, backgroundColor: track, overflow: 'hidden' }}>
+      <motion.div
+        style={{ height: '100%', borderRadius: 999, background: color }}
+        animate={{ width: `${value}%` }}
+        transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+      />
+    </Box>
+  );
+}
+
+function ScanBeam() {
+  return (
+    <motion.div
+      style={{
+        position: 'absolute', left: '6%', right: '6%', height: '16%',
+        background: `linear-gradient(180deg, transparent, ${CNN_C}45, transparent)`,
+        pointerEvents: 'none',
+      }}
+      animate={{ top: ['4%', '80%', '4%'] }}
+      transition={{ duration: 4.2, repeat: Infinity, ease: 'easeInOut' }}
+    />
+  );
+}
+
+function DetectionPulse({ color = RISK_MID }) {
+  return (
+    <Box sx={{ position: 'absolute', top: '38%', left: '58%', width: 20, height: 20 }}>
+      <motion.div
+        style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: `1.5px solid ${color}` }}
+        animate={{ scale: [0.6, 1.6], opacity: [0.9, 0] }}
+        transition={{ duration: 2.2, repeat: Infinity, ease: 'easeOut', delay: 1.4 }}
+      />
+      <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 6, height: 6, borderRadius: '50%', bgcolor: color, boxShadow: `0 0 8px 2px ${color}90` }} />
+    </Box>
+  );
+}
+
+// Browser chrome only — corners are intentionally tight (not the rounded
+// "card" radius used elsewhere on the site) so it actually reads as a window.
+function BrowserFrame({ url, children }) {
+  return (
+    <Box sx={{
+      borderRadius: 1.5, overflow: 'hidden', width: '100%',
+      border: '1px solid', borderColor: 'divider',
+      boxShadow: (theme) => theme.palette.mode === 'dark'
+        ? `0 24px 60px -12px rgba(0,0,0,0.55), 0 0 55px -10px ${A.teal}55, 0 0 0 1px ${A.teal}14`
+        : `0 20px 45px -14px rgba(8,145,178,0.28), 0 0 45px -12px ${A.teal}70`,
+      bgcolor: '#08131f',
+    }}>
+      {/* Title bar */}
+      <Box sx={{
+        display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 0.8,
+        bgcolor: '#0a1526', borderBottom: '1px solid rgba(255,255,255,0.08)',
+      }}>
+        <Box sx={{ display: 'flex', gap: 0.6, flexShrink: 0 }}>
+          <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#FF5F57' }} />
+          <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#FEBC2E' }} />
+          <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#28C840' }} />
+        </Box>
+        <Box sx={{
+          flex: 1, minWidth: 0, mx: { xs: 0.5, sm: 1 }, px: 1.25, py: 0.3, borderRadius: 0.6,
+          bgcolor: '#0c1c2e', border: '1px solid rgba(255,255,255,0.08)',
+          display: 'flex', alignItems: 'center', gap: 0.6,
+        }}>
+          <LockIcon sx={{ fontSize: 10, color: FLOW_NEUTRAL, flexShrink: 0 }} />
+          <Typography noWrap sx={{ fontSize: { xs: '0.6rem', sm: '0.66rem' }, color: FLOW_NEUTRAL, fontFamily: 'monospace' }}>{url}</Typography>
+        </Box>
+        <RefreshIcon sx={{ fontSize: 13, color: FLOW_NEUTRAL, flexShrink: 0, display: { xs: 'none', sm: 'block' } }} />
+      </Box>
+      {/* Page content */}
+      <Box sx={{ position: 'relative', width: '100%', aspectRatio: '4 / 3', overflow: 'hidden', bgcolor: '#0a1728' }}>
+        {children}
+      </Box>
+    </Box>
+  );
+}
+
+function ResultsPreviewMock() {
+  const [modelIdx, setModelIdx] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setModelIdx((i) => (i + 1) % MOCK_MODELS.length), 4500);
+    return () => clearInterval(id);
+  }, []);
+
+  const model = MOCK_MODELS[modelIdx];
+  const isComparison = model.id === 'comparison';
+  const classes = MOCK_CLASS_DATA[model.id];
+
+  return (
+    <BrowserFrame url="q-interval-lite.app/analysis">
+      <Box sx={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column' }}>
+
+        {/* Top bar — mirrors the real segmented Classical / Quantum / Comparison switcher */}
+        <Box sx={{
+          flexShrink: 0, display: 'flex', alignItems: 'center', gap: 1, px: 1.25, py: 0.75,
+          borderBottom: '1px solid #17304d',
+        }}>
+          <Typography sx={{ fontSize: '0.62rem', fontWeight: 800, color: '#eaf4ff', whiteSpace: 'nowrap' }}>
+            Mammo<Box component="span" sx={{ color: A.teal, fontStyle: 'italic' }}>Analysis</Box>
+          </Typography>
+          <Box sx={{ flex: 1 }} />
+          <Box sx={{ position: 'relative', display: 'flex', gap: 0.2, p: 0.25, borderRadius: 0.75, bgcolor: '#0c1c2e', border: '1px solid #17304d' }}>
+            {MOCK_MODELS.map((m, i) => (
+              <Box key={m.id} sx={{ position: 'relative', px: 0.9, py: 0.35, borderRadius: 0.5 }}>
+                {modelIdx === i && (
+                  <motion.div layoutId="mock-model-pill" style={{ position: 'absolute', inset: 0, borderRadius: 4, background: '#0f2740' }} transition={{ type: 'spring', stiffness: 300, damping: 28 }} />
+                )}
+                <Typography sx={{ position: 'relative', fontSize: '0.52rem', fontWeight: modelIdx === i ? 700 : 400, color: modelIdx === i ? '#eaf4ff' : FLOW_NEUTRAL, whiteSpace: 'nowrap' }}>
+                  {m.label}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        </Box>
+
+        {/* Body */}
+        <Box sx={{ flex: 1, minHeight: 0, display: 'flex' }}>
+
+          {/* View rail */}
+          <Box sx={{ flexShrink: 0, width: { xs: 26, sm: 34 }, borderRight: '1px solid #17304d', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: { xs: 0.5, sm: 0.75 }, py: 1 }}>
+            {MOCK_VIEWS.map((v, i) => (
+              <Box key={v} sx={{
+                width: { xs: 14, sm: 18 }, height: { xs: 14, sm: 18 }, borderRadius: 0.4, bgcolor: '#000',
+                border: '1.5px solid', borderColor: i === 0 ? CNN_C : '#17304d',
+                boxShadow: i === 0 ? `0 0 0 2px ${CNN_C}30` : 'none',
+              }} />
+            ))}
+          </Box>
+
+          {/* Scan pane */}
+          <Box sx={{ flex: 1, minWidth: 0, p: { xs: 0.75, sm: 1.25 } }}>
+            <Box sx={{
+              position: 'relative', width: '100%', height: '100%', borderRadius: 0.6, overflow: 'hidden',
+              border: '1px solid #17304d',
+              background: 'radial-gradient(ellipse at 50% 40%, #16283f 0%, #06101c 75%)',
+            }}>
+              <Box component="svg" width="100%" height="100%" sx={{ position: 'absolute', inset: 0, opacity: 0.3 }}>
+                <defs>
+                  <pattern id="mock-grid" width="10" height="10" patternUnits="userSpaceOnUse">
+                    <path d="M 10 0 L 0 0 0 10" fill="none" stroke={CNN_C} strokeWidth="0.4" />
+                  </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#mock-grid)" />
+              </Box>
+              <ScanBeam />
+              <DetectionPulse color={isComparison ? RISK_HIGH : MOCK_HEADLINE[model.id]?.color ?? RISK_MID} />
+              <Typography sx={{
+                position: 'absolute', top: 6, left: 6, fontFamily: 'monospace', fontSize: 8,
+                color: 'rgba(255,255,255,0.7)', bgcolor: 'rgba(0,0,0,0.5)', px: 0.6, py: 0.2, borderRadius: 0.4,
+              }}>
+                L-CC
+              </Typography>
+            </Box>
+          </Box>
+
+          {/* Result panel */}
+          <Box sx={{ flexShrink: 0, width: { xs: 92, sm: 128 }, borderLeft: '1px solid #17304d', bgcolor: '#08131f', p: { xs: 0.9, sm: 1.25 }, display: 'flex', flexDirection: 'column', gap: 0.9 }}>
+            {isComparison ? (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.3 }}>
+                <MockLabel>Verdict</MockLabel>
+                <Typography sx={{ fontFamily: 'monospace', fontSize: '0.7rem', fontWeight: 700, color: RISK_HIGH }}>Disagree</Typography>
+                <Typography sx={{ fontSize: '0.5rem', color: FLOW_NEUTRAL, lineHeight: 1.4 }}>
+                  <Box component="span" sx={{ color: CNN_C }}>C</Box> Benign vs <Box component="span" sx={{ color: QML_C }}>Q</Box> Malignant
+                </Typography>
+              </Box>
+            ) : (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.3 }}>
+                <MockLabel>Result</MockLabel>
+                <Typography sx={{ fontFamily: 'monospace', fontSize: '0.72rem', fontWeight: 700, color: MOCK_HEADLINE[model.id].color }}>
+                  {MOCK_HEADLINE[model.id].result}
+                </Typography>
+                <Typography sx={{ fontFamily: 'monospace', fontSize: '0.55rem', color: FLOW_NEUTRAL }}>
+                  {MOCK_HEADLINE[model.id].confidence}
+                </Typography>
+              </Box>
+            )}
+
+            <Box sx={{ height: '1px', bgcolor: '#17304d' }} />
+
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.65 }}>
+              <MockLabel>Classes</MockLabel>
+              {['Malignant', 'Benign', 'Normal'].map((label) => (
+                <Box key={label} sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography sx={{ fontSize: { xs: '0.42rem', sm: '0.48rem' }, color: '#c3d8ec' }}>{label}</Typography>
+                    <Typography sx={{ fontFamily: 'monospace', fontSize: { xs: '0.42rem', sm: '0.48rem' }, color: CLASS_COLORS[label], fontWeight: 700 }}>
+                      {classes[label]}%
+                    </Typography>
+                  </Box>
+                  <MockBar value={classes[label]} color={CLASS_COLORS[label]} track="#132840" />
+                </Box>
+              ))}
+            </Box>
+
+            <Typography sx={{ mt: 'auto', fontFamily: 'monospace', fontSize: { xs: '0.36rem', sm: '0.42rem' }, letterSpacing: '0.06em', textTransform: 'uppercase', color: RISK_HIGH, fontWeight: 700 }}>
+              Illustrative — not real data
+            </Typography>
+          </Box>
+        </Box>
+      </Box>
+    </BrowserFrame>
+  );
+}
+
+function PrimaryUserCard({ item }) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <Box
+      onClick={() => setExpanded((v) => !v)}
+      sx={{
+        display: 'flex', alignItems: 'flex-start', gap: 2,
+        px: 2.5, py: 2, mb: 1.25, borderRadius: 2, cursor: 'pointer',
+        backgroundColor: (theme) => theme.palette.mode === 'dark'
+          ? `${item.accent}12` : item.accent,
+        border: '1px solid',
+        borderColor: (theme) => theme.palette.mode === 'dark' ? `${item.accent}30` : `${item.accent}CC`,
+        borderLeft: (theme) => theme.palette.mode === 'dark' ? `2px solid ${item.accent}` : `2px solid rgba(0,0,0,0.18)`,
+        transition: 'all 0.2s',
+        '&:hover': {
+          backgroundColor: (theme) => theme.palette.mode === 'dark' ? `${item.accent}1C` : item.accent,
+          boxShadow: (theme) => theme.palette.mode === 'light' ? '0 4px 16px rgba(0,0,0,0.18)' : 'none',
+          transform: 'translateY(-1px)',
+        },
+        '&:hover .who-icon': { transform: 'rotate(-8deg) scale(1.08)' },
+      }}
+    >
+      <item.Icon className="who-icon" sx={{ fontSize: 18, flexShrink: 0, mt: '3px', transition: 'transform 0.22s ease',
+        color: (theme) => theme.palette.mode === 'dark' ? item.accent : 'rgba(255,255,255,0.92)',
+      }} />
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography sx={{ fontWeight: 700, fontSize: '0.87rem', lineHeight: 1.2, flex: 1, minWidth: 0,
+            color: (theme) => theme.palette.mode === 'dark' ? 'text.primary' : '#FFFFFF',
+          }}>{item.role}</Typography>
+          <ArrowDownIcon sx={{
+            fontSize: 16, flexShrink: 0, transition: 'transform 0.22s ease',
+            transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+            color: (theme) => theme.palette.mode === 'dark' ? item.accent : 'rgba(255,255,255,0.85)',
+          }} />
+        </Box>
+        <AnimatePresence initial={false}>
+          {expanded && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.22, ease: 'easeOut' }}
+              style={{ overflow: 'hidden' }}
+            >
+              <Typography sx={{ fontSize: '0.77rem', lineHeight: 1.6, pt: 0.6,
+                color: (theme) => theme.palette.mode === 'dark' ? 'text.secondary' : 'rgba(255,255,255,0.82)',
+              }}>[Placeholder — how {item.role.toLowerCase()} use the platform.]</Typography>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </Box>
+    </Box>
+  );
+}
+
 function OrgLogo({ domain, name }) {
   const [failed, setFailed] = useState(false);
   const initial = name.charAt(0).toUpperCase();
@@ -375,22 +685,23 @@ function TechCards() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: { md: 'center' }, gap: 0 }}>
-      <TechCard accent={TC.mode}    stepNum="01" icon={<SchoolIcon    sx={{ fontSize: 22 }} />} title="Choose a Mode"       summary="Select your analysis type before uploading."      delay={0} />
+      <TechCard accent={FLOW.mode}    stepNum="01" icon={<SchoolIcon    sx={{ fontSize: 22 }} />} title="Choose a Mode"       summary="Select your analysis type before uploading."      delay={0} />
       <HArrow />
-      <TechCard accent={TC.upload}  stepNum="02" icon={<ImageIcon     sx={{ fontSize: 22 }} />} title="Upload Mammogram"    summary="Submit a single image or sequential scans."       delay={0.07} />
+      <TechCard accent={FLOW.upload}  stepNum="02" icon={<ImageIcon     sx={{ fontSize: 22 }} />} title="Upload Mammogram"    summary="Submit a single image or sequential scans."       delay={0.07} />
       <HArrow />
       <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.14, ease: 'easeOut' }} style={{ flex: 1 }}>
         <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-          <TechCard accent={TC.cnn} stepNum="03" icon={<ScienceIcon   sx={{ fontSize: 22 }} />} title="Classical CNN"       summary="[Placeholder]"                                   delay={0} />
+          <TechCard accent={FLOW.cnn} stepNum="03" icon={<ScienceIcon   sx={{ fontSize: 22 }} />} title="Classical CNN"       summary="Runs a standard convolutional network over each view." delay={0} />
           <VConnector />
-          <TechCard accent={TC.qml} stepNum="04" icon={<ClassicalIcon sx={{ fontSize: 22 }} />} title="Quantum ML"          summary="[Placeholder]"                                   delay={0} />
+          <TechCard accent={FLOW.qml} stepNum="04" icon={<ClassicalIcon sx={{ fontSize: 22 }} />} title="Quantum ML"          summary="Runs a quantum-enhanced model over the same views."     delay={0} />
         </Box>
       </motion.div>
       <HArrow />
-      <TechCard accent={TC.results} stepNum="05" icon={<ScienceIcon   sx={{ fontSize: 22 }} />} title="Side-by-Side Results" summary="Compare CNN vs QML outputs directly."            delay={0.21} />
+      <TechCard accent={FLOW.results} stepNum="05" icon={<ScienceIcon   sx={{ fontSize: 22 }} />} title="Side-by-Side Results" summary="Compare CNN vs QML outputs directly."            delay={0.21} />
     </Box>
   );
 }
+
 
 export default function Home() {
   const navigate = useNavigate();
@@ -516,7 +827,7 @@ export default function Home() {
               </Typography>
             </FadeUp>
             <FadeUp isVisible={inAbout} delay={0.15}>
-              <ImageSlot accent={A.teal} label="Image / Diagram placeholder" />
+              <ResultsPreviewMock />
             </FadeUp>
           </Box>
         </Container>
@@ -593,33 +904,7 @@ export default function Home() {
                     animate={inWho ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
                     transition={{ duration: 0.28, delay: 0.14 + i * 0.08, ease: 'easeOut' }}
                   >
-                    <Box sx={{
-                      display: 'flex', alignItems: 'flex-start', gap: 2,
-                      px: 2.5, py: 2, mb: 1.25, borderRadius: 2,
-                      backgroundColor: (theme) => theme.palette.mode === 'dark'
-                        ? `${item.accent}12` : item.accent,
-                      border: '1px solid',
-                      borderColor: (theme) => theme.palette.mode === 'dark' ? `${item.accent}30` : `${item.accent}CC`,
-                      borderLeft: (theme) => theme.palette.mode === 'dark' ? `2px solid ${item.accent}` : `2px solid rgba(0,0,0,0.18)`,
-                      transition: 'all 0.2s',
-                      '&:hover': {
-                        backgroundColor: (theme) => theme.palette.mode === 'dark' ? `${item.accent}1C` : item.accent,
-                        boxShadow: (theme) => theme.palette.mode === 'light' ? '0 4px 16px rgba(0,0,0,0.18)' : 'none',
-                        transform: 'translateY(-1px)',
-                      },
-                    }}>
-                      <item.Icon sx={{ fontSize: 18, flexShrink: 0, mt: '3px',
-                        color: (theme) => theme.palette.mode === 'dark' ? item.accent : 'rgba(255,255,255,0.92)',
-                      }} />
-                      <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography sx={{ fontWeight: 700, fontSize: '0.87rem', mb: 0.3, lineHeight: 1.2,
-                          color: (theme) => theme.palette.mode === 'dark' ? 'text.primary' : '#FFFFFF',
-                        }}>{item.role}</Typography>
-                        <Typography sx={{ fontSize: '0.77rem', lineHeight: 1.6,
-                          color: (theme) => theme.palette.mode === 'dark' ? 'text.secondary' : 'rgba(255,255,255,0.82)',
-                        }}>[Placeholder — how {item.role.toLowerCase()} use the platform.]</Typography>
-                      </Box>
-                    </Box>
+                    <PrimaryUserCard item={item} />
                   </motion.div>
                 ))}
 
@@ -653,8 +938,9 @@ export default function Home() {
                           boxShadow: (theme) => theme.palette.mode === 'light' ? '0 4px 16px rgba(0,0,0,0.18)' : 'none',
                           transform: 'translateY(-1px)',
                         },
+                        '&:hover .who-icon': { transform: 'rotate(-8deg) scale(1.08)' },
                       }}>
-                        <item.Icon sx={{ fontSize: 17, mb: 0.75,
+                        <item.Icon className="who-icon" sx={{ fontSize: 17, mb: 0.75, transition: 'transform 0.22s ease',
                           color: (theme) => theme.palette.mode === 'dark' ? item.accent : 'rgba(255,255,255,0.92)',
                         }} />
                         <Typography sx={{ fontWeight: 700, fontSize: '0.76rem', mb: 0.35, lineHeight: 1.25,
