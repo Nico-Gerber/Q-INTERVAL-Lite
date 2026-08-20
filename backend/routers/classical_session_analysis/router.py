@@ -44,17 +44,19 @@ def _png_b64(arr: np.ndarray) -> str:
 
 
 def _heatmap_and_original(engine, image_path, age, view, lat, source, pred_idx):
-    """One Grad-CAM++ pass on the predicted class -> (pure_heatmap_b64, original_b64)."""
-    img_bgr = cv2.imread(image_path)
-    if img_bgr is None:
-        return "", ""
-    cam, rgb_resized = engine.cancer.gradcam_plus_plus(
-        img_bgr, age, view, lat, source, target_class=pred_idx
-    )
-    heat_bgr = cv2.applyColorMap((np.clip(cam, 0, 1) * 255).astype(np.uint8),
-                                 cv2.COLORMAP_JET)
+    from .qinterval_classifier import load_image, crop_breast
+    gray = crop_breast(load_image(image_path))
+    cam = engine.cancer.gradcam_plusplus(gray, view, lat, age, target=pred_idx)
+    
+
+    DISPLAY_SIZE = 512
+    gray_s = cv2.resize(gray, (DISPLAY_SIZE, DISPLAY_SIZE))
+    cam_s = cv2.resize(cam, (DISPLAY_SIZE, DISPLAY_SIZE))
+    
+    heat_bgr = cv2.applyColorMap(cam_s, cv2.COLORMAP_JET)
     heat_rgb = cv2.cvtColor(heat_bgr, cv2.COLOR_BGR2RGB)
-    return _png_b64(heat_rgb), _png_b64(rgb_resized)
+    rgb = cv2.cvtColor(gray_s, cv2.COLOR_GRAY2RGB)
+    return _png_b64(heat_rgb), _png_b64(rgb)
 
 
 def _original_only(image_path, size):
@@ -184,8 +186,8 @@ async def predict_four_views(
             m = slot_meta[slot]
             if include_heatmaps:
                 pred = r["predicted_cancer_class"]
-                names = list(engine.cancer.class_names)
-                pred_idx = names.index(pred) if pred in names else 0
+                from .qinterval_classifier import CLASS_NAMES
+                pred_idx = CLASS_NAMES.index(pred) if pred in CLASS_NAMES else 0
                 cam_data[slot] = _heatmap_and_original(
                     engine, m["image_path"], m["age"], m["view"],
                     m["laterality"], m["source"], pred_idx,

@@ -1056,7 +1056,7 @@ export default function Analysis() {
                       >
                         <Typography sx={{
                           color: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.78)' : theme.palette.text.secondary,
-                          fontSize: '0.92rem', lineHeight: 1.85, textAlign: 'justify',
+                          fontSize: '0.92rem', lineHeight: 1.85,
                         }}>
                           {summary.explanation}
                         </Typography>
