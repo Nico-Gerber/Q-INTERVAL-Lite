@@ -19,9 +19,20 @@ function horizonsFromYearly(yearly) {
     return Object.entries(yearly).map(([key, val]) => ({ year: key.replace('_year', ''), risk: val }));
 }
 
+const RECENCY_WEIGHTS = {
+    2: [0.62, 0.38],
+    3: [0.50, 0.30, 0.18],
+    4: [0.44, 0.27, 0.16, 0.10],
+    5: [0.41, 0.25, 0.15, 0.09, 0.06],
+};
+
 function buildExamHistory(uploadedFiles, imageResults) {
     if (!uploadedFiles || uploadedFiles.length === 0) return [];
     const sorted = [...uploadedFiles].sort((a, b) => new Date(b.scanDate) - new Date(a.scanDate));
+
+    const weights = RECENCY_WEIGHTS[sorted.length] ?? sorted.map(() => 1 / sorted.length);
+
+
     return sorted.map((f, i) => {
         const apiResult = imageResults?.find((r) => r.filename === f.file.name);
         const contribution = apiResult?.image_contribution_percent ?? null;
@@ -29,7 +40,7 @@ function buildExamHistory(uploadedFiles, imageResults) {
             year: new Date(f.scanDate).getFullYear(),
             scanDate: f.scanDate,
             filename: f.file.name,
-            weight: contribution !== null ? contribution : (100 / sorted.length),
+            weight: (weights[i] ?? 0) * 100,
             isCurrent: i === 0,
         };
     });
