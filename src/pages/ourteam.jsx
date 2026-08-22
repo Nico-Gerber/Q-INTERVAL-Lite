@@ -3,12 +3,12 @@ import { Container, Typography, Box, Chip, Divider, Avatar } from '@mui/material
 import { School, Email } from '@mui/icons-material';
 
 const TEAM_MEMBERS = [
-  { name: 'Nico Gerber',      major: 'Software Development',   studentId: '104551609', email: '104551609@student.swin.edu.au', description: 'User interface and Full Stack Architecture' },
-  { name: 'Josh Celestino',   major: 'Artificial Intelligence', studentId: '104550240', email: '104550240@student.swin.edu.au', description: '[Placeholder — add role description]' },
-  { name: 'Campbell Sholl',   major: 'Cybersecurity',           studentId: '105375279', email: '105375279@student.swin.edu.au', description: '[Placeholder — add role description]' },
-  { name: 'Vihanga Peiris',   major: 'Artificial Intelligence', studentId: '105006058', email: '105006058@student.swin.edu.au', description: '[Placeholder — add role description]' },
-  { name: 'Pasindu Pahasara', major: 'Artificial Intelligence', studentId: '104348348', email: '104348348@student.swin.edu.au', description: '[Placeholder — add role description]' },
-  { name: 'Chee Chen Guo',    major: 'Artificial Intelligence', studentId: '104829801', email: '104829801@student.swin.edu.au', description: '[Placeholder — add role description]' },
+  { name: 'Nico Gerber', major: 'Software Development', studentId: '104551609', email: '104551609@student.swin.edu.au', description: 'User interface and Full Stack Architecture' },
+  { name: 'Josh Celestino', major: 'Artificial Intelligence', studentId: '104550240', email: '104550240@student.swin.edu.au', description: 'QML future risk model developer' },
+  { name: 'Campbell Sholl', major: 'Cybersecurity', studentId: '105375279', email: '105375279@student.swin.edu.au', description: 'User Interface and Component Archtecture' },
+  { name: 'Vihanga Peiris', major: 'Artificial Intelligence', studentId: '105006058', email: '105006058@student.swin.edu.au', description: 'Classical future risk model developer' },
+  { name: 'Pasindu Pahasara', major: 'Artificial Intelligence', studentId: '104348348', email: '104348348@student.swin.edu.au', description: 'Classical classificaion model architecture' },
+  { name: 'Chee Chen Guo', major: 'Artificial Intelligence', studentId: '104829801', email: '104829801@student.swin.edu.au', description: 'QML classificaion model architecture' },
 ];
 
 const CARD_ACCENTS = ['#2DD4BF', '#7C3AED', '#FBBF24', '#3B82F6', '#2DD4BF', '#7C3AED'];
@@ -19,7 +19,7 @@ const OurTeam = () => (
     <Box
       sx={{
         position: 'relative', overflow: 'hidden',
-        background: (theme) => theme.palette.background.hero,
+        background: (theme) => theme.palette.background.heroGradient,
         color: 'text.primary',
         py: { xs: 6, md: 10 }, px: 2, textAlign: 'center',
         '&::before': { content: '""', position: 'absolute', top: '-40%', left: '50%', transform: 'translateX(-50%)', width: '500px', height: '500px', borderRadius: '50%', background: (theme) => `radial-gradient(circle, ${theme.palette.primary.main}0F 0%, transparent 70%)`, pointerEvents: 'none' },

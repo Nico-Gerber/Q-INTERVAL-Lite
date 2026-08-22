@@ -11,10 +11,6 @@ import {
   ChevronRight as ArrowIcon,
 } from '@mui/icons-material';
 
-// Palette keys (defined in App.js):
-// Pipeline columns: cnn='cnn' (blue), qml='qml' (purple)
-// Mode tabs:        classification='classification' (slate), risk='risk' (amber)
-// Status:           improving='improving' (orange), coming-soon='comingSoon' (slate)
 const MODES = [
   {
     id: 'classification',
@@ -94,13 +90,13 @@ function ModelNode({ model, paletteKey, index, isComingSoon }) {
     <motion.div
       initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.3, delay: 0.1 + index * 0.07, ease: 'easeOut' }}
+      transition={{ duration: 0.3, delay: 0.12 + index * 0.08, ease: 'easeOut' }}
       onHoverStart={() => setHovered(true)}
       onHoverEnd={() => setHovered(false)}
     >
       <Box sx={{
-        display: 'flex', alignItems: 'center', gap: 2,
-        px: 2.5, py: 2, borderRadius: 2,
+        display: 'flex', alignItems: 'center', gap: 2.5,
+        px: 3, py: 2.5, borderRadius: 2,
         border: '1px solid',
         borderColor: hovered
           ? (theme) => `${theme.palette[paletteKey].main}60`
@@ -110,34 +106,34 @@ function ModelNode({ model, paletteKey, index, isComingSoon }) {
           : 'rgba(255,255,255,0.025)',
         cursor: 'default',
         transition: 'border-color 0.18s ease, background-color 0.18s ease, transform 0.18s ease',
-        transform: hovered ? 'translateX(6px)' : 'translateX(0)',
+        transform: hovered ? 'translateX(8px)' : 'translateX(0)',
       }}>
         <Box sx={{
-          width: 10, height: 10, borderRadius: '50%', flexShrink: 0,
+          width: 12, height: 12, borderRadius: '50%', flexShrink: 0,
           backgroundColor: isComingSoon
             ? 'rgba(255,255,255,0.12)'
             : (theme) => theme.palette[paletteKey].main,
           boxShadow: (!isComingSoon && hovered)
-            ? (theme) => `0 0 12px 3px ${theme.palette[paletteKey].main}88`
+            ? (theme) => `0 0 14px 4px ${theme.palette[paletteKey].main}88`
             : 'none',
           transition: 'box-shadow 0.18s ease',
         }} />
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography sx={{
-            fontWeight: 800, fontSize: '1rem', lineHeight: 1.2,
+            fontWeight: 800, fontSize: '1.15rem', lineHeight: 1.2,
             color: isComingSoon ? 'text.disabled' : 'text.primary',
           }}>
             {model.name}
           </Typography>
-          <Typography variant="caption" sx={{
+          <Typography variant="body2" sx={{
             color: isComingSoon ? 'rgba(255,255,255,0.2)' : 'text.secondary',
-            fontSize: '0.72rem',
+            fontSize: '0.82rem', mt: 0.25,
           }}>
             {model.role}
           </Typography>
         </Box>
         <ArrowIcon sx={{
-          fontSize: 16, flexShrink: 0,
+          fontSize: 20, flexShrink: 0,
           color: hovered ? (theme) => theme.palette[paletteKey].main : 'rgba(255,255,255,0.2)',
           transition: 'color 0.18s ease',
         }} />
@@ -153,69 +149,64 @@ function PipelineColumn({ pipeline, side }) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 24 }}
+      initial={{ opacity: 0, y: 28 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.38, delay: side === 'left' ? 0.06 : 0.15, ease: 'easeOut' }}
+      transition={{ duration: 0.4, delay: side === 'left' ? 0.05 : 0.15, ease: 'easeOut' }}
       style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}
     >
       <Box sx={{
         flex: 1, borderRadius: 3, border: '2px solid',
         borderColor: isComingSoon
           ? 'rgba(255,255,255,0.07)'
-          : (theme) => `${theme.palette[paletteKey].main}35`,
+          : (theme) => `${theme.palette[paletteKey].main}40`,
         backgroundColor: isComingSoon
           ? 'rgba(255,255,255,0.018)'
-          : (theme) => `${theme.palette[paletteKey].main}08`,
+          : (theme) => `${theme.palette[paletteKey].main}07`,
         overflow: 'hidden', display: 'flex', flexDirection: 'column',
       }}>
         <Box sx={{
-          px: 3, pt: 3, pb: 2.5,
+          px: 4, pt: 4, pb: 3.5,
           borderBottom: '1px solid',
           borderColor: isComingSoon
             ? 'rgba(255,255,255,0.05)'
-            : (theme) => `${theme.palette[paletteKey].main}20`,
+            : (theme) => `${theme.palette[paletteKey].main}22`,
           background: isComingSoon
             ? 'transparent'
-            : (theme) => `linear-gradient(135deg, ${theme.palette[paletteKey].main}10 0%, transparent 60%)`,
+            : (theme) => `linear-gradient(145deg, ${theme.palette[paletteKey].main}12 0%, transparent 55%)`,
         }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.75 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5, mb: 2.5 }}>
             <Box sx={{
-              width: 44, height: 44, borderRadius: 2.5, flexShrink: 0,
+              width: 60, height: 60, borderRadius: 3, flexShrink: 0,
               backgroundColor: isComingSoon
                 ? 'rgba(255,255,255,0.05)'
-                : (theme) => `${theme.palette[paletteKey].main}20`,
-              border: '1.5px solid',
+                : (theme) => `${theme.palette[paletteKey].main}22`,
+              border: '2px solid',
               borderColor: isComingSoon
                 ? 'rgba(255,255,255,0.1)'
-                : (theme) => `${theme.palette[paletteKey].main}45`,
+                : (theme) => `${theme.palette[paletteKey].main}50`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: isComingSoon
-                ? 'rgba(255,255,255,0.25)'
-                : (theme) => theme.palette[paletteKey].main,
+              color: isComingSoon ? 'rgba(255,255,255,0.25)' : (theme) => theme.palette[paletteKey].main,
             }}>
-              {paletteKey === 'cnn'
-                ? <CNNIcon sx={{ fontSize: 22 }} />
-                : <QMLIcon sx={{ fontSize: 22 }} />
-              }
+              {paletteKey === 'cnn' ? <CNNIcon sx={{ fontSize: 30 }} /> : <QMLIcon sx={{ fontSize: 30 }} />}
             </Box>
-            <Typography sx={{
-              fontWeight: 800, fontSize: '1.25rem', lineHeight: 1.15,
-              letterSpacing: '-0.01em',
-              color: isComingSoon
-                ? 'text.secondary'
-                : (theme) => theme.palette[paletteKey].light,
-            }}>
-              {label}
-            </Typography>
+            <Box sx={{ flex: 1 }}>
+              <Typography sx={{
+                fontWeight: 800,
+                fontSize: { xs: '1.2rem', md: '1.4rem' },
+                lineHeight: 1.1, letterSpacing: '-0.02em',
+                color: isComingSoon ? 'text.secondary' : (theme) => theme.palette[paletteKey].light,
+              }}>
+                {label}
+              </Typography>
+            </Box>
           </Box>
-
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
             <Box sx={{
-              px: 1.5, py: 0.5, borderRadius: 1.5,
+              px: 1.75, py: 0.6, borderRadius: 1.5,
               backgroundColor: 'rgba(255,255,255,0.04)',
               border: '1px solid', borderColor: 'rgba(255,255,255,0.07)',
             }}>
-              <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.68rem', fontStyle: 'italic' }}>
+              <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.72rem', fontStyle: 'italic' }}>
                 {method}
               </Typography>
             </Box>
@@ -224,27 +215,24 @@ function PipelineColumn({ pipeline, side }) {
               label={statusLabel}
               size="small"
               sx={{
-                height: 22,
+                height: 24,
                 bgcolor: (theme) => `${theme.palette[statusKey].main}14`,
                 color: (theme) => theme.palette[statusKey].main,
                 border: '1px solid',
                 borderColor: (theme) => `${theme.palette[statusKey].main}30`,
-                fontWeight: 700, fontSize: '0.62rem', letterSpacing: '0.03em',
+                fontWeight: 700, fontSize: '0.65rem', letterSpacing: '0.03em',
                 '& .MuiChip-icon': { ml: '6px' },
               }}
             />
           </Box>
         </Box>
-
-        <Box sx={{ px: 2.5, py: 2.5, display: 'flex', flexDirection: 'column', gap: 1.25, flex: 1 }}>
+        <Box sx={{
+          px: 3, py: 3, display: 'flex', flexDirection: 'column',
+          gap: 1.5, flex: 1,
+          justifyContent: models.length === 1 ? 'center' : 'flex-start',
+        }}>
           {models.map((model, i) => (
-            <ModelNode
-              key={model.name}
-              model={model}
-              paletteKey={paletteKey}
-              index={i}
-              isComingSoon={isComingSoon}
-            />
+            <ModelNode key={model.name} model={model} paletteKey={paletteKey} index={i} isComingSoon={isComingSoon} />
           ))}
         </Box>
       </Box>
@@ -258,8 +246,9 @@ const Models = () => {
   const activeModeData = MODES.find(m => m.id === activeMode);
 
   return (
-    <Box sx={{ backgroundColor: 'background.default', minHeight: '100%', pb: 10 }}>
+    <Box sx={{ backgroundColor: 'background.default', minHeight: '100%', pb: 8 }}>
 
+      {/* ── Hero ── */}
       <Box sx={{
         position: 'relative', overflow: 'hidden',
         background: (theme) => theme.palette.background.hero,
@@ -298,11 +287,12 @@ const Models = () => {
         </Typography>
       </Box>
 
-      <Container maxWidth="md" sx={{ mt: { xs: 4, md: 6 } }}>
+      <Container maxWidth="lg" sx={{ mt: { xs: 4, md: 5 } }}>
 
+        {/* ── Mode tab switcher ── */}
         <motion.div {...fadeUp(0)}>
           <Box sx={{
-            display: 'flex', gap: 1, p: 0.75, mb: 3.5,
+            display: 'flex', gap: 1, p: 0.75, mb: 3,
             borderRadius: 2.5, backgroundColor: 'rgba(255,255,255,0.04)',
             border: '1px solid', borderColor: 'divider',
             width: 'fit-content', mx: 'auto',
@@ -346,6 +336,7 @@ const Models = () => {
           </Box>
         </motion.div>
 
+        {/* ── Animated content per mode ── */}
         <AnimatePresence mode="wait">
           <motion.div
             key={activeMode}
@@ -354,52 +345,80 @@ const Models = () => {
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.22, ease: 'easeOut' }}
           >
-            <Typography variant="body2" sx={{
-              color: 'text.secondary', textAlign: 'center', mb: 3.5,
-              maxWidth: 480, mx: 'auto', lineHeight: 1.75,
+            {/* Mode description */}
+            <Typography variant="h6" sx={{
+              color: 'text.secondary', fontWeight: 400, textAlign: 'center',
+              mb: 3, maxWidth: 560, mx: 'auto', lineHeight: 1.7,
+              fontSize: { xs: '1rem', md: '1.1rem' },
             }}>
               {activeModeData?.description}
             </Typography>
 
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                <CNNIcon sx={{ fontSize: 14, color: (theme) => theme.palette.cnn.main }} />
-                <Typography variant="caption" sx={{
+            {/* ── Classical vs Quantum divider ──
+                Two equal halves (50% each). VS badge is absolutely centred
+                over the full row so label lengths are irrelevant.
+            ── */}
+            <Box sx={{ position: 'relative', display: 'flex', alignItems: 'center', mb: 2.5 }}>
+
+              {/* Left half */}
+              <Box sx={{ width: '50%', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 0.75 }}>
+                <CNNIcon sx={{ fontSize: 14, color: (theme) => theme.palette.cnn.main, flexShrink: 0 }} />
+                <Typography sx={{
                   color: (theme) => theme.palette.cnn.main,
-                  fontWeight: 700, fontSize: '0.68rem', letterSpacing: '0.1em', textTransform: 'uppercase',
+                  fontWeight: 700, fontSize: '1.06rem', letterSpacing: '0.1em',
+                  textTransform: 'uppercase', whiteSpace: 'nowrap',
                 }}>
                   Classical CNN
                 </Typography>
+                <Divider sx={{ flex: 1, ml: 1.5 }} />
               </Box>
-              <Divider sx={{ flex: 1 }} />
+
+              {/* VS badge — absolutely centred on the full row */}
               <Box sx={{
-                px: 1.5, py: 0.35, borderRadius: 1,
+                position: 'absolute', left: '50%', transform: 'translateX(-50%)',
+                px: 1.5, py: 0.35, borderRadius: 1, flexShrink: 0,
                 border: '1px solid', borderColor: 'divider',
-                backgroundColor: 'rgba(255,255,255,0.03)',
+                backgroundColor: 'background.default',
+                zIndex: 1,
               }}>
-                <Typography variant="caption" sx={{ color: 'text.disabled', fontSize: '0.62rem', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+                <Typography sx={{
+                  color: 'text.disabled', fontSize: '0.7rem',
+                  letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 600,
+                }}>
                   vs
                 </Typography>
               </Box>
-              <Divider sx={{ flex: 1 }} />
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                <Typography variant="caption" sx={{
+
+              {/* Right half */}
+              <Box sx={{ width: '50%', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.75 }}>
+                <Divider sx={{ flex: 1, mr: 1.5 }} />
+                <Typography sx={{
                   color: (theme) => theme.palette.qml.main,
-                  fontWeight: 700, fontSize: '0.68rem', letterSpacing: '0.1em', textTransform: 'uppercase',
+                  fontWeight: 700, fontSize: '1.06rem', letterSpacing: '0.1em',
+                  textTransform: 'uppercase', whiteSpace: 'nowrap',
                 }}>
                   Quantum ML
                 </Typography>
-                <QMLIcon sx={{ fontSize: 14, color: (theme) => theme.palette.qml.main }} />
+                <QMLIcon sx={{ fontSize: 14, color: (theme) => theme.palette.qml.main, flexShrink: 0 }} />
               </Box>
+
             </Box>
 
-            <Box sx={{ display: 'flex', gap: 2.5, flexDirection: { xs: 'column', md: 'row' }, alignItems: 'stretch' }}>
+            {/* Two-column pipeline layout */}
+            <Box sx={{
+              display: 'flex', gap: 3,
+              flexDirection: { xs: 'column', md: 'row' },
+              alignItems: 'stretch',
+              minHeight: { md: 360 },
+            }}>
               <PipelineColumn pipeline={current.cnn} side="left" />
               <PipelineColumn pipeline={current.qml} side="right" />
             </Box>
+
           </motion.div>
         </AnimatePresence>
 
+        {/* ── Bottom note ── */}
         <motion.div {...fadeUp(0.25)}>
           <Box sx={{
             mt: 4, px: 2.5, py: 2, borderRadius: 2,
@@ -411,7 +430,7 @@ const Models = () => {
               width: 4, alignSelf: 'stretch', borderRadius: 1,
               backgroundColor: (theme) => theme.palette.primary.main, flexShrink: 0,
             }} />
-            <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.75, fontSize: '0.82rem' }}>
+            <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.75, fontSize: '0.85rem' }}>
               Both pipelines run simultaneously in the Analysis dashboard — results from each model are surfaced side by side so you can directly compare how classical deep learning and quantum approaches interpret the same scan.
             </Typography>
           </Box>
