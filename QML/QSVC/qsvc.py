@@ -44,7 +44,7 @@ RANDOM_SEED          = 42
 LABEL_NAMES           = {0: "normal", 1: "benign", 2: "malignant"}
 
 RUN_TAG               = f"qsvc_{FEATURE_MAP}_{N_FEATURES}f_{ENTANGLEMENT}_C{SVM_C}"
-OUTPUT_DIR            = "qsvc_outputs"
+OUTPUT_DIR            = "QML/QSVC/qsvc_outputs"
 MODEL_SAVE_PATH        = os.path.join(OUTPUT_DIR, f"{RUN_TAG}_model.joblib")
 RESULTS_TABLE_PATH     = os.path.join(OUTPUT_DIR, "experiment_results.csv")
 
