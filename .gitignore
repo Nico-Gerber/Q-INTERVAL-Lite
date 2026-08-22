@@ -21,3 +21,7 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+backend-dev-8000.log
+backend-dev-8000.err.log
+frontend-dev-3000.err.log
+frontend-dev-3000.log
