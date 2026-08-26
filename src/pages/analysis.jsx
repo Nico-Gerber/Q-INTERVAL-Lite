@@ -140,6 +140,9 @@ export default function Analysis() {
 
   const [result, setResult] = useState(null);
   const [sessionId, setSessionId] = useState(null);
+  // TODO: wire to real clinician verification once the auth/verification
+  // backend exists — for now every report is unverified by default.
+  const reportVerified = false;
 
 
   const [summary, setSummary] = useState(null);
@@ -762,6 +765,21 @@ export default function Analysis() {
                                 : '0 24px 70px rgba(0,0,0,0.35)',
                             }}>
                               <Box sx={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.25,
+                                mb: 1.5, px: 3, py: 1.75, borderRadius: 1.5,
+                                border: `1px solid ${reportVerified ? 'rgba(79,209,161,0.4)' : 'rgba(245,196,81,0.4)'}`,
+                                background: reportVerified ? 'rgba(79,209,161,0.08)' : 'rgba(245,196,81,0.08)',
+                              }}>
+                                <Box sx={{ width: 8, height: 8, borderRadius: '50%', background: reportVerified ? '#4fd1a1' : '#f5c451', flexShrink: 0 }} />
+                                <Typography sx={{
+                                  fontFamily: 'monospace', fontSize: '0.95rem', fontWeight: 800, letterSpacing: '0.04em',
+                                  color: reportVerified ? '#4fd1a1' : '#f5c451', textAlign: 'center',
+                                }}>
+                                  {reportVerified ? 'CLINICIAN-VERIFIED REPORT' : 'AI-GENERATED — AWAITING CLINICAL VERIFICATION'}
+                                </Typography>
+                              </Box>
+
+                              <Box sx={{
                                 display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5,
                                 mb: 1.5, px: 2, py: 1.25, borderRadius: 1,
                                 background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(34,211,238,0.08)',
@@ -821,6 +839,21 @@ export default function Analysis() {
                                 ? '0 24px 70px rgba(0,0,0,0.45)'
                                 : '0 24px 70px rgba(0,0,0,0.35)',
                             }}>
+                              <Box sx={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.25,
+                                mb: 1.5, px: 3, py: 1.75, borderRadius: 1.5,
+                                border: `1px solid ${reportVerified ? 'rgba(79,209,161,0.4)' : 'rgba(245,196,81,0.4)'}`,
+                                background: reportVerified ? 'rgba(79,209,161,0.08)' : 'rgba(245,196,81,0.08)',
+                              }}>
+                                <Box sx={{ width: 8, height: 8, borderRadius: '50%', background: reportVerified ? '#4fd1a1' : '#f5c451', flexShrink: 0 }} />
+                                <Typography sx={{
+                                  fontFamily: 'monospace', fontSize: '0.95rem', fontWeight: 800, letterSpacing: '0.04em',
+                                  color: reportVerified ? '#4fd1a1' : '#f5c451', textAlign: 'center',
+                                }}>
+                                  {reportVerified ? 'CLINICIAN-VERIFIED REPORT' : 'AI-GENERATED — AWAITING CLINICAL VERIFICATION'}
+                                </Typography>
+                              </Box>
+
                               <Box sx={{
                                 display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5,
                                 mb: 1.5, px: 2, py: 1.25, borderRadius: 1,
