@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Box, Chip, Container, Typography, Alert, Button, Drawer, TextField, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import { Box, Chip, Container, Typography, Alert, Button, Drawer, TextField, Dialog, DialogTitle, DialogContent, DialogActions, Snackbar } from '@mui/material';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Sidebar, Menu, MenuItem, SubMenu } from 'react-pro-sidebar';
 import exportSessionPDF from '../Components/Results/Shared/ExportSession';
@@ -97,13 +97,8 @@ const LOADING_MESSAGES = [
   { text: "Almost there...", duration: 3000 },
 ];
 
-// Short, readable per-session identifier — used in the results header, the
-// PDF filename, and the PDF's own footer/title so a downloaded report can
-// always be traced back to the session it came from.
-// Format: QIL-MA-YYYYMMDD-HHMM-XXXX
-//   QIL-MA   — Q-Interval-Lite+ MammoAnalysis
-//   YYYYMMDD-HHMM — date and 24h time down to the minute
-//   XXXX     — 4-char random alphanumeric tiebreaker for same-minute sessions
+// Session identifier: QIL-MA-YYYYMMDD-HHMM-XXXX (date/time + random tiebreaker).
+// Used in the results header and the exported PDF's filename/footer.
 const genSessionId = () => {
   const d = new Date();
   const pad = (n) => String(n).padStart(2, '0');
@@ -140,9 +135,30 @@ export default function Analysis() {
 
   const [result, setResult] = useState(null);
   const [sessionId, setSessionId] = useState(null);
-  // TODO: wire to real clinician verification once the auth/verification
-  // backend exists — for now every report is unverified by default.
-  const reportVerified = false;
+
+  // Per-view clinician verification for the classification results.
+  // Report-level "verified" status is derived from these, not a standalone flag.
+  const emptyVerifications = () => ({
+    'L-CC':  { status: 'pending', clinicianResult: null, note: '' },
+    'L-MLO': { status: 'pending', clinicianResult: null, note: '' },
+    'R-CC':  { status: 'pending', clinicianResult: null, note: '' },
+    'R-MLO': { status: 'pending', clinicianResult: null, note: '' },
+  });
+  const [verifications, setVerifications] = useState(emptyVerifications());
+
+  const handleVerifyView = (viewId, update) => {
+    setVerifications((prev) => ({ ...prev, [viewId]: { ...prev[viewId], ...update } }));
+  };
+
+  const verifiedViewCount = Object.values(verifications).filter((v) => v.status !== 'pending').length;
+  const reportVerified = verifiedViewCount === 4;
+  const bannerState = verifiedViewCount === 0 ? 'pending' : reportVerified ? 'verified' : 'partial';
+  const bannerColor = bannerState === 'verified' ? '#4fd1a1' : bannerState === 'partial' ? '#5cc8f5' : '#f5c451';
+  const bannerText = bannerState === 'verified'
+    ? 'CLINICIAN-VERIFIED REPORT'
+    : bannerState === 'partial'
+      ? `PARTIALLY REVIEWED — ${verifiedViewCount}/4 VIEWS`
+      : 'AI-GENERATED — AWAITING CLINICAL VERIFICATION';
 
 
   const [summary, setSummary] = useState(null);
@@ -181,6 +197,8 @@ export default function Analysis() {
     document.body.style.userSelect = 'none';
   };
   const [pdfConfirmOpen, setPdfConfirmOpen] = useState(false);
+  const [pendingCopyType, setPendingCopyType] = useState('clinician');
+  const [pdfGateToast, setPdfGateToast] = useState(false);
 
 
   const [audience, setAudience] = useState("clinician")
@@ -440,6 +458,7 @@ export default function Analysis() {
     setSummary("")
     setCollapsed(true)
     setSessions([emptySession(), emptySession()]);
+    setVerifications(emptyVerifications());
 
   };
 
@@ -534,12 +553,21 @@ export default function Analysis() {
     }
   };
 
-  // Fast path for anyone who already generated an explanation — exports
-  // immediately. Otherwise gives a chance to bail out and go generate one
-  // first, rather than silently shipping a PDF missing that section.
-  const handleDownloadPdfClick = () => {
+  // Fast path if an explanation was already generated; otherwise confirm first
+  // so the PDF doesn't silently ship without one.
+  //
+  // Gated on `reportVerified` as a defense-in-depth check — the calling
+  // buttons are already visually gated, this just guards the export itself.
+  //
+  // `copyType`: 'clinician' includes the AI-vs-reviewed audit trail + notes;
+  // 'patient' shows only the final verified result per view. NOTE:
+  // exportSessionPDF (Components/Results/Shared/ExportSession) still needs to
+  // branch on `copyType`/`verifications` to actually produce the two variants.
+  const handleDownloadPdfClick = (copyType) => {
+    if (!reportVerified) { setPdfGateToast(true); return; }
+    setPendingCopyType(copyType);
     if (summary?.explanation) {
-      exportSessionPDF({ sessionId, analysisMode, currentModel: modelMode, result, summary, patientAge, sessions });
+      exportSessionPDF({ sessionId, analysisMode, currentModel: modelMode, result, summary, patientAge, sessions, verifications, copyType });
     } else {
       setPdfConfirmOpen(true);
     }
@@ -547,7 +575,7 @@ export default function Analysis() {
 
   const confirmDownloadWithoutExplanation = () => {
     setPdfConfirmOpen(false);
-    exportSessionPDF({ sessionId, analysisMode, currentModel: modelMode, result, summary, patientAge, sessions });
+    exportSessionPDF({ sessionId, analysisMode, currentModel: modelMode, result, summary, patientAge, sessions, verifications, copyType: pendingCopyType });
   };
 
 
@@ -767,15 +795,15 @@ export default function Analysis() {
                               <Box sx={{
                                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.25,
                                 mb: 1.5, px: 3, py: 1.75, borderRadius: 1.5,
-                                border: `1px solid ${reportVerified ? 'rgba(79,209,161,0.4)' : 'rgba(245,196,81,0.4)'}`,
-                                background: reportVerified ? 'rgba(79,209,161,0.08)' : 'rgba(245,196,81,0.08)',
+                                border: `1px solid ${bannerColor}66`,
+                                background: `${bannerColor}14`,
                               }}>
-                                <Box sx={{ width: 8, height: 8, borderRadius: '50%', background: reportVerified ? '#4fd1a1' : '#f5c451', flexShrink: 0 }} />
+                                <Box sx={{ width: 8, height: 8, borderRadius: '50%', background: bannerColor, flexShrink: 0 }} />
                                 <Typography sx={{
                                   fontFamily: 'monospace', fontSize: '0.95rem', fontWeight: 800, letterSpacing: '0.04em',
-                                  color: reportVerified ? '#4fd1a1' : '#f5c451', textAlign: 'center',
+                                  color: bannerColor, textAlign: 'center',
                                 }}>
-                                  {reportVerified ? 'CLINICIAN-VERIFIED REPORT' : 'AI-GENERATED — AWAITING CLINICAL VERIFICATION'}
+                                  {bannerText}
                                 </Typography>
                               </Box>
 
@@ -787,20 +815,54 @@ export default function Analysis() {
                                 <Typography sx={{ fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.06em', color: (theme) => theme.palette.mode === 'dark' ? '#F0F9FF' : '#CBD8E8' }}>
                                   SESSION ID: {sessionId}
                                 </Typography>
-                                <Button
-                                  size="small" variant="outlined" startIcon={<DownloadIcon sx={{ fontSize: 16 }} />}
-                                  onClick={handleDownloadPdfClick}
-                                  sx={{ fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5, color: '#F0F9FF', borderColor: 'rgba(240,249,255,0.35)', '&:hover': { borderColor: '#F0F9FF', backgroundColor: 'rgba(240,249,255,0.08)' } }}
-                                >
-                                  Download PDF
-                                </Button>
+
+                                {/* Clickable rather than disabled so an unverified click can
+                                    still explain itself via the toast below. */}
+                                <Box sx={{ display: 'flex', gap: 1 }}>
+                                  {[
+                                    { key: 'clinician', label: 'Clinician Copy' },
+                                    { key: 'patient', label: 'Patient Copy' },
+                                  ].map(({ key, label }) => (
+                                    <Button
+                                      key={key}
+                                      size="small" variant="outlined" startIcon={<DownloadIcon sx={{ fontSize: 16 }} />}
+                                      onClick={() => handleDownloadPdfClick(key)}
+                                      sx={{
+                                        fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5,
+                                        color: reportVerified ? '#F0F9FF' : 'rgba(240,249,255,0.4)',
+                                        borderColor: reportVerified ? 'rgba(240,249,255,0.35)' : 'rgba(240,249,255,0.15)',
+                                        cursor: reportVerified ? 'pointer' : 'not-allowed',
+                                        '&:hover': {
+                                          borderColor: reportVerified ? '#F0F9FF' : 'rgba(240,249,255,0.15)',
+                                          backgroundColor: reportVerified ? 'rgba(240,249,255,0.08)' : 'transparent',
+                                        },
+                                      }}
+                                    >
+                                      {label}
+                                    </Button>
+                                  ))}
+                                </Box>
                               </Box>
+
+                              {/* Toast fires when a download is attempted before verification is complete. */}
+                              <Snackbar
+                                open={pdfGateToast} autoHideDuration={3500} onClose={() => setPdfGateToast(false)}
+                                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+                              >
+                                <Alert
+                                  severity="warning" variant="filled" onClose={() => setPdfGateToast(false)}
+                                  sx={{ fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 600, borderRadius: 1.5 }}
+                                >
+                                  Verify all 4 views before exporting — {verifiedViewCount}/4 reviewed so far
+                                </Alert>
+                              </Snackbar>
                               <ClassificationResults
                                 analyisedImage={preview} reset={handleReset} sessionId={sessionId}
                                 currentModel={modelMode} results={result} onModelSelect={setModelMode}
                                 summary={summary} LLMloading={LLMloading} audience={audience}
                                 setAudience={setAudience} onGenerateExplanation={handleExplain}
                                 onOpenFullExplanation={() => setCollapsed(false)}
+                                verifications={verifications} onVerifyView={handleVerifyView}
                               />
                               <MammoRiskResults results={result} sessionId={sessionId}
                                 reset={handleReset} currentModel={modelMode} />
@@ -842,15 +904,15 @@ export default function Analysis() {
                               <Box sx={{
                                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.25,
                                 mb: 1.5, px: 3, py: 1.75, borderRadius: 1.5,
-                                border: `1px solid ${reportVerified ? 'rgba(79,209,161,0.4)' : 'rgba(245,196,81,0.4)'}`,
-                                background: reportVerified ? 'rgba(79,209,161,0.08)' : 'rgba(245,196,81,0.08)',
+                                border: '1px solid rgba(245,196,81,0.4)',
+                                background: 'rgba(245,196,81,0.08)',
                               }}>
-                                <Box sx={{ width: 8, height: 8, borderRadius: '50%', background: reportVerified ? '#4fd1a1' : '#f5c451', flexShrink: 0 }} />
+                                <Box sx={{ width: 8, height: 8, borderRadius: '50%', background: '#f5c451', flexShrink: 0 }} />
                                 <Typography sx={{
                                   fontFamily: 'monospace', fontSize: '0.95rem', fontWeight: 800, letterSpacing: '0.04em',
-                                  color: reportVerified ? '#4fd1a1' : '#f5c451', textAlign: 'center',
+                                  color: '#f5c451', textAlign: 'center',
                                 }}>
-                                  {reportVerified ? 'CLINICIAN-VERIFIED REPORT' : 'AI-GENERATED — AWAITING CLINICAL VERIFICATION'}
+                                  AI-GENERATED — AWAITING CLINICAL VERIFICATION
                                 </Typography>
                               </Box>
 
@@ -928,17 +990,18 @@ export default function Analysis() {
                   height: 44,
                   borderRadius: '14px',
                   backdropFilter: 'blur(14px)',
-                  background: (theme) => theme.palette.mode === 'dark' ? 'rgba(15,23,42,0.9)' : 'rgba(8,145,178,0.90)',
-                  border: (theme) => theme.palette.mode === 'dark' ? '1px solid rgba(34,211,238,0.35)' : '1px solid rgba(8,145,178,0.5)',
+                  background: '#2f7fb8',
+                  border: '1px solid rgba(95,168,211,0.5)',
                   color: '#FFFFFF',
                   boxShadow: '0 8px 30px rgba(0,0,0,0.25)',
                   '@keyframes aiBreathe': {
-                    '0%, 100%': { boxShadow: '0 8px 30px rgba(0,0,0,0.25), 0 0 0 0 rgba(34,211,238,0.35)' },
-                    '50%': { boxShadow: '0 8px 30px rgba(0,0,0,0.25), 0 0 0 7px rgba(34,211,238,0)' },
+                    '0%, 100%': { boxShadow: '0 8px 30px rgba(0,0,0,0.25), 0 0 0 0 rgba(92,200,245,0.45)' },
+                    '50%': { boxShadow: '0 8px 30px rgba(0,0,0,0.25), 0 0 0 8px rgba(92,200,245,0)' },
                   },
                   animation: collapsed ? 'aiBreathe 6s ease-in-out infinite' : 'none',
                   '&:hover': {
-                    background: (theme) => theme.palette.mode === 'dark' ? 'rgba(25,35,55,0.95)' : 'rgba(14,116,144,0.95)',
+                    background: '#3a8fca',
+                    color: '#FFFFFF',
                     transform: 'scale(1.05)',
                   },
                 }}
