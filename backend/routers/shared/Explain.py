@@ -255,15 +255,13 @@ CLASSICAL MODEL:
   5-year cumulative risk: {round(cnn5, 1) if cnn5 is not None else "not provided"}%
   Year-by-year:
 {yearly_lines(data.cnn_yearly_risk)}
-  Exam contributions:
-{contrib_lines(data.cnn_exam_contributions)}
+
 
 QUANTUM MODEL:
   5-year cumulative risk: {round(qml5, 1) if qml5 is not None else "not provided"}%
   Year-by-year:
 {yearly_lines(data.qml_yearly_risk)}
-  Exam contributions :
-{contrib_lines(data.qml_exam_contributions)}
+
 
 The two models {agreement} at the 5-year horizon.
 

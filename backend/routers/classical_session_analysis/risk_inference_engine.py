@@ -65,7 +65,7 @@ import sys
 
 from . import q_interval_explainable_models
 
-# Compatibility alias for old pickled Sprint 3 models
+
 sys.modules["q_interval_explainable_models"] = q_interval_explainable_models
 
 from .qinterval_classifier import CLASS_NAMES, Classifier, crop_breast, load_image
