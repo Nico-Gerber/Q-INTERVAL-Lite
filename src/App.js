@@ -7,7 +7,7 @@ import Navigation from './Components/Navigation/Navbar';
 import Footer from './Components/Navigation/Footer';
 import Home from './pages/home';
 import Models from './pages/models';
-import OurTeam from './pages/ourteam';
+import About from './pages/about';
 import Analysis from './pages/analysis';
 
 export const ColorModeContext = createContext({ toggleColorMode: () => {}, mode: 'dark' });
@@ -241,7 +241,7 @@ function App() {
           <Routes>
             <Route path="/"         element={<Home />} />
             <Route path="/Models"   element={<Models />} />
-            <Route path="/OurTeam"  element={<OurTeam />} />
+            <Route path="/About"  element={<About />} />
             <Route path="/Analysis" element={<Analysis key={location.key} />} />
           </Routes>
           <Footer />

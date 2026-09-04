@@ -16,8 +16,8 @@ import logoDark from '../../assets/logo-dark.svg';
 
 const NAV_ITEMS = [
   { label: 'Home',     path: '/' },
+  { label: 'About', path: '/About' },
   { label: 'Models',   path: '/Models' },
-  { label: 'Our Team', path: '/OurTeam' },
 ];
 
 const LogoMark = ({ size = 44 }) => (
