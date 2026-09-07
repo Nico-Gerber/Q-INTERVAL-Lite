@@ -9,6 +9,7 @@ import Home from './pages/home';
 import Models from './pages/models';
 import About from './pages/about';
 import Analysis from './pages/analysis';
+import Report from './pages/report';
 
 export const ColorModeContext = createContext({ toggleColorMode: () => {}, mode: 'dark' });
 export const useColorMode = () => useContext(ColorModeContext);
@@ -243,6 +244,7 @@ function App() {
             <Route path="/Models"   element={<Models />} />
             <Route path="/About"  element={<About />} />
             <Route path="/Analysis" element={<Analysis key={location.key} />} />
+            <Route path="/report/:token" element={<Report />} />
           </Routes>
           <Footer />
         </div>

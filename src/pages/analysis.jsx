@@ -22,6 +22,8 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import AssistantIcon from '@mui/icons-material/Assistant';
 import { ThreeDot } from 'react-loading-indicators';
 
+import { supabase } from '../supabase/supabase';
+
 const API_BASE = 'http://localhost:8000';
 
 function NeuralCanvas() {
@@ -110,6 +112,43 @@ const genSessionId = () => {
   return `QIL-MA-${date}-${time}-${hash}`;
 };
 
+// Mirrors RiskAssessment.jsx's readModel() scoring logic so the persisted
+// risk_assessments row matches what the clinician actually sees on screen.
+const RISK_SEVERITY_RANK = { Malignant: 3, Benign: 2, Normal: 1 };
+const deriveRiskAssessment = (src) => {
+  if (!src) return null;
+  const images = src?.image_level_results ?? [];
+
+  const severity = src?.highest_severity_classification
+    ?? src?.overall_classification
+    ?? images.reduce((worst, im) => {
+      const c = im?.predicted_cancer_class;
+      return (RISK_SEVERITY_RANK[c] ?? 0) > (RISK_SEVERITY_RANK[worst] ?? 0) ? c : worst;
+    }, null)
+    ?? null;
+
+  const densityLetters = images.map((im) => im?.predicted_density).filter(Boolean).sort();
+  const density = densityLetters.length ? densityLetters[densityLetters.length - 1] : (src?.highest_density ?? null);
+
+  const biradsVals = images.map((im) => Number(im?.predicted_birads)).filter((n) => !Number.isNaN(n) && n > 0);
+  const birads = biradsVals.length ? Math.max(...biradsVals) : (src?.highest_birads ?? null);
+
+  const level = src?.risk_level ?? null;
+  const notApplicable = typeof level === 'string' && /not\s*applicable|n\/a/i.test(level);
+  const flagged = /malignant/i.test(src?.status ?? '');
+  const malignant = severity === 'Malignant' || notApplicable || flagged;
+
+  const rawScore = src.future_risk_score ?? src.composite_risk_score ?? src.risk_score ?? null;
+  const score = malignant ? null : (typeof rawScore === 'number' ? rawScore : null);
+
+  return {
+    composite_score: score,
+    risk_level: level,
+    highest_density: density != null ? String(density) : null,
+    highest_birads: birads != null ? String(birads) : null,
+  };
+};
+
 
 export default function Analysis() {
 
@@ -135,6 +174,14 @@ export default function Analysis() {
 
   const [result, setResult] = useState(null);
   const [sessionId, setSessionId] = useState(null);
+  // Supabase `sessions.id` (uuid) for the current session — distinct from the
+  // human-readable sessionId code above. Used to target ai_results updates.
+  const [dbSessionId, setDbSessionId] = useState(null);
+  // sessions.access_token — the shareable patient-link credential, returned
+  // by the insert. sessionFinalized mirrors sessions.verified once published.
+  const [accessToken, setAccessToken] = useState(null);
+  const [sessionFinalized, setSessionFinalized] = useState(false);
+  const [finalizing, setFinalizing] = useState(false);
 
   // Per-view clinician verification for the classification results.
   // Report-level "verified" status is derived from these, not a standalone flag.
@@ -148,6 +195,27 @@ export default function Analysis() {
 
   const handleVerifyView = (viewId, update) => {
     setVerifications((prev) => ({ ...prev, [viewId]: { ...prev[viewId], ...update } }));
+
+    if (!dbSessionId) return;
+
+    // Verification is per-view (covers both the Classical and Quantum reads
+    // for that view), so this updates both matching ai_results rows.
+    const verificationStatus = update.status === 'confirmed' ? 'approved'
+      : update.status === 'edited' ? 'overridden'
+      : 'pending';
+
+    supabase
+      .from('ai_results')
+      .update({
+        verification_status: verificationStatus,
+        verified_result: update.status === 'pending' ? null : update.clinicianResult,
+        verified_at: update.status === 'pending' ? null : new Date().toISOString(),
+      })
+      .eq('session_id', dbSessionId)
+      .eq('view', viewId)
+      .then(({ error }) => {
+        if (error) console.error('Failed to update ai_results verification:', error);
+      });
   };
 
   const verifiedViewCount = Object.values(verifications).filter((v) => v.status !== 'pending').length;
@@ -255,6 +323,71 @@ export default function Analysis() {
 
 
 
+
+  const persistClassificationSession = async ({ sessionCode, cnnData, qmlData, CRcnnData, CRqmlData }) => {
+    if (!supabase) return;
+    try {
+      const { data: sessionRow, error: sessionError } = await supabase
+        .from('sessions')
+        .insert({ session_code: sessionCode, analysis_mode: 'classification' })
+        .select()
+        .single();
+      if (sessionError) throw sessionError;
+
+      setDbSessionId(sessionRow.id);
+      setAccessToken(sessionRow.access_token);
+
+      const VIEW_KEYS = ['L-CC', 'L-MLO', 'R-CC', 'R-MLO'];
+      const aiResultRows = VIEW_KEYS.flatMap((view) => ([
+        cnnData?.views?.[view] && {
+          session_id: sessionRow.id, view, model: 'Classical',
+          ai_result: cnnData.views[view].result, ai_confidence: cnnData.views[view].score,
+        },
+        qmlData?.views?.[view] && {
+          session_id: sessionRow.id, view, model: 'Quantum',
+          ai_result: qmlData.views[view].result, ai_confidence: qmlData.views[view].score,
+        },
+      ])).filter(Boolean);
+
+      if (aiResultRows.length) {
+        const { error: aiResultsError } = await supabase.from('ai_results').insert(aiResultRows);
+        if (aiResultsError) throw aiResultsError;
+      }
+
+      const riskRows = [
+        CRcnnData && { session_id: sessionRow.id, model: 'Classical', ...deriveRiskAssessment(CRcnnData) },
+        CRqmlData && { session_id: sessionRow.id, model: 'Quantum', ...deriveRiskAssessment(CRqmlData) },
+      ].filter(Boolean);
+
+      if (riskRows.length) {
+        const { error: riskError } = await supabase.from('risk_assessments').insert(riskRows);
+        if (riskError) throw riskError;
+      }
+    } catch (err) {
+      console.error('Failed to persist session to Supabase:', err);
+    }
+  };
+
+  // Explicit clinician action — sessions.verified only flips once all 4 views
+  // are individually verified AND the clinician deliberately publishes, so a
+  // patient link is never live without a clinician actively choosing to share it.
+  const handleFinalizeSession = async () => {
+    if (!supabase || !dbSessionId || !reportVerified) return;
+    setFinalizing(true);
+    try {
+      const { error } = await supabase
+        .from('sessions')
+        .update({ verified: true, verified_at: new Date().toISOString() })
+        .eq('id', dbSessionId);
+      if (error) throw error;
+      setSessionFinalized(true);
+    } catch (err) {
+      console.error('Failed to finalize session:', err);
+      setStatus({ ok: false, msg: 'Failed to publish results. Please try again.' });
+    } finally {
+      setFinalizing(false);
+    }
+  };
 
   const handleAnalyse = async () => {
 
@@ -405,7 +538,11 @@ export default function Analysis() {
       return;
     } else {
       setActiveStep(2);
-      setSessionId(genSessionId());
+      const newSessionCode = genSessionId();
+      setSessionId(newSessionCode);
+      setDbSessionId(null);
+      setAccessToken(null);
+      setSessionFinalized(false);
 
       const formData = new FormData();
       formData.append('l_cc', views['L-CC'].file);
@@ -438,6 +575,14 @@ export default function Analysis() {
             CRqml: CRqmlData,
           }
         });
+
+        persistClassificationSession({
+          sessionCode: newSessionCode,
+          cnnData: sessionData.classification,
+          qmlData: qmlData,
+          CRcnnData: sessionData.composite_risk,
+          CRqmlData: CRqmlData,
+        });
       } catch {
         setStatus({ ok: false, msg: 'Cannot reach the server. Make sure the backend is running.' });
       } finally {
@@ -453,6 +598,9 @@ export default function Analysis() {
     setStatus(null);
     setResult(null);
     setSessionId(null);
+    setDbSessionId(null);
+    setAccessToken(null);
+    setSessionFinalized(false);
     setActiveStep(0);
     setViews({ "L-CC": null, "L-MLO": null, "R-CC": null, "R-MLO": null });
     setSummary("")
@@ -818,7 +966,7 @@ export default function Analysis() {
 
                                 {/* Clickable rather than disabled so an unverified click can
                                     still explain itself via the toast below. */}
-                                <Box sx={{ display: 'flex', gap: 1 }}>
+                                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                                   {[
                                     { key: 'clinician', label: 'Clinician Copy' },
                                     { key: 'patient', label: 'Patient Copy' },
@@ -841,8 +989,62 @@ export default function Analysis() {
                                       {label}
                                     </Button>
                                   ))}
+
+                                  {sessionFinalized ? (
+                                    <Button
+                                      size="small" variant="outlined" disabled
+                                      sx={{ fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5, color: '#4fd1a1', borderColor: 'rgba(79,209,161,0.5)' }}
+                                    >
+                                      Published to Patient
+                                    </Button>
+                                  ) : (
+                                    <Button
+                                      size="small" variant="outlined"
+                                      disabled={!reportVerified || !dbSessionId || finalizing}
+                                      onClick={handleFinalizeSession}
+                                      sx={{
+                                        fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5,
+                                        color: reportVerified ? '#F0F9FF' : 'rgba(240,249,255,0.4)',
+                                        borderColor: reportVerified ? 'rgba(240,249,255,0.35)' : 'rgba(240,249,255,0.15)',
+                                        cursor: reportVerified ? 'pointer' : 'not-allowed',
+                                        '&:hover': {
+                                          borderColor: reportVerified ? '#F0F9FF' : 'rgba(240,249,255,0.15)',
+                                          backgroundColor: reportVerified ? 'rgba(240,249,255,0.08)' : 'transparent',
+                                        },
+                                      }}
+                                    >
+                                      {finalizing ? 'Publishing…' : 'Finalize & Publish to Patient'}
+                                    </Button>
+                                  )}
                                 </Box>
                               </Box>
+
+                              {/* Patient link — only ever shown after the clinician deliberately publishes. */}
+                              {sessionFinalized && accessToken && (
+                                <Box sx={{
+                                  display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap',
+                                  mb: 1.5, px: 2, py: 1.25, borderRadius: 1,
+                                  border: '1px solid rgba(79,209,161,0.35)',
+                                  background: 'rgba(79,209,161,0.08)',
+                                }}>
+                                  <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: '#4fd1a1', whiteSpace: 'nowrap' }}>
+                                    Patient link:
+                                  </Typography>
+                                  <Typography sx={{
+                                    fontFamily: 'monospace', fontSize: '0.78rem', color: '#CBD8E8',
+                                    wordBreak: 'break-all', flex: 1, minWidth: 0,
+                                  }}>
+                                    {`${window.location.origin}/report/${accessToken}`}
+                                  </Typography>
+                                  <Button
+                                    size="small" variant="outlined"
+                                    onClick={() => navigator.clipboard?.writeText(`${window.location.origin}/report/${accessToken}`)}
+                                    sx={{ fontSize: '0.7rem', fontWeight: 700, borderRadius: 1.5, color: '#4fd1a1', borderColor: 'rgba(79,209,161,0.5)' }}
+                                  >
+                                    Copy
+                                  </Button>
+                                </Box>
+                              )}
 
                               {/* Toast fires when a download is attempted before verification is complete. */}
                               <Snackbar
