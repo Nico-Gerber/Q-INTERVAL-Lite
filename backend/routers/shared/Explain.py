@@ -15,6 +15,7 @@ router = APIRouter(prefix="/explain", tags=["explain"])
 
 MODEL_URL = "http://localhost:11434/api/generate"
 MODEL = "qwen3.5:4b"
+VLM="medgemma:4b"
 
 # ── Request shape ──────────────────────────────────────────────────────────────
 class ExplainRequest(BaseModel):
@@ -293,3 +294,130 @@ async def explain_future_risk(data: FutureRiskExplainRequest):
         "audience": data.audience,
         "disclaimer": "This explanation is AI-generated and intended solely to interpret model outputs. It must not be used as a substitute for professional clinical assessment.",
     })
+
+
+
+class VLMCompareRequest(BaseModel):
+    base_image: str         
+    classical_heatmap: str   
+    classical_verdict: str
+    quantum_heatmap: str   
+    quantum_verdict: str  
+    view: str            
+    audience: str            
+
+
+
+def build_view_prompt(data: VLMCompareRequest) -> str:
+    audience_instruction = (
+        "Explain the results for a general practitioner using precise "
+        "clinical language. Be concise and descriptive."
+        if data.audience == "clinician"
+        else
+        "Explain the results for a patient using plain, supportive language. "
+        "Avoid unnecessary technical terminology."
+    )
+
+    return f"""
+You are a medical imaging explanation assistant.
+
+You are analysing ONE mammographic view at a time.
+
+For this view, you are provided with:
+1. The original mammogram image.
+2. A heatmap showing regions highlighted by the Classical model.
+3. A heatmap showing regions highlighted by the Quantum model.
+
+The heatmaps are occlusion-sensitivity maps. They indicate regions of the
+image that had an influence on each model's prediction when information
+from those regions was occluded.
+
+The two models produce a three-way classification:
+Normal, Benign, or Malignant.
+
+Classical model verdict: {data.classical_verdict}
+Quantum model verdict: {data.quantum_verdict}
+
+Your task is to describe and compare the model behaviour for THIS VIEW ONLY.
+
+Please:
+
+1. Describe relevant visible characteristics of the mammographic view,
+   without making an independent diagnosis.
+
+2. Describe which regions of the mammogram are highlighted by the
+   Classical model's heatmap.
+
+3. Describe which regions are highlighted by the Quantum model's heatmap.
+
+4. Compare the two heatmaps. State whether the models appear to focus on
+   similar or different anatomical/image regions.
+
+5. Explain how the highlighted regions relate to the respective model
+   predictions. Treat the heatmaps as evidence of model attention or
+   sensitivity, NOT as proof that a particular region contains disease.
+
+6. Clearly distinguish between:
+   - what is visually observable in the mammogram,
+   - what the heatmaps indicate about model behaviour, and
+   - the predictions produced by the two models.
+
+Do not independently diagnose the patient.
+Do not claim that a highlighted region definitely represents cancer,
+benign disease, or normal tissue.
+Do not invent findings that are not visible in the supplied images.
+Do not provide treatment recommendations.
+
+This is a research and model-interpretability task. The purpose of your
+response is to explain the behaviour of the two models for this individual
+mammographic view, not to replace clinical assessment.
+
+{audience_instruction}
+
+
+End with:
+"This explanation is generated for research and decision-support purposes
+and should not replace assessment by a qualified healthcare professional."
+"""
+
+
+
+        
+    
+
+
+@router.post("/explain_view")
+async def explainview(data: VLMCompareRequest):
+        prompt = build_view_prompt(data)
+
+        try:
+            async with httpx.AsyncClient(timeout=320.0) as client:
+                response = await client.post(MODEL_URL, json={
+                    "model": VLM,
+                    "prompt": prompt,
+                    "images": [
+                        data.base_image,
+                        data.classical_heatmap,
+                        data.quantum_heatmap
+                    ],
+                    "stream": False,
+                    "think": False,
+                })
+            result = response.json()
+            explanation = result.get("response", "").strip()
+
+        except Exception as e:
+            return JSONResponse(
+                status_code=503,
+                content={"error": f"Model unavailable: {str(e)}", "type": type(e).__name__}
+            )
+
+        return JSONResponse(content={
+            "explanation": explanation,
+            "audience": data.audience,
+        })
+        
+
+
+        
+    

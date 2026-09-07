@@ -78,6 +78,7 @@ const stepVariants = {
   exit: { opacity: 0, y: -12, transition: { duration: 0.2, ease: 'easeIn' } },
 };
 
+
 const LOADING_MESSAGES = [
   { text: "Preprocessing mammogram views...", duration: 1200 },
   { text: "Running CNN classification — L-CC...", duration: 1000 },
@@ -159,6 +160,29 @@ export default function Analysis() {
 
   const [LLMloading, setLLMLoading] = useState(false);
 
+  const [VLMloading, setVLMLoading] = useState(false);
+
+
+  const [viewData, setViewData] = useState({
+    'L-CC': {
+      explanation: null,
+      generated: false,
+    },
+    'L-MLO': {
+      explanation: null,
+      generated: false,
+    },
+    'R-CC': {
+      explanation: null,
+      generated: false,
+    },
+    'R-MLO': {
+      explanation: null,
+      generated: false,
+    },
+  });
+
+
   const emptySession = () => ({
     id: crypto.randomUUID(),
     scanDate: '',
@@ -183,12 +207,26 @@ export default function Analysis() {
   const [sessionFinalized, setSessionFinalized] = useState(false);
   const [finalizing, setFinalizing] = useState(false);
 
+  const [selectedView, setSelectedView] = useState('L-CC')
+
+
+  useEffect(() => {
+    console.log(result);
+  }, [result]);
+
+
+
+  useEffect(() => {
+    console.log("selectedView changed:", selectedView);
+  }, [selectedView]);
+
+
   // Per-view clinician verification for the classification results.
   // Report-level "verified" status is derived from these, not a standalone flag.
   const emptyVerifications = () => ({
-    'L-CC':  { status: 'pending', clinicianResult: null, note: '' },
+    'L-CC': { status: 'pending', clinicianResult: null, note: '' },
     'L-MLO': { status: 'pending', clinicianResult: null, note: '' },
-    'R-CC':  { status: 'pending', clinicianResult: null, note: '' },
+    'R-CC': { status: 'pending', clinicianResult: null, note: '' },
     'R-MLO': { status: 'pending', clinicianResult: null, note: '' },
   });
   const [verifications, setVerifications] = useState(emptyVerifications());
@@ -285,6 +323,7 @@ export default function Analysis() {
     "L-CC": null, "L-MLO": null,
     "R-CC": null, "R-MLO": null,
   })
+
 
 
 
@@ -573,7 +612,8 @@ export default function Analysis() {
             cnn: sessionData.classification,
             CRcnn: sessionData.composite_risk,
             CRqml: CRqmlData,
-          }
+          },
+
         });
 
         persistClassificationSession({
@@ -587,6 +627,7 @@ export default function Analysis() {
         setStatus({ ok: false, msg: 'Cannot reach the server. Make sure the backend is running.' });
       } finally {
         setLoading(false);
+
       }
     }
   };
@@ -700,6 +741,56 @@ export default function Analysis() {
       setLLMLoading(false);
     }
   };
+
+  const viewKey = selectedView.replace('_', '-');
+
+  const currentViewData = viewData[selectedView];
+  const handleExplainView = async () => {
+    setVLMLoading(true);
+
+    try {
+      const view = result.resultFile.cnn.views[selectedView];
+      const qmlView = result.resultFile.qml.views[selectedView];
+
+      const vlmResponse = await fetch(`${API_BASE}/explain/explain_view/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          base_image: view.gradcam.base_image_base64,
+          classical_heatmap: view.gradcam.heatmap_base64,
+          classical_verdict: view.result,
+
+          quantum_heatmap: qmlView.gradcam.heatmap_base64,
+          quantum_verdict: qmlView.result,
+
+          view: selectedView,
+          audience: audience,
+        }),
+      });
+
+      const data = await vlmResponse.json();
+
+      if (!vlmResponse.ok) {
+        throw new Error(data?.error || 'Failed to generate explanation');
+      }
+
+      setViewData(prev => ({
+        ...prev,
+        [selectedView]: {
+          explanation: data.explanation,
+          generated: true,
+        },
+      }));
+
+    } catch (err) {
+      console.error("VLM error:", err);
+
+    } finally {
+      setVLMLoading(false);
+    }
+  };
+
+
 
   // Fast path if an explanation was already generated; otherwise confirm first
   // so the PDF doesn't silently ship without one.
@@ -1061,10 +1152,10 @@ export default function Analysis() {
                               <ClassificationResults
                                 analyisedImage={preview} reset={handleReset} sessionId={sessionId}
                                 currentModel={modelMode} results={result} onModelSelect={setModelMode}
-                                summary={summary} LLMloading={LLMloading} audience={audience}
-                                setAudience={setAudience} onGenerateExplanation={handleExplain}
+                                viewData={viewData} LLMloading={VLMloading} audience={audience}
+                                setAudience={setAudience} onGenerateExplanation={handleExplainView}
                                 onOpenFullExplanation={() => setCollapsed(false)}
-                                verifications={verifications} onVerifyView={handleVerifyView}
+                                verifications={verifications} onVerifyView={handleVerifyView} setSelectedView={setSelectedView}
                               />
                               <MammoRiskResults results={result} sessionId={sessionId}
                                 reset={handleReset} currentModel={modelMode} />
