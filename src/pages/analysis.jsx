@@ -240,7 +240,7 @@ export default function Analysis() {
     // for that view), so this updates both matching ai_results rows.
     const verificationStatus = update.status === 'confirmed' ? 'approved'
       : update.status === 'edited' ? 'overridden'
-      : 'pending';
+        : 'pending';
 
     supabase
       .from('ai_results')
@@ -498,79 +498,86 @@ export default function Analysis() {
         });
       });
 
-      // reshape /future-risk response into the { patient_summary, image_level_results }
-      // contract FutureRiskResults reads
-      const adaptFutureRisk = (api) => {
-        if (!api?.risk_predictions) return null;
-        const num = (x) => parseFloat(String(x).replace('%', '')) || 0;
 
-        const yearly = Object.fromEntries(
-          Object.entries(api.risk_predictions).map(([k, val]) => [k, num(val)])
-        );
+      const buildFutureRiskFormData = () => {
+        const viewKeys = ['L-CC', 'R-CC', 'L-MLO', 'R-MLO'];
 
-        // one contribution % per exam, matched by date (5-year relative contribution)
-        const byDate = Object.fromEntries(
-          (api.session_contributions ?? []).map(r =>
-            [String(r.exam_date), r.risk_5yr_relative_contribution_percent ?? 0])
-        );
+        const formData = new FormData();
 
-        return {
-          patient_summary: {
-            final_patient_yearly_future_risk: yearly,
-            final_patient_5_year_risk_score: yearly['5_year'] ?? 0,
-          },
-          // emit a row per session; null contribution lets the component fall back
-          // to an even 1/n weight for single-view sessions (skipped in ablation)
-          image_level_results: datedSessions.map((s, i) => ({
-            filename: `exam_${i + 1}`,
-            image_contribution_percent: byDate[String(s.scanDate)] ?? null,
-          })),
+        const metadata = {
+          patient_age: patientAge ? Number(patientAge) : null,
+          exams: datedSessions.map((session, index) => {
+            const examId = `exam_${index + 1}`;
+
+            const views = {};
+
+            viewKeys.forEach((viewKey) => {
+              const uploaded = session.views?.[viewKey];
+              const file = uploaded?.file ?? (uploaded instanceof File ? uploaded : null);
+
+              if (!file) return;
+
+              const safeName =
+                file.name?.replace(/[^A-Za-z0-9._-]/g, '_') ?? `${viewKey}.png`;
+
+              const transportName = `${examId}_${viewKey}_${safeName}`;
+
+              views[viewKey] = transportName;
+              formData.append('files', file, transportName);
+            });
+
+            return {
+              exam_id: examId,
+              exam_date: session.scanDate,
+              views,
+            };
+          }),
         };
-      };
 
-      const adaptQmlFutureRisk = (api) => {
-        const yearly = api?.future_risk?.age_adjusted_risk;
-        if (!yearly) return null;
+        formData.append('metadata_json', JSON.stringify(metadata));
 
-        const byExamId = Object.fromEntries(
-          (api.exam_contributions ?? []).map(row => [
-            String(row.exam_id),
-            row.contribution_percent,
-          ])
-        );
-
-        return {
-          patient_summary: {
-            final_patient_yearly_future_risk: yearly,
-            final_patient_5_year_risk_score: yearly['5_year'] ?? 0,
-            future_risk_score: yearly['5_year'] ?? 0,
-            risk_level: api.future_risk?.risk_level,
-          },
-          image_level_results: datedSessions.map((s, i) => ({
-            filename: `exam_${i + 1}`,
-            image_contribution_percent: byExamId[`exam_${i + 1}`] ?? null,
-          })),
-          model_info: api.model,
-        };
+        return formData;
       };
 
       try {
         const [cnnRes, qmlRes] = await Promise.all([
-          fetch(`${API_BASE}/future-risk`, { method: 'POST', body: fd }),
-          fetch(`${API_BASE}/qml-future-risk-view-aware/`, { method: 'POST', body: qmlFd }),
+          fetch(`${API_BASE}/future-risk`, {
+            method: 'POST',
+            body: buildFutureRiskFormData(),
+          }),
+          fetch(`${API_BASE}/qml-future-risk-view-aware/`, {
+            method: 'POST',
+            body: buildFutureRiskFormData(),
+          }),
         ]);
 
-        const [cnnApi, qmlApi] = await Promise.all([cnnRes.json(), qmlRes.json()]);
+        const [cnnApi, qmlApi] = await Promise.all([
+          cnnRes.json(),
+          qmlRes.json(),
+        ]);
 
-        if (!cnnRes.ok) throw new Error(cnnApi?.detail ?? 'Classical future-risk request failed.');
-        if (!qmlRes.ok) throw new Error(qmlApi?.detail ?? 'Quantum future-risk request failed.');
+        if (!cnnRes.ok) {
+          throw new Error(cnnApi?.detail ?? 'Classical future-risk request failed.');
+        }
 
-        const cnnData = adaptFutureRisk(cnnApi);
-        const qmlData = adaptQmlFutureRisk(qmlApi);
+        if (!qmlRes.ok) {
+          throw new Error(qmlApi?.detail ?? 'Quantum future-risk request failed.');
+        }
 
-        setResult({ resultFile: { qml: qmlData, cnn: cnnData } });
+        setResult({
+          resultFile: {
+            cnn: cnnApi,
+            qml: qmlApi,
+          },
+        });
+
       } catch (err) {
-        setStatus({ ok: false, msg: err?.message || 'Cannot reach the server. Make sure the backend is running.' });
+        setStatus({
+          ok: false,
+          msg:
+            err?.message ||
+            'Cannot reach the server. Make sure the backend is running.',
+        });
       } finally {
         setLoading(false);
       }
