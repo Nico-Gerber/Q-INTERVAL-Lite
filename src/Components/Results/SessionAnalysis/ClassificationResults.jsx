@@ -311,8 +311,8 @@ export default function ClassificationResults({
                         !!c?.result &&
                         c?.result === q?.result,
                     base:
-                        c?.gradcam?.base_image_base64 ??
-                        q?.gradcam?.base_image_base64,
+                        c?.explainability?.base_image_base64 ??
+                        q?.explainability?.base_image_base64,
                 };
             }),
         [cnn, qml, currentModel]
@@ -340,8 +340,8 @@ export default function ClassificationResults({
 
     const baseSrc = (v) => {
         const b64 =
-            cnn?.views?.[v]?.gradcam?.base_image_base64 ??
-            qml?.views?.[v]?.gradcam?.base_image_base64;
+            cnn?.views?.[v]?.explainability?.base_image_base64 ??
+            qml?.views?.[v]?.explainability?.base_image_base64;
 
         return b64
             ? `data:image/png;base64,${b64}`
@@ -353,7 +353,7 @@ export default function ClassificationResults({
             (model === 'Quantum'
                 ? qml
                 : cnn
-            )?.views?.[v]?.gradcam?.heatmap_base64;
+            )?.views?.[v]?.explainability?.heatmap_base64;
 
         return b64
             ? `data:image/png;base64,${b64}`

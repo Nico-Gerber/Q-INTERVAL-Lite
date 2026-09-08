@@ -69,11 +69,7 @@ function BandScale({ score, tokens, height = 12, mounted }) {
     );
 }
 
-function pickRisk(src) {
-    if (!src) return null;
-    const v = src.future_risk_score ?? src.composite_risk_score ?? src.risk_score ?? null;
-    return typeof v === 'number' ? v : null;
-}
+
 
 
 export default function MammoRiskResults({ currentModel, results, sessionId }) {
@@ -93,8 +89,8 @@ export default function MammoRiskResults({ currentModel, results, sessionId }) {
         track: 'rgba(255,255,255,0.08)', footer: '#4A6A80',
     };
 
-    const cnn = results?.resultFile?.CRcnn;
-    const qml = results?.resultFile?.CRqml;
+    const cnn = results?.resultFile?.cnn;
+    const qml = results?.resultFile?.qml;
     const isBoth = currentModel === 'Both';
     const active = currentModel === 'Quantum' ? qml : cnn;
 
@@ -106,43 +102,60 @@ export default function MammoRiskResults({ currentModel, results, sessionId }) {
 
     if (!cnn && !qml) return null;
 
-    const SEVERITY_RANK = { Malignant: 3, Benign: 2, Normal: 1 };
 
     const readModel = (src) => {
-        const images = src?.image_level_results ?? [];
+        if (!src) {
+            return {
+                score: null,
+                severity: '—',
+                malignant: false,
+                level: '—',
+                density: '—',
+                birads: '—',
+                images: 0,
+                feedback: null,
+            };
+        }
 
-        /* worst finding across the four views */
-        const severity = src?.highest_severity_classification
-            ?? src?.overall_classification
-            ?? images.reduce((worst, im) => {
-                const c = im?.predicted_cancer_class;
-                return (SEVERITY_RANK[c] ?? 0) > (SEVERITY_RANK[worst] ?? 0) ? c : worst;
-            }, null)
-            ?? '—';
+        const viewResults = Object.values(src.views ?? {});
 
-        const densityLetters = images.map((im) => im?.predicted_density).filter(Boolean).sort();
-        const density = densityLetters.length ? densityLetters[densityLetters.length - 1]
-            : (src?.highest_density ?? '—');
+        const anyMalignant = viewResults.some(
+            (view) => view?.result === 'Malignant'
+        );
 
-        const biradsVals = images.map((im) => Number(im?.predicted_birads)).filter((n) => !Number.isNaN(n) && n > 0);
-        const birads = biradsVals.length ? Math.max(...biradsVals) : (src?.highest_birads ?? '—');
+        const anyBenign = viewResults.some(
+            (view) => view?.result === 'Benign'
+        );
 
-        const level = src?.risk_level ?? null;
-        const notApplicable = typeof level === 'string' && /not\s*applicable|n\/a/i.test(level);
-        const flagged = /malignant/i.test(src?.status ?? '');
-        const malignant = severity === 'Malignant' || notApplicable || flagged;
+        const severity = anyMalignant
+            ? 'Malignant'
+            : anyBenign
+                ? 'Benign'
+                : 'Normal';
 
-        const score = pickRisk(src);
+        const score = anyMalignant
+            ? null
+            : (src.mammo_risk?.score ?? null);
+
+        const level = anyMalignant
+            ? 'N/A'
+            : (src.mammo_risk?.level ?? '—');
+
+        const density =
+            src.mammo_risk?.density ?? '—';
+
+        const birads =
+            src.mammo_risk?.birads ?? '—';
 
         return {
-            score: malignant ? null : score,
+            score,
             severity,
-            malignant,
-            level: malignant ? 'N/A' : (level ?? (score !== null ? bandName(score) : '—')),
+            malignant: anyMalignant,
+            level,
             density,
-            birads: birads === 0 ? '—' : birads,
-            images: src?.number_of_images ?? images.length ?? 4,
-            feedback: src?.feedback ?? null,
+            birads,
+            images: viewResults.length,
+            feedback: null,
         };
     };
 

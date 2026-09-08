@@ -3,7 +3,7 @@ from . import run
 
 router = create_session_analysis_router(
     engine=run,
-    prefix="/session-analysis",
-    tag="SessionAnalysis",
-    model_name="Classical",
+    prefix="/quantum-session-analysis",
+    tag="QuantumSessionAnalysis",
+    model_name="Quantum",
 )

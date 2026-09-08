@@ -113,43 +113,6 @@ const genSessionId = () => {
   return `QIL-MA-${date}-${time}-${hash}`;
 };
 
-// Mirrors RiskAssessment.jsx's readModel() scoring logic so the persisted
-// risk_assessments row matches what the clinician actually sees on screen.
-const RISK_SEVERITY_RANK = { Malignant: 3, Benign: 2, Normal: 1 };
-const deriveRiskAssessment = (src) => {
-  if (!src) return null;
-  const images = src?.image_level_results ?? [];
-
-  const severity = src?.highest_severity_classification
-    ?? src?.overall_classification
-    ?? images.reduce((worst, im) => {
-      const c = im?.predicted_cancer_class;
-      return (RISK_SEVERITY_RANK[c] ?? 0) > (RISK_SEVERITY_RANK[worst] ?? 0) ? c : worst;
-    }, null)
-    ?? null;
-
-  const densityLetters = images.map((im) => im?.predicted_density).filter(Boolean).sort();
-  const density = densityLetters.length ? densityLetters[densityLetters.length - 1] : (src?.highest_density ?? null);
-
-  const biradsVals = images.map((im) => Number(im?.predicted_birads)).filter((n) => !Number.isNaN(n) && n > 0);
-  const birads = biradsVals.length ? Math.max(...biradsVals) : (src?.highest_birads ?? null);
-
-  const level = src?.risk_level ?? null;
-  const notApplicable = typeof level === 'string' && /not\s*applicable|n\/a/i.test(level);
-  const flagged = /malignant/i.test(src?.status ?? '');
-  const malignant = severity === 'Malignant' || notApplicable || flagged;
-
-  const rawScore = src.future_risk_score ?? src.composite_risk_score ?? src.risk_score ?? null;
-  const score = malignant ? null : (typeof rawScore === 'number' ? rawScore : null);
-
-  return {
-    composite_score: score,
-    risk_level: level,
-    highest_density: density != null ? String(density) : null,
-    highest_birads: birads != null ? String(birads) : null,
-  };
-};
-
 
 export default function Analysis() {
 
@@ -363,7 +326,7 @@ export default function Analysis() {
 
 
 
-  const persistClassificationSession = async ({ sessionCode, cnnData, qmlData, CRcnnData, CRqmlData }) => {
+  const persistClassificationSession = async ({ sessionCode, cnnData, qmlData }) => {
     if (!supabase) return;
     try {
       const { data: sessionRow, error: sessionError } = await supabase
@@ -394,8 +357,23 @@ export default function Analysis() {
       }
 
       const riskRows = [
-        CRcnnData && { session_id: sessionRow.id, model: 'Classical', ...deriveRiskAssessment(CRcnnData) },
-        CRqmlData && { session_id: sessionRow.id, model: 'Quantum', ...deriveRiskAssessment(CRqmlData) },
+        cnnData?.mammo_risk && {
+          session_id: sessionRow.id,
+          model: 'Classical',
+          composite_score: cnnData.mammo_risk.score,
+          risk_level: cnnData.mammo_risk.level,
+          highest_density: cnnData.mammo_risk.density,
+          highest_birads: cnnData.mammo_risk.birads,
+        },
+
+        qmlData?.mammo_risk && {
+          session_id: sessionRow.id,
+          model: 'Quantum',
+          composite_score: qmlData.mammo_risk.score,
+          risk_level: qmlData.mammo_risk.level,
+          highest_density: qmlData.mammo_risk.density,
+          highest_birads: qmlData.mammo_risk.birads,
+        },
       ].filter(Boolean);
 
       if (riskRows.length) {
@@ -457,46 +435,6 @@ export default function Analysis() {
 
       setActiveStep(2);
       setSessionId(genSessionId());
-
-      // UI slot names use hyphens; the endpoint expects underscores
-      const slotMap = { 'L-CC': 'L_CC', 'R-CC': 'R_CC', 'L-MLO': 'L_MLO', 'R-MLO': 'R_MLO' };
-      const viewKeys = ['L-CC', 'R-CC', 'L-MLO', 'R-MLO'];
-
-      const fd = new FormData();
-      if (patientAge) fd.append('age', String(patientAge));
-      datedSessions.forEach((s, i) => {
-        fd.append(`s${i}_date`, s.scanDate);
-        Object.entries(slotMap).forEach(([uiKey, apiKey]) => {
-          const v = s.views?.[uiKey];
-          const file = v?.file ?? (v instanceof File ? v : null);
-          if (file) fd.append(`s${i}_${apiKey}`, file);
-        });
-      });
-
-      const qmlFd = new FormData();
-      const qmlMetadata = {
-        patient_age: Number(patientAge),
-        exams: datedSessions.map((s, i) => ({
-          exam_id: `exam_${i + 1}`,
-          exam_date: s.scanDate,
-          views: Object.fromEntries(
-            viewKeys.map((viewKey) => {
-              const file = s.views?.[viewKey]?.file ?? s.views?.[viewKey];
-              const safeOriginalName = file?.name?.replace(/[^A-Za-z0-9._-]/g, '_') ?? `${viewKey}.png`;
-              return [viewKey, `exam_${i + 1}_${viewKey}_${safeOriginalName}`];
-            })
-          ),
-        })),
-      };
-
-      qmlFd.append('metadata_json', JSON.stringify(qmlMetadata));
-      datedSessions.forEach((s, i) => {
-        viewKeys.forEach((viewKey) => {
-          const file = s.views?.[viewKey]?.file ?? s.views?.[viewKey];
-          const filename = qmlMetadata.exams[i].views[viewKey];
-          qmlFd.append('files', file, filename);
-        });
-      });
 
 
       const buildFutureRiskFormData = () => {
@@ -596,45 +534,57 @@ export default function Analysis() {
       formData.append('r_cc', views['R-CC'].file);
       formData.append('r_mlo', views['R-MLO'].file);
 
-      const compositeRiskData = new FormData();
-      compositeRiskData.append('files', views['L-CC'].file);
-      compositeRiskData.append('files', views['L-MLO'].file);
-      compositeRiskData.append('files', views['R-CC'].file);
-      compositeRiskData.append('files', views['R-MLO'].file);
-
 
 
       try {
-        const [qmlRes, sessionRes, CRqmlRes] = await Promise.all([
-          fetch(`${API_BASE}/QMLPredictV2/predict-four-views-QML`, { method: 'POST', body: formData }),
-          fetch(`${API_BASE}/session-analysis/predict-four-views`, { method: 'POST', body: formData }),
-          fetch(`${API_BASE}/qml-mammo-risk/predict/multi`, { method: 'POST', body: compositeRiskData }),
+        const [qmlRes, cnnRes] = await Promise.all([
+          fetch(`${API_BASE}/quantum-session-analysis/predict-four-views`, {
+            method: 'POST',
+            body: formData
+          }),
+
+          fetch(`${API_BASE}/session-analysis/predict-four-views`, {
+            method: 'POST',
+            body: formData
+          }),
         ]);
-        const [qmlData, sessionData, CRqmlData] = await Promise.all([
-          qmlRes.json(), sessionRes.json(), CRqmlRes.json(),
+
+        const [qmlData, cnnData] = await Promise.all([
+          qmlRes.json(),
+          cnnRes.json(),
         ]);
+
+        if (!qmlRes.ok) {
+          throw new Error(qmlData?.detail || 'Quantum analysis failed');
+        }
+
+        if (!cnnRes.ok) {
+          throw new Error(cnnData?.detail || 'Classical analysis failed');
+        }
+
         setResult({
           resultFile: {
             qml: qmlData,
-            cnn: sessionData.classification,
-            CRcnn: sessionData.composite_risk,
-            CRqml: CRqmlData,
+            cnn: cnnData,
           },
-
         });
 
         persistClassificationSession({
           sessionCode: newSessionCode,
-          cnnData: sessionData.classification,
+          cnnData: cnnData,
           qmlData: qmlData,
-          CRcnnData: sessionData.composite_risk,
-          CRqmlData: CRqmlData,
         });
-      } catch {
-        setStatus({ ok: false, msg: 'Cannot reach the server. Make sure the backend is running.' });
+
+      } catch (err) {
+        console.error(err);
+
+        setStatus({
+          ok: false,
+          msg: err?.message || 'Cannot reach the server. Make sure the backend is running.'
+        });
+
       } finally {
         setLoading(false);
-
       }
     }
   };
@@ -669,26 +619,58 @@ export default function Analysis() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },  // ← must set this manually
         body: JSON.stringify({
-          // CNN primary
           audience: audience,
-          overall_classification: result.resultFile.cnn.aggregated.overall_classification,
-          patient_malignant_score: result.resultFile.cnn.aggregated.patient_malignant_score,
-          malignant_detected: result.resultFile.cnn.aggregated.malignant_detected,
-          views: result.resultFile.cnn.views,
-          composite_risk_score: result.resultFile.CRcnn?.future_risk_score ?? null,
-          composite_risk_level: result.resultFile.CRcnn?.risk_level ?? null,
-          highest_density: result.resultFile.CRcnn?.highest_density_risk_score ?? null,
-          highest_birads: result.resultFile.CRcnn?.highest_birads_risk_score ?? null,
-          // QML secondary
-          qml_overall_classification: result.resultFile.qml?.aggregated?.overall_classification ?? null,
-          qml_patient_malignant_score: result.resultFile.qml?.aggregated?.patient_malignant_score ?? null,
-          qml_views: result.resultFile.qml?.views ?? null,
-          qml_composite_risk_score: result.resultFile.CRqml?.future_risk_score ?? null,
-          qml_composite_risk_level: result.resultFile.CRqml?.risk_level ?? null,
-          qml_highest_density: result.resultFile.CRqml?.highest_density_risk_score ?? null,
-          qml_highest_birads: result.resultFile.CRqml?.highest_birads_risk_score ?? null,
+
+          // Classical
+          overall_classification:
+            result.resultFile.cnn.classification.overall,
+
+          patient_malignant_score:
+            result.resultFile.cnn.classification.patient_malignant_score,
+
+          malignant_detected:
+            result.resultFile.cnn.classification.malignant_detected,
+
+          views:
+            result.resultFile.cnn.views,
+
+          composite_risk_score:
+            result.resultFile.cnn.mammo_risk.score,
+
+          composite_risk_level:
+            result.resultFile.cnn.mammo_risk.level,
+
+          highest_density:
+            result.resultFile.cnn.mammo_risk.density,
+
+          highest_birads:
+            result.resultFile.cnn.mammo_risk.birads,
+
+
+          // Quantum
+          qml_overall_classification:
+            result.resultFile.qml.classification.overall,
+
+          qml_patient_malignant_score:
+            result.resultFile.qml.classification.patient_malignant_score,
+
+          qml_views:
+            result.resultFile.qml.views,
+
+          qml_composite_risk_score:
+            result.resultFile.qml.mammo_risk.score,
+
+          qml_composite_risk_level:
+            result.resultFile.qml.mammo_risk.level,
+
+          qml_highest_density:
+            result.resultFile.qml.mammo_risk.density,
+
+          qml_highest_birads:
+            result.resultFile.qml.mammo_risk.birads,
         })
-      })
+
+      });
 
       const data = await llmRes.json()
       setSummary(data)
@@ -761,52 +743,17 @@ export default function Analysis() {
       const view = result.resultFile.cnn.views[selectedView];
       const qmlView = result.resultFile.qml.views[selectedView];
 
-      console.log("=== VLM DEBUG ===");
-      console.log("selectedView:", selectedView);
-
-      console.log("CLASSICAL verdict:", view?.result);
-      console.log("QUANTUM verdict:", qmlView?.result);
-
-      console.log(
-        "Heatmaps identical?",
-        view?.gradcam?.heatmap_base64 ===
-        qmlView?.gradcam?.heatmap_base64
-      );
-
-      console.log(
-        "Classical heatmap length:",
-        view?.gradcam?.heatmap_base64?.length
-      );
-
-      console.log(
-        "Quantum heatmap length:",
-        qmlView?.gradcam?.heatmap_base64?.length
-      );
-
-      console.log(
-        "Classical heatmap start:",
-        view?.gradcam?.heatmap_base64?.slice(0, 80)
-      );
-
-      console.log(
-        "Quantum heatmap start:",
-        qmlView?.gradcam?.heatmap_base64?.slice(0, 80)
-      );
-
-
-
-
       const vlmResponse = await fetch(`${API_BASE}/explain/explain_view/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          base_image: view.gradcam.base_image_base64,
+          base_image: view.explainability.base_image_base64,
 
-          classical_heatmap: view.gradcam.overlay_base64,
+          classical_heatmap: view.explainability.overlay_base64,
 
           classical_verdict: view.result,
 
-          quantum_heatmap: qmlView.gradcam.overlay_base64,
+          quantum_heatmap: qmlView.explainability.overlay_base64,
 
           quantum_verdict: qmlView.result,
 

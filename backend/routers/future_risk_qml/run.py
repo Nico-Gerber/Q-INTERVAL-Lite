@@ -1,39 +1,4 @@
-"""
-qesfrp_backend_v2.py -- QeSFRP inference API for the retrained model.
 
-Same endpoint, same request format, same response shape as the previous
-backend, so the frontend does not need to change. What is different inside:
-
-  * loads artifacts.pkl from 03_train_quantum.py (hazard head, not 5 sigmoids)
-  * features come from the radiomic descriptor pipeline, not raw-pixel PCA
-  * cumulative risk is monotone by construction, so no post-hoc enforcement
-  * the demo-shaped curve is gone (see DEMO CURVE below)
-
-Age multipliers follow the architecture document: each yearly risk is
-multiplied by the patient's age-group weight to give the final yearly risk.
-
-    Final N year risk = N year risk * age_group weight
-
-DEMO CURVE
-----------
-The old backend had USE_DEMO_RISK_AS_MAIN_OUTPUT = True, which returned a
-hand-shaped curve anchored on the model's 5-year output as the main displayed
-risk. That existed because the model was not trained yet. It is now, so this
-version returns real model output only. Shipping a fabricated curve through a
-field called `qml_yearly_future_risk` on a breast-cancer risk tool is not
-something to leave switched on by accident.
-
-RUNNING
--------
-    pip install fastapi uvicorn pennylane torch scikit-learn scikit-image \
-                scipy pillow pandas numpy
-    uvicorn qesfrp_backend_v2:app --host 0.0.0.0 --port 8000
-
-Single file. The only thing beside it is the weights:
-
-    qesfrp_backend_v2.py
-    models/QeSFRP_V0.2.pkl     (artifacts.pkl from training, renamed)
-"""
 
 import io
 import json
@@ -87,14 +52,6 @@ VIEW_KEYS = ["L-CC", "R-CC", "L-MLO", "R-MLO"]
 RISK_BANDS = [(3.0, "Low Risk"), (8.0, "Medium Risk"), (float("inf"), "High Risk")]
 
 
-
-# ============================================================
-# IMAGE DESCRIPTORS  (inlined from 02_extract_features.py)
-# ------------------------------------------------------------
-# Identical to the training-time extractor. If you ever change one, change
-# both: a mismatch here does not raise, it just feeds the model wrong numbers
-# and returns a confident answer.
-# ============================================================
 
 try:
     from skimage.feature import graycomatrix, graycoprops, local_binary_pattern
@@ -187,7 +144,7 @@ def extract_image_features(path, laterality):
     img = img.resize((WORK_SIZE, WORK_SIZE), Image.BILINEAR)
     arr = np.asarray(img).astype(np.float32) / 255.0
 
-    # Orient every breast the same way so L/R comparisons mean something.
+   
     if str(laterality).upper().startswith("L"):
         arr = np.fliplr(arr)
 
@@ -196,14 +153,14 @@ def extract_image_features(path, laterality):
 
     feats = []
 
-    # --- intensity inside the breast ------------------------------------
+  
     st = safe_stats(tissue)
     pct = np.percentile(tissue, [10, 25, 50, 75, 90]) if tissue.size else np.zeros(5)
     feats += [float(mask.mean()), st["mean"], st["std"], st["skew"], st["kurt"]]
     feats += [float(x) for x in pct]
     feats += [float(pct[3] - pct[1]), shannon_entropy(tissue)]
 
-    # --- density proxies -------------------------------------------------
+    
     dense_mask_ref = None
     for p in DENSITY_PERCENTILES:
         if tissue.size:
@@ -228,7 +185,7 @@ def extract_image_features(path, laterality):
         compact, contrast = 0.0, 0.0
     feats += [compact, contrast]
 
-    # --- GLCM texture ----------------------------------------------------
+   
     if HAVE_SKIMAGE:
         q = (arr * 31).astype(np.uint8)
         q[~mask] = 0
@@ -245,7 +202,7 @@ def extract_image_features(path, laterality):
     else:
         feats += [0.0] * 12
 
-    # --- LBP -------------------------------------------------------------
+  
     if HAVE_SKIMAGE:
         try:
             lbp = local_binary_pattern(arr, LBP_POINTS, LBP_RADIUS, method="uniform")
@@ -276,7 +233,7 @@ def extract_image_features(path, laterality):
     else:
         feats += [0.0] * 8
 
-    # --- multiscale band energies ----------------------------------------
+   
     if HAVE_SCIPY:
         blurs = [arr] + [gaussian_filter(arr, sigma=s) for s in (2, 4, 8)]
         bands = [blurs[i] - blurs[i + 1] for i in range(3)] + [blurs[-1]]
@@ -299,26 +256,12 @@ def extract_image_features(path, laterality):
     return np.nan_to_num(out, nan=0.0, posinf=0.0, neginf=0.0)
 
 
-# ============================================================
-# QUANTUM CIRCUIT  (inlined from 03_train_quantum.py)
-# ------------------------------------------------------------
-# The pickle stores a state_dict, not the class, so the architecture has to be
-# defined here for the weights to load into. n_qubits and n_blocks come from
-# the artifact, so this rebuilds whatever was trained.
-# ============================================================
 
 import torch.nn as nn
 import pennylane as qml
 
 
 class QuantumRiskModel(nn.Module):
-    """Data re-uploading VQC with a discrete-time hazard head.
-
-    Readout uses single-qubit <Z> and neighbouring <ZZ> correlators. The old
-    circuit measured only single-qubit Z after one encoding pass, which keeps
-    the model close to linear in the encoded angles; correlators expose the
-    entanglement the circuit actually builds.
-    """
 
     def __init__(self, n_qubits=8, n_blocks=4, n_horizons=5, seed=42,
                  device="default.qubit", diff_method="backprop"):
@@ -333,10 +276,7 @@ class QuantumRiskModel(nn.Module):
         self.theta = nn.Parameter(
             0.1 * torch.randn(n_blocks, n_qubits, 3, generator=g))
 
-        # backprop through default.qubit stores every intermediate statevector,
-        # so memory and time blow up past ~12 qubits. lightning.qubit with
-        # adjoint differentiation is O(1) in circuit depth and far faster at
-        # high qubit counts, but it evaluates one sample at a time.
+
         self.batched = (diff_method == "backprop")
         dev = qml.device(device, wires=n_qubits)
 
@@ -501,9 +441,6 @@ def parse_metadata(metadata_json: str) -> Dict[str, Any]:
 
 
 
-# ============================================================
-# FEATURE BUILDING -- must mirror training exactly
-# ============================================================
 
 def image_descriptor_from_bytes(image_bytes: bytes, laterality: str) -> np.ndarray:
     """61 radiomic descriptors, via the training-time extractor."""
@@ -666,16 +603,7 @@ def yearly_risk_dict(risk_pct: np.ndarray) -> Dict[str, float]:
 
 
 def apply_calibration(risk_dict: Dict[str, float]) -> Dict[str, float]:
-    """Map raw model output onto observed event rates, if calibrators exist.
 
-    Training uses pos_weight ~8 so the model attends to a 0.85% event rate.
-    That helps ranking and inflates every probability by roughly that factor,
-    so raw output reads like "38% one-year risk" for someone near 1%. Isotonic
-    regression is monotone, so this rescales without changing AUC.
-
-    Run 05_calibrate.py to add these. Without them the API still works, and
-    `calibrated` in the response tells the frontend which it is looking at.
-    """
     cal = artifacts.get("calibrators")
     if not cal:
         return dict(risk_dict)
@@ -733,8 +661,7 @@ def _run_model_once(metadata: Dict[str, Any],
     else:
         final_risk = dict(model_risk)
 
-    # The hazard head makes model_risk monotone; a constant multiplier and the
-    # 0-100 clip both preserve that, so no re-sorting is needed here.
+
     risk_5y = final_risk.get("5_year", list(final_risk.values())[-1])
 
     return {
@@ -821,97 +748,44 @@ def calculate_asymmetry_ablation(metadata, file_bytes_by_name, full_final_risk):
     }
 
 
-# ===========================================================================
-# PUBLIC DROP-IN ENGINE INTERFACE
-# ===========================================================================
-
-_INITIALISED = False
-
-
-def initialise():
-    """Required lifecycle hook. Rebuilds and loads the QeSFRP circuit once."""
-    global _INITIALISED
-    if _INITIALISED:
-        return
-
-    startup_event()
-    _INITIALISED = True
-
-
-def health():
+def get_health():
+    """Small health payload for the model-specific health endpoint."""
     return {
-        "status": "ok" if _INITIALISED and artifacts else "model_not_loaded",
-        "model_loaded": bool(_INITIALISED and artifacts),
-        "model_type": artifacts.get(
-            "model_type",
-            "QeSFRP radiomic + variational quantum circuit",
-        ) if artifacts else None,
+        "status": "ok" if artifacts else "model_not_loaded",
+        "model_loaded": bool(artifacts),
         "version": "0.2",
+        "n_qubits": artifacts.get("n_qubits"),
+        "n_blocks": artifacts.get("n_blocks"),
+        "horizons": artifacts.get("horizons"),
+        "calibrated": bool(artifacts.get("calibrators")),
     }
 
 
-def run_inference(model_input):
-    """Run current QeSFRP using the exact same input/output interface as Classical."""
-    initialise()
+def run_inference(metadata: Dict[str, Any],
+                  file_bytes_by_name: Dict[str, bytes]) -> Dict[str, Any]:
 
-    metadata = {
-        "patient_age": (
-            float(model_input["patient_age"])
-            if model_input.get("patient_age") is not None
-            else 0.0
-        ),
-        "exams": [],
-    }
+    if not artifacts:
+        raise RuntimeError("QeSFRP model artifacts are not loaded")
 
-    file_bytes_by_name = {}
-
-    for exam in model_input["exams"]:
-        views = {}
-
-        for view_key, image_bytes in exam["views"].items():
-            if image_bytes is None:
-                continue
-
-            # Existing QeSFRP internals expect filenames in metadata and a
-            # separate filename -> bytes lookup.
-            filename = f'{exam["exam_id"]}_{view_key}.png'
-            views[view_key] = filename
-            file_bytes_by_name[filename] = image_bytes
-
-        metadata["exams"].append(
-            {
-                "exam_id": exam["exam_id"],
-                "exam_date": exam["exam_date"],
-                "views": views,
-            }
-        )
-
-    # Reuse the current model-specific inference and interpretability code.
     inference = _run_model_once(metadata, file_bytes_by_name)
     final_risk = inference["final_risk"]
 
     exam_rows, _exam_meta = calculate_exam_contributions(
-        metadata,
-        file_bytes_by_name,
-        final_risk,
+        metadata, file_bytes_by_name, final_risk
     )
 
-    exam_results = []
-
-    for index, exam in enumerate(model_input["exams"]):
-        matching = next(
-            (row for row in exam_rows if row.get("exam_index") == index),
+    exams = []
+    for index, exam in enumerate(metadata["exams"], start=1):
+        row = next(
+            (r for r in exam_rows if r.get("exam_index") == index - 1),
             None,
         )
-
-        exam_results.append(
+        exams.append(
             {
-                "exam_id": exam["exam_id"],
+                "exam_id": row.get("exam_id", f"exam_{index}") if row else f"exam_{index}",
                 "exam_date": exam["exam_date"],
                 "contribution_percent": (
-                    matching.get("contribution_percent")
-                    if matching
-                    else None
+                    row.get("contribution_percent") if row else None
                 ),
             }
         )
@@ -922,5 +796,5 @@ def run_inference(model_input):
             for year in range(1, 6)
         },
         "risk_level": inference["risk_level"],
-        "exams": exam_results,
+        "exams": exams,
     }
