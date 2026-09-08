@@ -755,19 +755,59 @@ export default function Analysis() {
   const handleExplainView = async () => {
     setVLMLoading(true);
 
+
+
     try {
       const view = result.resultFile.cnn.views[selectedView];
       const qmlView = result.resultFile.qml.views[selectedView];
+
+      console.log("=== VLM DEBUG ===");
+      console.log("selectedView:", selectedView);
+
+      console.log("CLASSICAL verdict:", view?.result);
+      console.log("QUANTUM verdict:", qmlView?.result);
+
+      console.log(
+        "Heatmaps identical?",
+        view?.gradcam?.heatmap_base64 ===
+        qmlView?.gradcam?.heatmap_base64
+      );
+
+      console.log(
+        "Classical heatmap length:",
+        view?.gradcam?.heatmap_base64?.length
+      );
+
+      console.log(
+        "Quantum heatmap length:",
+        qmlView?.gradcam?.heatmap_base64?.length
+      );
+
+      console.log(
+        "Classical heatmap start:",
+        view?.gradcam?.heatmap_base64?.slice(0, 80)
+      );
+
+      console.log(
+        "Quantum heatmap start:",
+        qmlView?.gradcam?.heatmap_base64?.slice(0, 80)
+      );
+
+
+
 
       const vlmResponse = await fetch(`${API_BASE}/explain/explain_view/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           base_image: view.gradcam.base_image_base64,
-          classical_heatmap: view.gradcam.heatmap_base64,
+
+          classical_heatmap: view.gradcam.overlay_base64,
+
           classical_verdict: view.result,
 
-          quantum_heatmap: qmlView.gradcam.heatmap_base64,
+          quantum_heatmap: qmlView.gradcam.overlay_base64,
+
           quantum_verdict: qmlView.result,
 
           view: selectedView,

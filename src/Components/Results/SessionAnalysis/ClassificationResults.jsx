@@ -2223,13 +2223,22 @@ export default function ClassificationResults({
                                     }}
                                 />
 
-                                {isBoth ? (
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: 1.25,
+                                        flex: 1,
+                                        minHeight: 0
+                                    }}
+                                >
+                                    {/* heading + audience selector */}
+
                                     <Box
                                         sx={{
                                             display: 'flex',
-                                            flexDirection:
-                                                'column',
-                                            gap: 0.75
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between'
                                         }}
                                     >
                                         <Label
@@ -2237,255 +2246,159 @@ export default function ClassificationResults({
                                                 color: t.muted
                                             }}
                                         >
-                                            AI Explanation
+                                            AI Explanation · {currentView}
                                         </Label>
 
-                                        <Typography
+                                        <Box
                                             sx={{
-                                                fontSize: 12,
-                                                color: t.dim,
-                                                lineHeight: 1.5
+                                                display: 'flex',
+                                                gap: 0.4,
+                                                p: 0.3,
+                                                borderRadius: 1.25,
+                                                background: t.card,
+                                                border: `1px solid ${t.line}`,
                                             }}
                                         >
-                                            Per-view explanations aren't
-                                            available in Comparison mode.
-                                            The full explanation panel
-                                            covers both models together.
-                                        </Typography>
+                                            {[
+                                                {
+                                                    v: 'clinician',
+                                                    l: 'Clinician'
+                                                },
+                                                {
+                                                    v: 'patient',
+                                                    l: 'Patient'
+                                                }
+                                            ].map(({ v, l }) => {
+                                                const activeAud =
+                                                    audience === v;
 
-                                        {onOpenFullExplanation && (
+                                                return (
+                                                    <Box
+                                                        key={v}
+                                                        onClick={() =>
+                                                            setAudience?.(v)
+                                                        }
+                                                        sx={{
+                                                            px: 1,
+                                                            py: 0.35,
+                                                            borderRadius: 0.75,
+                                                            cursor: 'pointer',
+                                                            background:
+                                                                activeAud
+                                                                    ? t.selBg
+                                                                    : 'transparent',
+                                                            transition:
+                                                                'background 0.15s ease',
+                                                        }}
+                                                    >
+                                                        <Typography
+                                                            sx={{
+                                                                fontSize: 10,
+                                                                fontWeight: 700,
+                                                                color:
+                                                                    activeAud
+                                                                        ? t.text
+                                                                        : t.dim
+                                                            }}
+                                                        >
+                                                            {l}
+                                                        </Typography>
+                                                    </Box>
+                                                );
+                                            })}
+                                        </Box>
+                                    </Box>
+
+                                    {/* generated explanation */}
+
+                                    {currentExplanation?.generated ? (
+                                        <Box
+                                            sx={{
+                                                flex: 1,
+                                                minHeight: 140,
+                                                p: 1.5,
+                                                borderRadius: 1,
+                                                background: t.card,
+                                                border: `1px solid ${t.line}`,
+                                                overflowY: 'auto',
+                                            }}
+                                        >
+                                            <Typography
+                                                sx={{
+                                                    fontSize: 12.5,
+                                                    color: t.body,
+                                                    lineHeight: 1.65
+                                                }}
+                                            >
+                                                {currentExplanation.explanation}
+                                            </Typography>
+                                        </Box>
+                                    ) : (
+                                        <Box
+                                            sx={{
+                                                flex: 1,
+                                                minHeight: 170,
+                                                p: 2.5,
+                                                borderRadius: 1,
+                                                border: `1px dashed ${t.line}`,
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                gap: 1.5,
+                                                textAlign: 'center',
+                                            }}
+                                        >
+                                            <Typography
+                                                sx={{
+                                                    fontSize: 12.5,
+                                                    color: t.dim,
+                                                    lineHeight: 1.5,
+                                                    maxWidth: 260
+                                                }}
+                                            >
+                                                Generate an AI explanation for the{' '}
+                                                {currentView} view.
+                                            </Typography>
+
                                             <Box
                                                 onClick={
-                                                    onOpenFullExplanation
+                                                    !LLMloading
+                                                        ? onGenerateExplanation
+                                                        : undefined
                                                 }
                                                 sx={{
-                                                    cursor: 'pointer',
-                                                    display:
-                                                        'inline-flex',
-                                                    width: 'fit-content'
+                                                    px: 2,
+                                                    py: 0.9,
+                                                    borderRadius: 1.5,
+                                                    cursor:
+                                                        LLMloading
+                                                            ? 'default'
+                                                            : 'pointer',
+                                                    background: t.selLine,
+                                                    opacity:
+                                                        LLMloading
+                                                            ? 0.6
+                                                            : 1,
+                                                    transition:
+                                                        'opacity 0.15s ease',
                                                 }}
                                             >
                                                 <Typography
                                                     sx={{
                                                         fontSize: 12.5,
                                                         fontWeight: 700,
-                                                        color:
-                                                            theme.palette
-                                                                .primary
-                                                                .main
+                                                        color: '#fff'
                                                     }}
                                                 >
-                                                    Open AI Explanation →
+                                                    {LLMloading
+                                                        ? 'Generating…'
+                                                        : 'Generate AI Explanation'}
                                                 </Typography>
-                                            </Box>
-                                        )}
-                                    </Box>
-                                ) : (
-                                    <Box
-                                        sx={{
-                                            display: 'flex',
-                                            flexDirection:
-                                                'column',
-                                            gap: 1.25,
-                                            flex: 1,
-                                            minHeight: 0
-                                        }}
-                                    >
-                                        {/* heading + audience selector */}
-
-                                        <Box
-                                            sx={{
-                                                display: 'flex',
-                                                alignItems:
-                                                    'center',
-                                                justifyContent:
-                                                    'space-between'
-                                            }}
-                                        >
-                                            <Label
-                                                sx={{
-                                                    color: t.muted
-                                                }}
-                                            >
-                                                AI Explanation ·{' '}
-                                                {currentView}
-                                            </Label>
-
-                                            <Box
-                                                sx={{
-                                                    display: 'flex',
-                                                    gap: 0.4,
-                                                    p: 0.3,
-                                                    borderRadius: 1.25,
-                                                    background:
-                                                        t.card,
-                                                    border:
-                                                        `1px solid ${t.line}`,
-                                                }}
-                                            >
-                                                {[
-                                                    {
-                                                        v: 'clinician',
-                                                        l: 'Clinician'
-                                                    },
-                                                    {
-                                                        v: 'patient',
-                                                        l: 'Patient'
-                                                    }
-                                                ].map(
-                                                    ({
-                                                        v,
-                                                        l
-                                                    }) => {
-                                                        const activeAud =
-                                                            audience ===
-                                                            v;
-
-                                                        return (
-                                                            <Box
-                                                                key={
-                                                                    v
-                                                                }
-                                                                onClick={() =>
-                                                                    setAudience?.(
-                                                                        v
-                                                                    )
-                                                                }
-                                                                sx={{
-                                                                    px: 1,
-                                                                    py: 0.35,
-                                                                    borderRadius: 0.75,
-                                                                    cursor: 'pointer',
-                                                                    background:
-                                                                        activeAud
-                                                                            ? t.selBg
-                                                                            : 'transparent',
-                                                                    transition:
-                                                                        'background 0.15s ease',
-                                                                }}
-                                                            >
-                                                                <Typography
-                                                                    sx={{
-                                                                        fontSize: 10,
-                                                                        fontWeight: 700,
-                                                                        color:
-                                                                            activeAud
-                                                                                ? t.text
-                                                                                : t.dim
-                                                                    }}
-                                                                >
-                                                                    {l}
-                                                                </Typography>
-                                                            </Box>
-                                                        );
-                                                    }
-                                                )}
                                             </Box>
                                         </Box>
-
-                                        {/* generated explanation */}
-
-                                        {currentExplanation?.generated ? (
-                                            <Box
-                                                sx={{
-                                                    flex: 1,
-                                                    minHeight: 140,
-                                                    p: 1.5,
-                                                    borderRadius: 1,
-                                                    background:
-                                                        t.card,
-                                                    border:
-                                                        `1px solid ${t.line}`,
-                                                    overflowY:
-                                                        'auto',
-                                                }}
-                                            >
-                                                <Typography
-                                                    sx={{
-                                                        fontSize: 12.5,
-                                                        color: t.body,
-                                                        lineHeight: 1.65
-                                                    }}
-                                                >
-                                                    {
-                                                        currentExplanation.explanation
-                                                    }
-                                                </Typography>
-                                            </Box>
-                                        ) : (
-                                            <Box
-                                                sx={{
-                                                    flex: 1,
-                                                    minHeight: 170,
-                                                    p: 2.5,
-                                                    borderRadius: 1,
-                                                    border:
-                                                        `1px dashed ${t.line}`,
-                                                    display: 'flex',
-                                                    flexDirection:
-                                                        'column',
-                                                    alignItems:
-                                                        'center',
-                                                    justifyContent:
-                                                        'center',
-                                                    gap: 1.5,
-                                                    textAlign:
-                                                        'center',
-                                                }}
-                                            >
-                                                <Typography
-                                                    sx={{
-                                                        fontSize: 12.5,
-                                                        color: t.dim,
-                                                        lineHeight: 1.5,
-                                                        maxWidth: 260
-                                                    }}
-                                                >
-                                                    Generate an AI
-                                                    explanation for the{' '}
-                                                    {currentView} view.
-                                                </Typography>
-
-                                                <Box
-                                                    onClick={
-                                                        !LLMloading
-                                                            ? onGenerateExplanation
-                                                            : undefined
-                                                    }
-                                                    sx={{
-                                                        px: 2,
-                                                        py: 0.9,
-                                                        borderRadius: 1.5,
-                                                        cursor:
-                                                            LLMloading
-                                                                ? 'default'
-                                                                : 'pointer',
-                                                        background:
-                                                            t.selLine,
-                                                        opacity:
-                                                            LLMloading
-                                                                ? 0.6
-                                                                : 1,
-                                                        transition:
-                                                            'opacity 0.15s ease',
-                                                    }}
-                                                >
-                                                    <Typography
-                                                        sx={{
-                                                            fontSize: 12.5,
-                                                            fontWeight: 700,
-                                                            color: '#fff'
-                                                        }}
-                                                    >
-                                                        {LLMloading
-                                                            ? 'Generating…'
-                                                            : 'Generate AI Explanation'}
-                                                    </Typography>
-                                                </Box>
-                                            </Box>
-                                        )}
-                                    </Box>
-                                )}
+                                    )}
+                                </Box>
                             </>
                         )}
 

@@ -1,8 +1,47 @@
 import httpx
+import os
+import base64
+
+from pathlib import Path
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Optional
+
+
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+
+VLM = "dots-studio/dots-3-note-preview:free"
+
+
+DEBUG_VLM_DIR = Path("debug_vlm")
+DEBUG_VLM_DIR.mkdir(exist_ok=True)
+
+
+def save_debug_b64_image(b64_string: str, filename: str):
+    if not b64_string:
+        print(f"DEBUG: no image data for {filename}")
+        return
+
+    if "," in b64_string:
+        b64_string = b64_string.split(",", 1)[1]
+
+    path = DEBUG_VLM_DIR / filename
+
+    with open(path, "wb") as f:
+        f.write(base64.b64decode(b64_string))
+
+    print("DEBUG saved:", path.resolve())
+
+
+def as_data_uri(image_b64: str) -> str:
+    if image_b64.startswith("data:image"):
+        return image_b64
+
+    return f"data:image/png;base64,{image_b64}"
+
 
 VIEW_NAMES = {
     "L-CC":  "Left Craniocaudal (L-CC)",
@@ -15,7 +54,7 @@ router = APIRouter(prefix="/explain", tags=["explain"])
 
 MODEL_URL = "http://localhost:11434/api/generate"
 MODEL = "qwen3.5:4b"
-VLM="medgemma:4b"
+
 
 # ── Request shape ──────────────────────────────────────────────────────────────
 class ExplainRequest(BaseModel):
@@ -310,74 +349,219 @@ class VLMCompareRequest(BaseModel):
 
 def build_view_prompt(data: VLMCompareRequest) -> str:
     audience_instruction = (
-        "Explain the results for a general practitioner using precise "
-        "clinical language. Be concise and descriptive."
+        "Write for a general practitioner using concise, precise clinical language. "
+        "Avoid explaining basic medical concepts unless needed for clarity."
         if data.audience == "clinician"
         else
-        "Explain the results for a patient using plain, supportive language. "
-        "Avoid unnecessary technical terminology."
+        "Write for a patient using clear, neutral, non-alarming language. "
+        "Avoid unnecessary technical terminology and do not imply that an AI prediction is a diagnosis."
     )
 
     return f"""
-You are a medical imaging explanation assistant.
+You are a medical imaging model-interpretability assistant.
 
-You are analysing ONE mammographic view at a time.
+You are analysing ONE mammographic view only.
 
-For this view, you are provided with:
-1. The original mammogram image.
-2. A heatmap showing regions highlighted by the Classical model.
-3. A heatmap showing regions highlighted by the Quantum model.
+You will receive exactly three images in this exact order:
 
-The heatmaps are occlusion-sensitivity maps. They indicate regions of the
-image that had an influence on each model's prediction when information
-from those regions was occluded.
+IMAGE 1 = the original mammogram for view {data.view}.
+IMAGE 2 = the Classical model occlusion-sensitivity heatmap for the SAME view.
+IMAGE 3 = the Quantum model occlusion-sensitivity heatmap for the SAME view.
 
-The two models produce a three-way classification:
-Normal, Benign, or Malignant.
+All three images refer to the same mammographic view and the same breast.
 
-Classical model verdict: {data.classical_verdict}
-Quantum model verdict: {data.quantum_verdict}
+Classical model prediction: {data.classical_verdict}
+Quantum model prediction: {data.quantum_verdict}
 
-Your task is to describe and compare the model behaviour for THIS VIEW ONLY.
+The heatmaps are occlusion-sensitivity maps. A highlighted area indicates that
+occluding information in that image region affected the corresponding model's
+output.
 
-Please:
+A highlighted region represents model sensitivity or influence only.
+It does NOT prove that the highlighted region contains cancer, benign disease,
+normal tissue, or any other pathology.
 
-1. Describe relevant visible characteristics of the mammographic view,
-   without making an independent diagnosis.
+IMPORTANT IMAGE-IDENTITY RULES:
 
-2. Describe which regions of the mammogram are highlighted by the
-   Classical model's heatmap.
+IMAGE 2 is ALWAYS the Classical model heatmap.
+IMAGE 3 is ALWAYS the Quantum model heatmap.
 
-3. Describe which regions are highlighted by the Quantum model's heatmap.
+Never swap IMAGE 2 and IMAGE 3.
 
-4. Compare the two heatmaps. State whether the models appear to focus on
-   similar or different anatomical/image regions.
+Never assign the Quantum model prediction to the Classical heatmap.
+Never assign the Classical model prediction to the Quantum heatmap.
 
-5. Explain how the highlighted regions relate to the respective model
-   predictions. Treat the heatmaps as evidence of model attention or
-   sensitivity, NOT as proof that a particular region contains disease.
+The Classical prediction is exactly:
+{data.classical_verdict}
 
-6. Clearly distinguish between:
-   - what is visually observable in the mammogram,
-   - what the heatmaps indicate about model behaviour, and
-   - the predictions produced by the two models.
+The Quantum prediction is exactly:
+{data.quantum_verdict}
+
+Do not infer either prediction from the appearance of a heatmap.
+Use the supplied prediction labels exactly as given.
+
+Before writing the final explanation, internally compare IMAGE 2 and IMAGE 3
+directly and determine:
+
+- where the strongest Classical heatmap regions are located,
+- where the strongest Quantum heatmap regions are located,
+- whether the strongest regions overlap,
+- whether they are only partially overlapping,
+- or whether they are clearly different.
+
+Do not state that the two models focus on the same region unless their strongest
+highlighted regions visibly overlap.
+
+If their strongest highlighted regions are spatially different, explicitly say
+that the models focus on different regions.
+
+LATERALITY AND IMAGE-ORIENTATION RULES:
+
+The supplied view label determines which breast is shown.
+
+L-CC and L-MLO ALWAYS represent the LEFT breast.
+R-CC and R-MLO ALWAYS represent the RIGHT breast.
+
+For this request, the supplied view is {data.view}.
+
+Never infer breast laterality from where the breast appears within the image.
+Never change the laterality specified by the view label.
+
+The words "left" and "right" can refer to two different things:
+1. anatomical breast laterality, determined ONLY by the view label;
+2. left/right position within the displayed image.
+
+When describing a heatmap location, explicitly say:
+"left side of the displayed image"
+or
+"right side of the displayed image".
+
+Do NOT say "left breast" or "right breast" when describing heatmap position.
+
+For example:
+"The strongest sensitivity is in the upper-left portion of the displayed image."
+
+Do NOT convert this into:
+"The strongest sensitivity is in the left breast."
+
+SPATIAL DESCRIPTION RULES:
+
+Prefer conservative image-relative descriptions such as:
+
+- left side of the displayed image
+- right side of the displayed image
+- central region
+- upper portion of the displayed image
+- lower portion of the displayed image
+- near the edge of the displayed image
+- near the chest-wall side
+- near the anterior portion of the breast
+
+Do not invent anatomical localisation.
+
+For CC views, do not assign a highlighted region to an upper or lower breast
+quadrant unless that anatomical location can be established confidently from
+the supplied image.
+
+Do not use terms such as:
+"upper outer quadrant",
+"upper inner quadrant",
+"lower outer quadrant",
+or "lower inner quadrant"
+unless the anatomical orientation is genuinely unambiguous.
+
+If anatomical orientation is uncertain, use image-relative descriptions instead.
+
+VISIBLE-MAMMOGRAM RULES:
+
+Describe only features that are reasonably visible in IMAGE 1.
 
 Do not independently diagnose the patient.
-Do not claim that a highlighted region definitely represents cancer,
-benign disease, or normal tissue.
-Do not invent findings that are not visible in the supplied images.
-Do not provide treatment recommendations.
 
-This is a research and model-interpretability task. The purpose of your
-response is to explain the behaviour of the two models for this individual
-mammographic view, not to replace clinical assessment.
+Do not call an area:
+"suspicious",
+"malignant",
+"benign",
+"cancerous",
+"concerning",
+or "abnormal"
+unless that description was explicitly supplied as ground truth.
+
+Do not claim that a visible area corresponds to disease solely because a heatmap
+highlights it.
+
+If no specific visible abnormal feature can be confidently described, say so
+briefly and neutrally.
+
+HEATMAP INTERPRETATION RULES:
+
+Describe the heatmaps as indicators of model sensitivity.
+
+Do not say:
+"this area caused the malignant prediction",
+"this region supports the benign classification",
+"this area is malignant",
+or similar wording that makes the heatmap sound diagnostic.
+
+Instead use wording such as:
+
+"The Classical model shows strongest sensitivity in..."
+"The Quantum model shows strongest sensitivity in..."
+"This region influenced the Classical model's output..."
+"The Classical model predicted Malignant, while the Quantum model predicted Benign."
+
+Keep the heatmap location and the model prediction as separate concepts.
+
+COMPARISON RULES:
+
+Explicitly compare the two heatmaps.
+
+Use one of these types of conclusions when appropriate:
+
+- the highlighted regions substantially overlap
+- the highlighted regions partially overlap
+- the strongest highlighted regions are different
+
+Do not force agreement between the models.
+
+Do not assume that similar predictions mean similar heatmaps.
+
+Do not assume that different predictions mean different heatmaps.
+
+Base the heatmap comparison only on what is visible in IMAGE 2 and IMAGE 3.
+
+Do not speculate that differences are caused by model architecture, training data,
+feature extraction, or quantum/classical methodology unless that information is
+explicitly provided.
+
+OUTPUT FORMAT:
+
+Return one coherent paragraph only.
+
+Do not use headings.
+Do not use bullet points.
+Do not use numbered lists.
+Do not use Markdown.
+Do not use asterisks.
+Do not use tables.
+Do not use code formatting.
+
+Write naturally and avoid repetitive phrasing.
+
+Keep the explanation between 90 and 130 words, excluding the final disclaimer.
+
+The paragraph should naturally include:
+- a brief description of what can be visibly observed in the original mammogram,
+- the main Classical heatmap location,
+- the main Quantum heatmap location,
+- whether the two heatmaps overlap or differ,
+- and the supplied model predictions.
 
 {audience_instruction}
 
+End with exactly this sentence:
 
-End with:
-"This explanation is generated for research and decision-support purposes
-and should not replace assessment by a qualified healthcare professional."
+This explanation is generated for research and decision-support purposes and should not replace assessment by a qualified healthcare professional.
 """
 
 
@@ -388,36 +572,167 @@ and should not replace assessment by a qualified healthcare professional."
 
 @router.post("/explain_view")
 async def explainview(data: VLMCompareRequest):
-        prompt = build_view_prompt(data)
 
-        try:
-            async with httpx.AsyncClient(timeout=320.0) as client:
-                response = await client.post(MODEL_URL, json={
-                    "model": VLM,
-                    "prompt": prompt,
-                    "images": [
-                        data.base_image,
-                        data.classical_heatmap,
-                        data.quantum_heatmap
-                    ],
-                    "stream": False,
-                    "think": False,
-                })
-            result = response.json()
-            explanation = result.get("response", "").strip()
+    prompt = build_view_prompt(data)
 
-        except Exception as e:
-            return JSONResponse(
-                status_code=503,
-                content={"error": f"Model unavailable: {str(e)}", "type": type(e).__name__}
+    if not OPENROUTER_API_KEY:
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": "OPENROUTER_API_KEY is not configured"
+            }
+        )
+
+    print("\n===== OPENROUTER VLM DEBUG =====")
+    print("View:", data.view)
+    print("Classical:", data.classical_verdict)
+    print("Quantum:", data.quantum_verdict)
+
+    # Keep your debug image saving for now
+    save_debug_b64_image(
+        data.base_image,
+        f"{data.view}_01_original.png"
+    )
+
+    save_debug_b64_image(
+        data.classical_heatmap,
+        f"{data.view}_02_classical.png"
+    )
+
+    save_debug_b64_image(
+        data.quantum_heatmap,
+        f"{data.view}_03_quantum.png"
+    )
+
+    payload = {
+        "model": VLM,
+
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": prompt
+                    },
+
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": as_data_uri(
+                                data.base_image
+                            )
+                        }
+                    },
+
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": as_data_uri(
+                                data.classical_heatmap
+                            )
+                        }
+                    },
+
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": as_data_uri(
+                                data.quantum_heatmap
+                            )
+                        }
+                    }
+                ]
+            }
+        ],
+
+        "temperature": 0.2,
+        "max_tokens": 10000
+    }
+
+    try:
+        async with httpx.AsyncClient(
+            timeout=320.0
+        ) as client:
+
+            response = await client.post(
+                OPENROUTER_URL,
+
+                headers={
+                    "Authorization":
+                        f"Bearer {OPENROUTER_API_KEY}",
+
+                    "Content-Type":
+                        "application/json",
+
+                    # Optional
+                    "X-OpenRouter-Title":
+                        "Q-Interval-Lite"
+                },
+
+                json=payload
             )
 
-        return JSONResponse(content={
+        # Very useful while testing
+        if not response.is_success:
+            print(
+                "OpenRouter error:",
+                response.status_code,
+                response.text
+            )
+
+            return JSONResponse(
+                status_code=response.status_code,
+                content={
+                    "error":
+                        f"OpenRouter request failed: "
+                        f"{response.text}"
+                }
+            )
+
+        result = response.json()
+
+        print("FULL OPENROUTER RESPONSE:")
+        print(result)
+
+        content = (
+            result
+            .get("choices", [{}])[0]
+            .get("message", {})
+            .get("content")
+        )
+
+        explanation = content.strip() if isinstance(content, str) else ""
+
+        print(
+            "OpenRouter model used:",
+            result.get("model")
+        )
+
+        print(
+            "VLM explanation:",
+            explanation
+        )
+
+    except Exception as e:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "error":
+                    f"OpenRouter unavailable: {str(e)}",
+
+                "type":
+                    type(e).__name__
+            }
+        )
+
+    return JSONResponse(
+        content={
             "explanation": explanation,
             "audience": data.audience,
-        })
-        
 
-
-        
+            # Helpful during testing.
+            "model": result.get("model")
+        }
+    )
     
