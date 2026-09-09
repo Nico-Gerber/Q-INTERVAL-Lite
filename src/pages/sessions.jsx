@@ -1,12 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Box, Container, Typography, Table, TableHead, TableRow, TableCell, TableBody,
+  Box, Container, Typography, Table, TableHead, TableRow, TableCell, TableBody, TableContainer,
   Chip, Button, CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions, IconButton,
-  Select, MenuItem,
+  Select, MenuItem, TextField, InputAdornment, Divider,
 } from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import CloseIcon from '@mui/icons-material/Close';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import IosShareIcon from '@mui/icons-material/IosShare';
 import { supabase } from '../supabase/supabase';
 import { useAuth } from '../supabase/AuthContext';
 import NeuralCanvas from '../Components/Shared/NeuralCanvas';
@@ -32,17 +38,58 @@ export default function Sessions() {
   const [detail, setDetail] = useState(null); // { session, rows, risk } | null
   const [detailLoading, setDetailLoading] = useState(false);
   const [pendingChange, setPendingChange] = useState(null); // { view, from, to } | null
+  const [pendingDelete, setPendingDelete] = useState(null); // session | null
+  const [deleting, setDeleting] = useState(false);
+  const [shareSession, setShareSession] = useState(null); // session | null
+  const [copied, setCopied] = useState(false);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all'); // all | published | in-progress | not-reviewed
+  const [sortNewestFirst, setSortNewestFirst] = useState(true);
+
+  const statusOf = (s) => (s.verified ? 'published' : s.reviewedCount === 0 ? 'not-reviewed' : 'in-progress');
+
+  const visibleSessions = useMemo(() => {
+    const list = (sessions ?? []).filter((s) => {
+      if (statusFilter !== 'all' && statusOf(s) !== statusFilter) return false;
+      if (search && !s.session_code.toLowerCase().includes(search.trim().toLowerCase())) return false;
+      return true;
+    });
+    list.sort((a, b) => sortNewestFirst
+      ? new Date(b.created_at) - new Date(a.created_at)
+      : new Date(a.created_at) - new Date(b.created_at));
+    return list;
+  }, [sessions, search, statusFilter, sortNewestFirst]);
 
   useEffect(() => {
     if (!supabase) { setSessions([]); return; }
     supabase
       .from('sessions')
-      .select('id, session_code, analysis_mode, verified, verified_at, created_at')
+      .select('id, session_code, analysis_mode, verified, verified_at, created_at, access_token')
       .eq('analysis_mode', 'classification')
       .order('created_at', { ascending: false })
-      .then(({ data, error }) => {
+      .then(async ({ data, error }) => {
         if (error) { console.error('Failed to load sessions:', error); setSessions([]); return; }
-        setSessions(data ?? []);
+        const list = data ?? [];
+        if (!list.length) { setSessions([]); return; }
+
+        // One batched query for review progress across every listed session,
+        // rather than N+1 — Classical model only, since both models share
+        // the same verification_status per view.
+        const { data: progressRows, error: progressError } = await supabase
+          .from('ai_results')
+          .select('session_id, verification_status')
+          .eq('model', 'Classical')
+          .in('session_id', list.map((s) => s.id));
+        if (progressError) console.error('Failed to load review progress:', progressError);
+
+        const reviewedCounts = {};
+        (progressRows ?? []).forEach((r) => {
+          if (r.verification_status !== 'pending') {
+            reviewedCounts[r.session_id] = (reviewedCounts[r.session_id] ?? 0) + 1;
+          }
+        });
+
+        setSessions(list.map((s) => ({ ...s, reviewedCount: reviewedCounts[s.id] ?? 0 })));
       });
   }, []);
 
@@ -61,6 +108,9 @@ export default function Sessions() {
         view: v, classical, quantum,
         verified: classical?.verified_result ?? quantum?.verified_result ?? null,
         overridden: classical?.verification_status === 'overridden' || quantum?.verification_status === 'overridden',
+        // Never reviewed with the image visible — editing this blind isn't a
+        // correction, it'd be fabricating a review. Locked in the UI below.
+        reviewed: classical?.verification_status !== 'pending',
       };
     });
     setDetail({ session, rows, risk: riskRows ?? [] });
@@ -91,6 +141,23 @@ export default function Sessions() {
     setPendingChange(null);
     if (error) { console.error('Failed to update verified result:', error); return; }
     openDetail(detail.session);
+  };
+
+  // Only ever offered for sessions that were never published — get_patient_report
+  // refuses to return anything for an unpublished session regardless of who
+  // holds the access_token, so deleting one destroys nothing a patient could
+  // ever have seen. A published session's link may already be in a patient's
+  // hands; pulling that data out from under them isn't something a button in
+  // this list should be able to do — that stays a deliberate DB-console action.
+  const handleDeleteSession = async () => {
+    if (!supabase || !pendingDelete || pendingDelete.verified) return;
+    setDeleting(true);
+    const { error } = await supabase.from('sessions').delete().eq('id', pendingDelete.id);
+    setDeleting(false);
+    if (error) { console.error('Failed to delete session:', error); return; }
+    setSessions((prev) => (prev ?? []).filter((s) => s.id !== pendingDelete.id));
+    if (detail?.session?.id === pendingDelete.id) setDetail(null);
+    setPendingDelete(null);
   };
 
   return (
@@ -125,61 +192,140 @@ export default function Sessions() {
             borderRadius: '999px',
           }}
         />
-        <Typography variant="h3" sx={{ fontWeight: 700, letterSpacing: '-0.02em', color: 'text.primary', mb: 1, fontSize: { xs: '1.8rem', md: '2.25rem' } }}>
+        <Typography variant="h3" sx={{ fontWeight: 700, letterSpacing: '-0.02em', color: 'text.primary', mb: 1.5, fontSize: { xs: '1.8rem', md: '2.25rem' } }}>
           My
           <Box component="span" sx={{ color: 'primary.main', fontStyle: 'italic' }}>
             Sessions
           </Box>
+          {user?.email && (
+            <Box component="span" sx={{ color: 'text.secondary', fontStyle: 'normal', fontWeight: 500, fontSize: '0.55em', ml: 1.5 }}>
+              — {user.email.split('@')[0]}
+            </Box>
+          )}
         </Typography>
-        <Typography sx={{ color: 'text.secondary', mb: 3, fontSize: '0.9rem' }}>
-          Every Session Analysis you've run — reviewed or not. Open one to adjust a verified result.
+        <Typography sx={{ color: 'text.secondary', mb: 4, fontSize: '0.95rem', lineHeight: 1.75, maxWidth: 640 }}>
+          Every Session Analysis you've run — reviewed or not. Open one to correct an already-reviewed result;
+          views you never reviewed with the image visible stay locked.
         </Typography>
 
         {sessions === null ? (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <CircularProgress size={20} />
-            <Typography sx={{ color: 'text.secondary' }}>Loading…</Typography>
+          <Box sx={{ minHeight: '30vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1.75 }}>
+            <CircularProgress size={30} sx={{ color: 'primary.main' }} />
+            <Typography sx={{ color: 'text.secondary', fontSize: '0.9rem' }}>Loading your sessions…</Typography>
           </Box>
         ) : sessions.length === 0 ? (
           <Typography sx={{ color: 'text.secondary' }}>No sessions yet — run an analysis to see it here.</Typography>
         ) : (
           <ResultShell sx={{ p: { xs: 2, md: 2.5 }, pb: { xs: 3, md: 3.5 } }}>
-            <Table size="small">
+            <Box sx={{
+              display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'center',
+              pb: 2, mb: 2, borderBottom: '1px solid #17304d',
+            }}>
+              <TextField
+                size="small"
+                placeholder="Search by session code…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                sx={{
+                  flex: 1, minWidth: 220,
+                  '& .MuiOutlinedInput-root': { color: '#eaf4ff', background: 'rgba(255,255,255,0.04)', fontSize: '0.82rem' },
+                  '& fieldset': { borderColor: '#1f3a5c' },
+                  '&:hover fieldset': { borderColor: '#2d4a6b !important' },
+                }}
+                InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon sx={{ fontSize: 16, color: '#5f7fa6' }} /></InputAdornment> }}
+              />
+              <Select
+                size="small"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                sx={{ minWidth: 150, fontSize: '0.82rem', color: '#eaf4ff', background: 'rgba(255,255,255,0.04)', '.MuiOutlinedInput-notchedOutline': { borderColor: '#1f3a5c' } }}
+                MenuProps={{ PaperProps: { sx: { fontSize: '0.82rem' } } }}
+              >
+                <MenuItem value="all" sx={{ fontSize: '0.82rem' }}>All statuses</MenuItem>
+                <MenuItem value="published" sx={{ fontSize: '0.82rem' }}>Published</MenuItem>
+                <MenuItem value="in-progress" sx={{ fontSize: '0.82rem' }}>In progress</MenuItem>
+                <MenuItem value="not-reviewed" sx={{ fontSize: '0.82rem' }}>Not reviewed</MenuItem>
+              </Select>
+              <Button
+                size="small"
+                startIcon={sortNewestFirst ? <ArrowDownwardIcon sx={{ fontSize: 14 }} /> : <ArrowUpwardIcon sx={{ fontSize: 14 }} />}
+                onClick={() => setSortNewestFirst((v) => !v)}
+                sx={{ color: '#8fabc9', border: '1px solid #1f3a5c', px: 1.5, fontSize: '0.8rem', background: 'rgba(255,255,255,0.04)' }}
+              >
+                {sortNewestFirst ? 'Newest first' : 'Oldest first'}
+              </Button>
+            </Box>
+
+            {visibleSessions.length === 0 ? (
+              <Typography sx={{ color: '#8fabc9', fontSize: '0.9rem', p: 2 }}>
+                No sessions match your search or filter.
+              </Typography>
+            ) : (
+            <TableContainer sx={{ overflowX: 'auto' }}>
+            <Table size="small" sx={{ minWidth: 640 }}>
               <TableHead>
                 <TableRow>
-                  <TableCell sx={{ color: '#8fabc9', borderColor: '#17304d' }}>Session</TableCell>
-                  <TableCell sx={{ color: '#8fabc9', borderColor: '#17304d' }}>Date</TableCell>
-                  <TableCell sx={{ color: '#8fabc9', borderColor: '#17304d' }}>Status</TableCell>
-                  <TableCell align="right" sx={{ color: '#8fabc9', borderColor: '#17304d' }}>Action</TableCell>
+                  <TableCell sx={{ py: 1.5, color: '#8fabc9', borderBottom: '2px solid #1f3a5c', whiteSpace: 'nowrap' }}>Session</TableCell>
+                  <TableCell sx={{ py: 1.5, color: '#8fabc9', borderBottom: '2px solid #1f3a5c', whiteSpace: 'nowrap' }}>Date</TableCell>
+                  <TableCell sx={{ py: 1.5, color: '#8fabc9', borderBottom: '2px solid #1f3a5c', whiteSpace: 'nowrap' }}>Status</TableCell>
+                  <TableCell sx={{ py: 1.5, color: '#8fabc9', borderBottom: '2px solid #1f3a5c', whiteSpace: 'nowrap' }}>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {sessions.map((s) => (
+                {visibleSessions.map((s) => (
                   <TableRow key={s.id} hover>
-                    <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.8rem', color: '#eaf4ff', borderColor: '#17304d' }}>{s.session_code}</TableCell>
-                    <TableCell sx={{ fontSize: '0.85rem', color: '#c3d8ec', borderColor: '#17304d' }}>{new Date(s.created_at).toLocaleString()}</TableCell>
-                    <TableCell sx={{ borderColor: '#17304d' }}>
-                      <Chip
-                        size="small"
-                        label={s.verified ? 'Published' : 'Not published'}
-                        sx={{
-                          fontSize: '0.7rem', fontWeight: 700,
-                          color: s.verified ? '#4fd1a1' : '#8fabc9',
-                          borderColor: s.verified ? 'rgba(79,209,161,0.5)' : '#17304d',
-                          background: s.verified ? 'rgba(79,209,161,0.1)' : 'transparent',
-                        }}
-                        variant="outlined"
-                      />
+                    <TableCell sx={{ py: 2, fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 700, color: '#eaf4ff', borderColor: '#1f3a5c', whiteSpace: 'nowrap' }}>{s.session_code}</TableCell>
+                    <TableCell sx={{ py: 2, fontSize: '0.85rem', color: '#c3d8ec', borderColor: '#1f3a5c', whiteSpace: 'nowrap' }}>{new Date(s.created_at).toLocaleString()}</TableCell>
+                    <TableCell sx={{ py: 2, borderColor: '#1f3a5c' }}>
+                      {s.verified ? (
+                        <Chip
+                          size="small" label="Published" variant="outlined"
+                          sx={{ fontSize: '0.7rem', fontWeight: 700, color: '#4fd1a1', borderColor: 'rgba(79,209,161,0.5)', background: 'rgba(79,209,161,0.1)' }}
+                        />
+                      ) : s.reviewedCount === 0 ? (
+                        <Chip
+                          size="small" label="Not reviewed" variant="outlined"
+                          sx={{ fontSize: '0.7rem', fontWeight: 700, color: '#5f7fa6', borderColor: '#17304d', background: 'transparent' }}
+                        />
+                      ) : (
+                        <Chip
+                          size="small" label={`${s.reviewedCount}/4 reviewed`} variant="outlined"
+                          sx={{ fontSize: '0.7rem', fontWeight: 700, color: OVERRIDE_GLOW, borderColor: `${OVERRIDE_GLOW}80`, background: `${OVERRIDE_GLOW}14` }}
+                        />
+                      )}
                     </TableCell>
-                    <TableCell align="right" sx={{ borderColor: '#17304d' }}>
-                      <Button size="small" startIcon={<VisibilityIcon sx={{ fontSize: 15 }} />} onClick={() => openDetail(s)} sx={{ color: '#5cc8f5' }}>
-                        View
-                      </Button>
+                    <TableCell sx={{ py: 2, borderColor: '#1f3a5c', whiteSpace: 'nowrap' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Button
+                          size="small" startIcon={<VisibilityIcon sx={{ fontSize: 15 }} />} onClick={() => openDetail(s)}
+                          sx={{ color: '#5cc8f5', minWidth: 84, justifyContent: 'flex-start' }}
+                        >
+                          View
+                        </Button>
+                        <Divider orientation="vertical" flexItem sx={{ borderColor: '#1f3a5c', mx: 0.5, my: 0.5 }} />
+                        {s.verified ? (
+                          <Button
+                            size="small" startIcon={<IosShareIcon sx={{ fontSize: 14 }} />} onClick={() => { setShareSession(s); setCopied(false); }}
+                            sx={{ color: '#4fd1a1', minWidth: 84, justifyContent: 'flex-start' }}
+                          >
+                            Share
+                          </Button>
+                        ) : (
+                          <Button
+                            size="small" startIcon={<DeleteOutlineIcon sx={{ fontSize: 15 }} />} onClick={() => setPendingDelete(s)}
+                            sx={{ color: '#8fabc9', minWidth: 84, justifyContent: 'flex-start' }}
+                          >
+                            Delete
+                          </Button>
+                        )}
+                      </Box>
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
+            </TableContainer>
+            )}
           </ResultShell>
         )}
       </Container>
@@ -191,7 +337,9 @@ export default function Sessions() {
               {detail?.session?.session_code}
             </Typography>
             <Typography sx={{ fontSize: '0.78rem', color: '#8fabc9' }}>
-              {detail?.session?.verified ? `Published ${new Date(detail.session.verified_at).toLocaleString()}` : 'Not yet published'}
+              {detail?.session?.verified
+                ? `Published ${new Date(detail.session.verified_at).toLocaleString()}`
+                : `Not published · ${(detail?.rows ?? []).filter((r) => r.reviewed).length}/4 reviewed`}
             </Typography>
           </Box>
           <IconButton onClick={() => setDetail(null)} size="small" sx={{ color: '#8fabc9' }}><CloseIcon fontSize="small" /></IconButton>
@@ -241,30 +389,54 @@ export default function Sessions() {
                         <TableCell sx={{ py: 2, color: getColor(r.classical?.ai_result), borderColor: '#17304d' }}>{r.classical?.ai_result ?? '—'}</TableCell>
                         <TableCell sx={{ py: 2, color: getColor(r.quantum?.ai_result), borderColor: '#17304d' }}>{r.quantum?.ai_result ?? '—'}</TableCell>
                         <TableCell sx={{ py: 1, borderColor: '#17304d' }}>
-                          <Select
-                            size="small"
-                            value={r.verified ?? ''}
-                            displayEmpty
-                            onChange={(e) => requestChange(r.view, e.target.value)}
-                            sx={{
-                              minWidth: 130, fontSize: '0.85rem', color: getColor(r.verified),
-                              '.MuiOutlinedInput-notchedOutline': { borderColor: '#17304d' },
-                            }}
-                          >
-                            <MenuItem value="" disabled>Not reviewed</MenuItem>
-                            {RESULTS.map((res) => (
-                              <MenuItem key={res} value={res} sx={{ color: getColor(res) }}>{res}</MenuItem>
-                            ))}
-                          </Select>
+                          {r.reviewed ? (
+                            <Select
+                              size="small"
+                              value={r.verified ?? ''}
+                              displayEmpty
+                              onChange={(e) => requestChange(r.view, e.target.value)}
+                              sx={{
+                                minWidth: 130, fontSize: '0.85rem', color: getColor(r.verified),
+                                '.MuiOutlinedInput-notchedOutline': { borderColor: '#17304d' },
+                              }}
+                            >
+                              <MenuItem value="" disabled>Not reviewed</MenuItem>
+                              {RESULTS.map((res) => (
+                                <MenuItem key={res} value={res} sx={{ color: getColor(res) }}>{res}</MenuItem>
+                              ))}
+                            </Select>
+                          ) : (
+                            <Box title="Never reviewed with the mammogram image visible — can't be edited here." sx={{ display: 'flex', alignItems: 'center', gap: 0.75, color: '#5f7fa6', cursor: 'help' }}>
+                              <LockOutlinedIcon sx={{ fontSize: 15 }} />
+                              <Typography sx={{ fontSize: '0.8rem' }}>Never reviewed</Typography>
+                            </Box>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
-                <Typography sx={{ fontSize: '0.72rem', color: '#8fabc9', mt: 1.5 }}>
-                  <Box component="span" sx={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: OVERRIDE_GLOW, mr: 0.75, verticalAlign: 'middle' }} />
-                  Highlighted rows are where the verified result differs from the Classical AI reading.
-                </Typography>
+                <Box sx={{
+                  display: 'flex', gap: 1.25, alignItems: 'flex-start', mt: 2,
+                  p: 1.5, borderRadius: 1.5, border: `1px solid ${OVERRIDE_GLOW}66`, background: `${OVERRIDE_GLOW}14`,
+                }}>
+                  <Box sx={{ width: 10, height: 10, borderRadius: '50%', background: OVERRIDE_GLOW, flexShrink: 0, mt: 0.35 }} />
+                  <Typography sx={{ fontSize: '0.85rem', color: '#FFD98A', lineHeight: 1.6 }}>
+                    Highlighted rows are where the verified result differs from the Classical AI reading.
+                  </Typography>
+                </Box>
+                {(detail?.rows ?? []).some((r) => !r.reviewed) && (
+                  <Box sx={{
+                    display: 'flex', gap: 1.25, alignItems: 'flex-start', mt: 1.25,
+                    p: 1.5, borderRadius: 1.5, border: '1px solid #2d4a6b', background: 'rgba(95,127,166,0.12)',
+                  }}>
+                    <LockOutlinedIcon sx={{ fontSize: 18, color: '#8fabc9', flexShrink: 0, mt: 0.15 }} />
+                    <Typography sx={{ fontSize: '0.85rem', color: '#c3d8ec', lineHeight: 1.6 }}>
+                      Locked views were never reviewed while the mammogram image was on screen — open a new
+                      session to review them properly rather than setting a result blind.
+                    </Typography>
+                  </Box>
+                )}
               </Box>
 
               <Box>
@@ -280,6 +452,71 @@ export default function Sessions() {
             </Box>
           )}
         </DialogContent>
+        {detail?.session && !detail.session.verified && (
+          <DialogActions sx={{ px: 3, py: 1.5 }}>
+            <Button
+              size="small" startIcon={<DeleteOutlineIcon sx={{ fontSize: 16 }} />}
+              onClick={() => setPendingDelete(detail.session)}
+              sx={{ color: '#F87171', mr: 'auto' }}
+            >
+              Delete Session
+            </Button>
+          </DialogActions>
+        )}
+      </Dialog>
+
+      {/* Delete is only ever offered for unpublished sessions (see handleDeleteSession) —
+          still confirm, since it's a permanent, irreversible action either way. */}
+      <Dialog open={!!pendingDelete} onClose={() => setPendingDelete(null)} maxWidth="xs" fullWidth PaperProps={{ sx: DIALOG_SX }}>
+        <DialogTitle sx={{ fontSize: '1rem', fontWeight: 700 }}>Delete this session?</DialogTitle>
+        <DialogContent>
+          <Typography sx={{ fontSize: '0.9rem', color: '#c3d8ec', lineHeight: 1.6 }}>
+            <Box component="span" sx={{ fontFamily: 'monospace', fontWeight: 700 }}>{pendingDelete?.session_code}</Box>
+            {' '}and all of its AI results and risk assessments will be permanently deleted. This can't be undone.
+          </Typography>
+          <Typography sx={{ fontSize: '0.8rem', color: '#8fabc9', mt: 1.5 }}>
+            This session was never published, so no patient could ever have seen it.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2.5 }}>
+          <Button onClick={() => setPendingDelete(null)} sx={{ color: '#8fabc9' }}>Cancel</Button>
+          <Button onClick={handleDeleteSession} variant="contained" disabled={deleting} color="error" sx={{ fontWeight: 700 }}>
+            {deleting ? 'Deleting…' : 'Delete Permanently'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={!!shareSession} onClose={() => setShareSession(null)} maxWidth="xs" fullWidth PaperProps={{ sx: DIALOG_SX }}>
+        <DialogTitle sx={{ fontSize: '1rem', fontWeight: 700 }}>Patient link</DialogTitle>
+        <DialogContent>
+          <Typography sx={{ fontSize: '0.85rem', color: '#8fabc9', mb: 1.5 }}>
+            This link has been live since <Box component="span" sx={{ fontFamily: 'monospace' }}>{shareSession?.session_code}</Box> was published — it never expires.
+          </Typography>
+          <Box sx={{
+            display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap',
+            px: 2, py: 1.25, borderRadius: 1, border: '1px solid rgba(79,209,161,0.35)', background: 'rgba(79,209,161,0.08)',
+          }}>
+            <Typography sx={{
+              fontFamily: 'monospace', fontSize: '0.78rem', color: '#c3d8ec',
+              wordBreak: 'break-all', flex: 1, minWidth: 0,
+            }}>
+              {shareSession ? `${window.location.origin}/report/${shareSession.access_token}` : ''}
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2.5 }}>
+          <Button onClick={() => setShareSession(null)} sx={{ color: '#8fabc9' }}>Close</Button>
+          <Button
+            variant="contained"
+            onClick={() => {
+              navigator.clipboard?.writeText(`${window.location.origin}/report/${shareSession.access_token}`);
+              setCopied(true);
+            }}
+            sx={{ fontWeight: 700 }}
+          >
+            {copied ? 'Copied!' : 'Copy Link'}
+          </Button>
+        </DialogActions>
       </Dialog>
 
       {/* Confirm-before-save — a verified result feeds a live patient link, so an
