@@ -61,7 +61,7 @@ warnings.filterwarnings("ignore")
 HERE = Path(__file__).resolve().parent
 
 ARTIFACTS_PATH = Path(os.environ.get(
-    "QESFRP_ARTIFACTS", HERE / "models" / "QeSFRP_V0.2.pkl"))
+    "QESFRP_ARTIFACTS", HERE / "models" / "QeSFRP_V0.4.pkl"))
 
 APPLY_AGE_MULTIPLIER = True
 
