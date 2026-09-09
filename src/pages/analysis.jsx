@@ -80,25 +80,16 @@ const stepVariants = {
 
 
 const LOADING_MESSAGES = [
-  { text: "Preprocessing mammogram views...", duration: 1200 },
-  { text: "Running CNN classification — L-CC...", duration: 1000 },
-  { text: "Running CNN classification — L-MLO...", duration: 1000 },
-  { text: "Running CNN classification — R-CC...", duration: 1000 },
-  { text: "Running CNN classification — R-MLO...", duration: 1000 },
-  { text: "Generating Grad-CAM heatmaps...", duration: 1500 },
-  { text: "Applying temperature calibration...", duration: 800 },
-  { text: "Running quantum classification...", duration: 1200 },
-  { text: "Encoding PCA features into qubits...", duration: 1000 },
-  { text: "Measuring quantum circuit outputs...", duration: 1000 },
-  { text: "Running composite risk pipeline...", duration: 1200 },
-  { text: "Scoring breast density classification...", duration: 800 },
-  { text: "Calculating BI-RADS risk score...", duration: 800 },
-  { text: "Computing weighted risk index...", duration: 800 },
-  { text: "Aggregating patient-level scores...", duration: 800 },
-  { text: "Comparing classical vs quantum results...", duration: 1000 },
-  { text: "Finalising analysis results...", duration: 800 },
-  { text: "Almost there...", duration: 3000 },
+  { text: "Analysing mammogram views...", duration: 4000 },
+  { text: "Running classification models...", duration: 8000 },
+  { text: "Generating explainability heatmaps...", duration: 12000 },
+  { text: "Calculating composite risk scores...", duration: 5000 },
+  { text: "Finalising results...", duration: 4000 },
 ];
+// Once the scripted timeline runs out (real inference can outlast it, e.g. on
+// CPU without a GPU), hold on the last message instead of cycling back —
+// the progress bar keeps moving so it never reads as frozen.
+const LOADING_MESSAGES_TAIL_LOOP = 1;
 
 // Session identifier: QIL-MA-YYYYMMDD-HHMM-XXXX (date/time + random tiebreaker).
 // Used in the results header and the exported PDF's filename/footer.
@@ -302,10 +293,18 @@ export default function Analysis() {
     let timeoutId;
 
     const advance = (index) => {
-      if (cancelled || index >= LOADING_MESSAGES.length) return;
-      setLoadingText(LOADING_MESSAGES[index].text);
-      setMsgIndex(index);
-      timeoutId = setTimeout(() => advance(index + 1), LOADING_MESSAGES[index].duration);
+      if (cancelled) return;
+      // Past the end of the scripted timeline, loop over the tail messages
+      // (e.g. the occlusion-heatmap steps) so the text keeps moving instead
+      // of sitting frozen on "Almost there..." while the real request
+      // finishes.
+      const loopStart = LOADING_MESSAGES.length - LOADING_MESSAGES_TAIL_LOOP;
+      const i = index >= LOADING_MESSAGES.length
+        ? loopStart + ((index - LOADING_MESSAGES.length) % LOADING_MESSAGES_TAIL_LOOP)
+        : index;
+      setLoadingText(LOADING_MESSAGES[i].text);
+      setMsgIndex(i);
+      timeoutId = setTimeout(() => advance(index + 1), LOADING_MESSAGES[i].duration);
     };
 
     advance(0);
@@ -1009,7 +1008,10 @@ export default function Analysis() {
                       minHeight: '55vh', display: 'flex',
                       alignItems: 'center', justifyContent: 'center',
                     }}>
-                      <ScanningLoader message={loadingText} />
+                      <ScanningLoader
+                        message={loadingText}
+                        expectedDurationMs={analysisMode === 'classification' ? 38000 : 16000}
+                      />
                     </Box>
                   ) : (
                     <>

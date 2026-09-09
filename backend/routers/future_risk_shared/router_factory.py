@@ -1,6 +1,6 @@
 """Generic Future Risk FastAPI router factory."""
 
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
@@ -13,7 +13,7 @@ def create_future_risk_router(
     engine,
     path: str,
     tag: str,
-    health_path: str | None = None,
+    health_path: Optional[str] = None,
 ):
     """Create a complete Future Risk router around a compliant run.py module.
 
