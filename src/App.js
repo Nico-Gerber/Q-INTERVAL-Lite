@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, createContext, useContext } from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
-import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { ThemeProvider, createTheme, CssBaseline, Box, CircularProgress } from '@mui/material';
 import './App.css';
 
 import Navigation from './Components/Navigation/Navbar';
@@ -10,6 +10,27 @@ import Models from './pages/models';
 import About from './pages/about';
 import Analysis from './pages/analysis';
 import Report from './pages/report';
+import Sessions from './pages/sessions';
+import Login from './pages/login';
+import RequestAccess from './pages/requestAccess';
+import { AuthProvider, useAuth } from './supabase/AuthContext';
+
+function RequireAuth({ children }) {
+  const { user, loading } = useAuth();
+  const location = useLocation();
+
+  if (loading) {
+    return (
+      <Box sx={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <CircularProgress size={28} />
+      </Box>
+    );
+  }
+  if (!user) {
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  }
+  return children;
+}
 
 export const ColorModeContext = createContext({ toggleColorMode: () => {}, mode: 'dark' });
 export const useColorMode = () => useContext(ColorModeContext);
@@ -237,17 +258,22 @@ function App() {
       <ThemeProvider theme={mode === 'dark' ? darkTheme : lightTheme}>
         <CssBaseline />
         <ScrollToTop />
-        <div className="app-root">
-          <Navigation />
-          <Routes>
-            <Route path="/"         element={<Home />} />
-            <Route path="/Models"   element={<Models />} />
-            <Route path="/About"  element={<About />} />
-            <Route path="/Analysis" element={<Analysis key={location.key} />} />
-            <Route path="/report/:token" element={<Report />} />
-          </Routes>
-          <Footer />
-        </div>
+        <AuthProvider>
+          <div className="app-root">
+            <Navigation />
+            <Routes>
+              <Route path="/"         element={<Home />} />
+              <Route path="/Models"   element={<Models />} />
+              <Route path="/About"  element={<About />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/request-access" element={<RequestAccess />} />
+              <Route path="/Analysis" element={<RequireAuth><Analysis key={location.key} /></RequireAuth>} />
+              <Route path="/Sessions" element={<RequireAuth><Sessions /></RequireAuth>} />
+              <Route path="/report/:token" element={<Report />} />
+            </Routes>
+            <Footer />
+          </div>
+        </AuthProvider>
       </ThemeProvider>
     </ColorModeContext.Provider>
   );

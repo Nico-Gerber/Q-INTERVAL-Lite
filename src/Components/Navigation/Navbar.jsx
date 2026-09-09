@@ -9,10 +9,27 @@ import {
   Close as CloseIcon,
   LightMode as SunIcon,
   DarkMode as MoonIcon,
+  LogoutRounded as LogoutIcon,
+  HistoryRounded as HistoryIcon,
+  SpaceDashboardRounded as DashboardIcon,
 } from '@mui/icons-material';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ColorModeContext } from '../../App';
+import { useAuth } from '../../supabase/AuthContext';
 import logoDark from '../../assets/logo-dark.svg';
+
+// Shared hover treatment for every icon button in the desktop nav bar —
+// theme toggle, My Sessions, Sign Out, and the logged-in dashboard icon —
+// so none of them stand out from the others.
+const NAV_ICON_SX = {
+  width: 36, height: 36,
+  border: '1px solid rgba(255,255,255,0.2)',
+  borderRadius: '999px',
+  color: 'rgba(255,255,255,0.75)',
+  backgroundColor: 'rgba(255,255,255,0.06)',
+  transition: 'all 0.2s',
+  '&:hover': { backgroundColor: 'rgba(255,255,255,0.12)', borderColor: 'rgba(255,255,255,0.4)', color: '#FFFFFF' },
+};
 
 const NAV_ITEMS = [
   { label: 'Home',     path: '/' },
@@ -31,11 +48,18 @@ const LogoMark = ({ size = 44 }) => (
 
 const Navigation = () => {
   const location  = useLocation();
+  const navigate  = useNavigate();
   const theme     = useTheme();
   const isMobile  = useMediaQuery(theme.breakpoints.down('md'));
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { mode, toggleColorMode } = React.useContext(ColorModeContext);
+  const { user, signOut } = useAuth();
   const isDark = mode === 'dark';
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
 
   const handleNavClick = (path) => {
     if (path === '/' && location.pathname === '/') {
@@ -105,30 +129,63 @@ const Navigation = () => {
           {!isMobile ? (
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1 }}>
               <Tooltip title={isDark ? 'Switch to light mode' : 'Switch to dark mode'} arrow>
-                <IconButton
-                  onClick={toggleColorMode}
-                  size="small"
-                  sx={{
-                    width: 36, height: 36,
-                    border: '1px solid rgba(255,255,255,0.2)',
-                    borderRadius: '999px',
-                    color: 'rgba(255,255,255,0.75)',
-                    backgroundColor: 'rgba(255,255,255,0.06)',
-                    transition: 'all 0.2s',
-                    '&:hover': { backgroundColor: 'rgba(255,255,255,0.12)', borderColor: 'rgba(255,255,255,0.4)', color: '#FFFFFF' },
-                  }}
-                >
+                <IconButton onClick={toggleColorMode} size="small" sx={NAV_ICON_SX}>
                   {isDark ? <SunIcon sx={{ fontSize: 17 }} /> : <MoonIcon sx={{ fontSize: 17 }} />}
                 </IconButton>
               </Tooltip>
-              <Button
-                component={Link}
-                to="/Analysis"
-                variant="contained"
-                sx={{ px: 2.5, py: 1, fontSize: '0.88rem', fontWeight: 700, color: '#FFFFFF' }}
-              >
-                Launch Analysis Dashboard →
-              </Button>
+
+              {user ? (
+                <Tooltip title="Analysis Dashboard" arrow>
+                  <IconButton
+                    component={Link}
+                    to="/Analysis"
+                    size="small"
+                    sx={(theme) => ({
+                      width: 36, height: 36,
+                      borderRadius: '999px',
+                      color: '#FFFFFF',
+                      background: theme.palette.mode === 'dark'
+                        ? 'linear-gradient(135deg, #22D3EE, #0891B2)'
+                        : 'linear-gradient(135deg, #0891B2, #0E7490)',
+                      boxShadow: theme.palette.mode === 'dark' ? '0 0 20px rgba(34,211,238,0.22)' : '0 0 20px rgba(8,145,178,0.28)',
+                      transition: 'all 0.2s',
+                      '&:hover': {
+                        background: theme.palette.mode === 'dark'
+                          ? 'linear-gradient(135deg, #67E8F9, #22D3EE)'
+                          : 'linear-gradient(135deg, #22D3EE, #0891B2)',
+                        boxShadow: theme.palette.mode === 'dark' ? '0 0 28px rgba(34,211,238,0.32)' : '0 0 28px rgba(8,145,178,0.4)',
+                      },
+                    })}
+                  >
+                    <DashboardIcon sx={{ fontSize: 17 }} />
+                  </IconButton>
+                </Tooltip>
+              ) : (
+                <Button
+                  component={Link}
+                  to="/Analysis"
+                  variant="contained"
+                  size="small"
+                  sx={{ height: 36, px: 2, fontSize: '0.8rem', fontWeight: 700, color: '#FFFFFF' }}
+                >
+                  Launch Analysis Dashboard →
+                </Button>
+              )}
+
+              {user && (
+                <Tooltip title="My Sessions" arrow>
+                  <IconButton component={Link} to="/Sessions" size="small" sx={NAV_ICON_SX}>
+                    <HistoryIcon sx={{ fontSize: 17 }} />
+                  </IconButton>
+                </Tooltip>
+              )}
+              {user && (
+                <Tooltip title={`Sign out (${user.email})`} arrow>
+                  <IconButton onClick={handleSignOut} size="small" sx={NAV_ICON_SX}>
+                    <LogoutIcon sx={{ fontSize: 17 }} />
+                  </IconButton>
+                </Tooltip>
+              )}
             </Box>
           ) : (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, justifySelf: 'end' }}>
@@ -188,10 +245,28 @@ const Navigation = () => {
             {isDark ? <SunIcon sx={{ fontSize: 16 }} /> : <MoonIcon sx={{ fontSize: 16 }} />}
           </IconButton>
         </Box>
-        <Box sx={{ p: 2, mt: 1 }}>
+        <Box sx={{ p: 2, mt: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
           <Button component={Link} to="/Analysis" variant="contained" fullWidth onClick={() => setDrawerOpen(false)} sx={{ py: 1.2, fontSize: '0.9rem', fontWeight: 700, color: '#FFFFFF' }}>
             Launch Analysis Dashboard →
           </Button>
+          {user && (
+            <Button
+              component={Link} to="/Sessions" fullWidth onClick={() => setDrawerOpen(false)}
+              startIcon={<HistoryIcon sx={{ fontSize: 16 }} />}
+              sx={{ fontSize: '0.85rem', fontWeight: 600, color: 'rgba(255,255,255,0.75)', '&:hover': { color: '#FFFFFF' } }}
+            >
+              My Sessions
+            </Button>
+          )}
+          {user && (
+            <Button
+              fullWidth
+              onClick={() => { setDrawerOpen(false); handleSignOut(); }}
+              sx={{ fontSize: '0.85rem', fontWeight: 600, color: 'rgba(255,255,255,0.6)', '&:hover': { color: '#FFFFFF' } }}
+            >
+              Sign Out
+            </Button>
+          )}
         </Box>
       </Drawer>
     </>

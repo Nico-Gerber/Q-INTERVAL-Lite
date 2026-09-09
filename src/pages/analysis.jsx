@@ -3,6 +3,7 @@ import { Box, Chip, Container, Typography, Alert, Button, Drawer, TextField, Dia
 import { AnimatePresence, motion } from 'framer-motion';
 import { Sidebar, Menu, MenuItem, SubMenu } from 'react-pro-sidebar';
 import exportSessionPDF from '../Components/Results/Shared/ExportSession';
+import NeuralCanvas from '../Components/Shared/NeuralCanvas';
 import DownloadIcon from '@mui/icons-material/Download';
 
 
@@ -23,53 +24,9 @@ import AssistantIcon from '@mui/icons-material/Assistant';
 import { ThreeDot } from 'react-loading-indicators';
 
 import { supabase } from '../supabase/supabase';
+import { useAuth } from '../supabase/AuthContext';
 
 const API_BASE = 'http://localhost:8000';
-
-function NeuralCanvas() {
-  const canvasRef = useRef(null);
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    let raf;
-    const resize = () => { canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight; };
-    resize();
-    window.addEventListener('resize', resize);
-    const NODE_COUNT = 48;
-    const CONNECT_DIST = 160;
-    const nodes = Array.from({ length: NODE_COUNT }, () => ({
-      x: Math.random() * canvas.width, y: Math.random() * canvas.height,
-      vx: (Math.random() - 0.5) * 0.18, vy: (Math.random() - 0.5) * 0.18,
-      r: Math.random() * 1.2 + 0.6,
-    }));
-    const draw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      for (let i = 0; i < nodes.length; i++) {
-        for (let j = i + 1; j < nodes.length; j++) {
-          const dx = nodes[i].x - nodes[j].x, dy = nodes[i].y - nodes[j].y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < CONNECT_DIST) {
-            const alpha = (1 - dist / CONNECT_DIST) * 0.12;
-            ctx.beginPath(); ctx.moveTo(nodes[i].x, nodes[i].y); ctx.lineTo(nodes[j].x, nodes[j].y);
-            ctx.strokeStyle = `rgba(34,211,238,${alpha})`; ctx.lineWidth = 0.8; ctx.stroke();
-          }
-        }
-      }
-      nodes.forEach((n) => {
-        n.x += n.vx; n.y += n.vy;
-        if (n.x < 0) n.x = canvas.width; if (n.x > canvas.width) n.x = 0;
-        if (n.y < 0) n.y = canvas.height; if (n.y > canvas.height) n.y = 0;
-        ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(34,211,238,0.28)'; ctx.fill();
-      });
-      raf = requestAnimationFrame(draw);
-    };
-    draw();
-    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); };
-  }, []);
-  return <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 0 }} />;
-}
 
 // Shared fade+slide up variant for step transitions
 const stepVariants = {
@@ -106,6 +63,8 @@ const genSessionId = () => {
 
 
 export default function Analysis() {
+
+  const { user } = useAuth();
 
   const [files, setFiles] = useState([]);
   const [preview, setPreview] = useState(null);
@@ -202,6 +161,7 @@ export default function Analysis() {
         verification_status: verificationStatus,
         verified_result: update.status === 'pending' ? null : update.clinicianResult,
         verified_at: update.status === 'pending' ? null : new Date().toISOString(),
+        verified_by: update.status === 'pending' ? null : (user?.email ?? null),
       })
       .eq('session_id', dbSessionId)
       .eq('view', viewId)
@@ -330,7 +290,7 @@ export default function Analysis() {
     try {
       const { data: sessionRow, error: sessionError } = await supabase
         .from('sessions')
-        .insert({ session_code: sessionCode, analysis_mode: 'classification' })
+        .insert({ session_code: sessionCode, analysis_mode: 'classification', clinician_id: user?.id ?? null })
         .select()
         .single();
       if (sessionError) throw sessionError;
@@ -393,7 +353,7 @@ export default function Analysis() {
     try {
       const { error } = await supabase
         .from('sessions')
-        .update({ verified: true, verified_at: new Date().toISOString() })
+        .update({ verified: true, verified_at: new Date().toISOString(), verified_by: user?.email ?? null })
         .eq('id', dbSessionId);
       if (error) throw error;
       setSessionFinalized(true);
