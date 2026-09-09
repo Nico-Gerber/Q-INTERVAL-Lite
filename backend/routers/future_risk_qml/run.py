@@ -1,57 +1,18 @@
-
-
 import io
-import json
 import os
 import pickle
+import tempfile
 import warnings
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
-from PIL import Image
-from fastapi import HTTPException
-
 import torch
+import torch.nn as nn
+import pennylane as qml
+from PIL import Image
 
 warnings.filterwarnings("ignore")
-
-
-# ============================================================
-# CONFIG
-# ============================================================
-
-HERE = Path(__file__).resolve().parent
-
-ARTIFACTS_PATH = Path(os.environ.get(
-    "QESFRP_ARTIFACTS", HERE / "models" / "QeSFRP_V0.2.pkl"))
-
-APPLY_AGE_MULTIPLIER = True
-
-# Interpretability thresholds (percentage points on the 5-year risk).
-MIN_TOTAL_POSITIVE_DROP_FOR_PERCENT = 1.0
-LOW_IMPACT_THRESHOLD_5Y = 1.0
-MODERATE_IMPACT_THRESHOLD_5Y = 3.0
-
-# From the architecture document. Prototype adjustment, not clinically
-# validated, and applied AFTER the model rather than learned by it.
-AGE_MULTIPLIERS = {
-    "Under 30": 0.70,
-    "30-39": 1.02,
-    "40-49": 1.04,
-    "50-59": 1.08,
-    "60-69": 1.15,
-    "70-79": 1.25,
-    "80+": 1.50,
-}
-
-VIEW_KEYS = ["L-CC", "R-CC", "L-MLO", "R-MLO"]
-
-# Risk bands on the final 5-year figure.
-RISK_BANDS = [(3.0, "Low Risk"), (8.0, "Medium Risk"), (float("inf"), "High Risk")]
-
-
 
 try:
     from skimage.feature import graycomatrix, graycoprops, local_binary_pattern
@@ -66,7 +27,27 @@ except ImportError:
     HAVE_SCIPY = False
 
 
-WORK_SIZE = 224          # matches the pipeline's native 224x224 output
+ARTIFACTS_PATH = Path(os.environ.get(
+    "QESFRP_ARTIFACTS", Path(__file__).resolve().parent / "models" / "qesfrp.pkl"))
+
+VIEW_KEYS = ["L-CC", "R-CC", "L-MLO", "R-MLO"]
+RISK_BANDS = [(3.0, "Low Risk"), (8.0, "Medium Risk"), (float("inf"), "High Risk")]
+AGE_MULTIPLIERS = {"Under 30": 0.70, "30-39": 1.02, "40-49": 1.04, "50-59": 1.08,
+                   "60-69": 1.15, "70-79": 1.25, "80+": 1.50}
+RISE = 0.40
+MIN_DROP_FOR_PERCENT = 1.0
+
+_loaded = False
+_artifacts = {}
+_backbone = {}
+_model = None
+
+
+# ============================================================
+# IMAGE MEASUREMENTS
+# ============================================================
+
+WORK_SIZE = 500          # matches the Sprint 5 pipeline's 500x500 output
 LBP_POINTS = 8
 LBP_RADIUS = 1
 DENSITY_PERCENTILES = [60, 70, 80, 90]
@@ -144,7 +125,7 @@ def extract_image_features(path, laterality):
     img = img.resize((WORK_SIZE, WORK_SIZE), Image.BILINEAR)
     arr = np.asarray(img).astype(np.float32) / 255.0
 
-   
+    # Orient every breast the same way so L/R comparisons mean something.
     if str(laterality).upper().startswith("L"):
         arr = np.fliplr(arr)
 
@@ -153,14 +134,14 @@ def extract_image_features(path, laterality):
 
     feats = []
 
-  
+    # --- intensity inside the breast ------------------------------------
     st = safe_stats(tissue)
     pct = np.percentile(tissue, [10, 25, 50, 75, 90]) if tissue.size else np.zeros(5)
     feats += [float(mask.mean()), st["mean"], st["std"], st["skew"], st["kurt"]]
     feats += [float(x) for x in pct]
     feats += [float(pct[3] - pct[1]), shannon_entropy(tissue)]
 
-    
+    # --- density proxies -------------------------------------------------
     dense_mask_ref = None
     for p in DENSITY_PERCENTILES:
         if tissue.size:
@@ -185,7 +166,7 @@ def extract_image_features(path, laterality):
         compact, contrast = 0.0, 0.0
     feats += [compact, contrast]
 
-   
+    # --- GLCM texture ----------------------------------------------------
     if HAVE_SKIMAGE:
         q = (arr * 31).astype(np.uint8)
         q[~mask] = 0
@@ -202,7 +183,7 @@ def extract_image_features(path, laterality):
     else:
         feats += [0.0] * 12
 
-  
+    # --- LBP -------------------------------------------------------------
     if HAVE_SKIMAGE:
         try:
             lbp = local_binary_pattern(arr, LBP_POINTS, LBP_RADIUS, method="uniform")
@@ -233,7 +214,7 @@ def extract_image_features(path, laterality):
     else:
         feats += [0.0] * 8
 
-   
+    # --- multiscale band energies ----------------------------------------
     if HAVE_SCIPY:
         blurs = [arr] + [gaussian_filter(arr, sigma=s) for s in (2, 4, 8)]
         bands = [blurs[i] - blurs[i + 1] for i in range(3)] + [blurs[-1]]
@@ -255,44 +236,44 @@ def extract_image_features(path, laterality):
                            % (out.shape[0], N_FEATURES))
     return np.nan_to_num(out, nan=0.0, posinf=0.0, neginf=0.0)
 
+# ============================================================
+# QUANTUM CIRCUIT AND RISK HEAD
+# ============================================================
 
+class QuantumEncoder(nn.Module):
+    """Data re-uploading circuit whose readout is the reusable representation.
 
-import torch.nn as nn
-import pennylane as qml
+    Returns 2*n_qubits values: single-qubit <Z> and neighbouring <ZZ>. The
+    correlators matter -- with <Z> alone the readout stays close to linear in
+    the encoded angles and there is little for a downstream head to use.
+    """
 
-
-class QuantumRiskModel(nn.Module):
-
-    def __init__(self, n_qubits=8, n_blocks=4, n_horizons=5, seed=42,
+    def __init__(self, n_qubits=12, n_blocks=5, seed=42,
                  device="default.qubit", diff_method="backprop"):
         super().__init__()
-        self.n_qubits = n_qubits
-        self.n_blocks = n_blocks
-        self.diff_method = diff_method
+        self.n_qubits, self.n_blocks = n_qubits, n_blocks
+        self.batched = (diff_method == "backprop")
 
         g = torch.Generator().manual_seed(seed)
         self.enc_scale = nn.Parameter(torch.ones(n_blocks, n_qubits))
         self.enc_shift = nn.Parameter(torch.zeros(n_blocks, n_qubits))
-        self.theta = nn.Parameter(
-            0.1 * torch.randn(n_blocks, n_qubits, 3, generator=g))
+        self.theta = nn.Parameter(0.1 * torch.randn(n_blocks, n_qubits, 3,
+                                                    generator=g))
 
-
-        self.batched = (diff_method == "backprop")
         dev = qml.device(device, wires=n_qubits)
 
         @qml.qnode(dev, interface="torch", diff_method=diff_method)
         def circuit(x, theta, enc_scale, enc_shift):
             for b in range(n_blocks):
-                # re-upload the data every block
                 for q in range(n_qubits):
-                    qml.RY(enc_scale[b, q] * x[..., q] + enc_shift[b, q], wires=q)  # noqa
+                    qml.RY(enc_scale[b, q] * x[..., q] + enc_shift[b, q], wires=q)
                 for q in range(n_qubits):
                     qml.RY(theta[b, q, 0], wires=q)
                     qml.RZ(theta[b, q, 1], wires=q)
                     qml.RY(theta[b, q, 2], wires=q)
                 for q in range(n_qubits):
                     qml.CNOT(wires=[q, (q + 1) % n_qubits])
-                if b % 2 == 1:                     # longer-range coupling
+                if b % 2 == 1:
                     for q in range(0, n_qubits - 2, 2):
                         qml.CZ(wires=[q, q + 2])
             obs = [qml.expval(qml.PauliZ(q)) for q in range(n_qubits)]
@@ -301,500 +282,341 @@ class QuantumRiskModel(nn.Module):
             return obs
 
         self.circuit = circuit
-        self.head = nn.Linear(2 * n_qubits, n_horizons)
-        nn.init.zeros_(self.head.bias)
-        nn.init.normal_(self.head.weight, std=0.1)
 
     def forward(self, x):
         if self.batched:
-            out = self.circuit(x, self.theta, self.enc_scale, self.enc_shift)
-            q = torch.stack(out, dim=-1).float()
-        else:
-            rows = []
-            for i in range(x.shape[0]):
-                o = self.circuit(x[i], self.theta, self.enc_scale, self.enc_shift)
-                rows.append(torch.stack(o, dim=-1).float())
-            q = torch.stack(rows, dim=0)
-        return self.head(q)                        # hazard logits [B, 5]
+            return torch.stack(self.circuit(x, self.theta, self.enc_scale,
+                                            self.enc_shift), dim=-1).float()
+        rows = [torch.stack(self.circuit(x[i], self.theta, self.enc_scale,
+                                         self.enc_shift), dim=-1).float()
+                for i in range(x.shape[0])]
+        return torch.stack(rows, dim=0)
 
+class SequentialRiskModel(nn.Module):
+    """Frozen quantum encoder per exam, then a temporal head."""
+
+    def __init__(self, encoder, readout_dim, n_horizons=5, freeze=True,
+                 use_timing=False, n_asym=6):
+        super().__init__()
+        self.encoder = encoder
+        self.use_timing = use_timing
+        if freeze:
+            for p in self.encoder.parameters():
+                p.requires_grad = False
+        # current readout, recency-weighted readout, delta, asymmetry trend,
+        # and optionally the timing scalars
+        d = readout_dim * 3 + n_asym + (3 if use_timing else 0)
+        self.head = nn.Sequential(
+            nn.Linear(d, 32), nn.ReLU(), nn.Linear(32, n_horizons))
+        nn.init.zeros_(self.head[-1].bias)
+
+    def encode_exams(self, x_flat):
+        return self.encoder(x_flat)
+
+    def forward(self, cur, rec, dlt, scal, asym):
+        parts = [cur, rec, dlt, asym]
+        if self.use_timing:
+            parts.insert(3, scal)
+        return self.head(torch.cat(parts, dim=-1))
+
+
+def cumulative_risk(logits):
+    h = torch.sigmoid(logits)
+    return 1.0 - torch.cumprod(1.0 - h + 1e-8, dim=1)
 
 def cumulative_risk(hazard_logits):
-    """h_t -> F_t = 1 - prod_{j<=t}(1 - h_j). Monotone non-decreasing."""
+    """h_t -> F_t = 1 - prod(1 - h_j). Monotone non-decreasing by construction."""
     h = torch.sigmoid(hazard_logits)
-    surv = torch.cumprod(1.0 - h + 1e-8, dim=1)
-    return 1.0 - surv
+    return 1.0 - torch.cumprod(1.0 - h + 1e-8, dim=1)
 
 
-def cumulative_risk(hazard_logits):
-    """h_t -> F_t = 1 - prod_{j<=t}(1 - h_j). Monotone non-decreasing."""
-    h = torch.sigmoid(hazard_logits)
-    surv = torch.cumprod(1.0 - h + 1e-8, dim=1)
-    return 1.0 - surv
+# ============================================================
+# CONTRACT
+# ============================================================
 
+def initialise():
+    """Load the artifact and rebuild the circuit it describes. Runs once."""
+    global _loaded, _artifacts, _backbone, _model
 
-artifacts: Dict[str, Any] = {}
-_model = None
-
-
-def startup_event():
-    """Load the artifact and rebuild the circuit it describes."""
-    global artifacts, _model
+    if _loaded:
+        return
 
     if not ARTIFACTS_PATH.exists():
         raise FileNotFoundError(
-            "Could not find model artifact: %s\n"
-            "Copy qml_out/artifacts.pkl there, or set QESFRP_ARTIFACTS."
-            % ARTIFACTS_PATH)
+            "model artifact not found: %s\n"
+            "Copy artifacts.pkl there, or set QESFRP_ARTIFACTS." % ARTIFACTS_PATH)
 
-    with open(ARTIFACTS_PATH, "rb") as f:
-        artifacts = pickle.load(f)
+    with open(ARTIFACTS_PATH, "rb") as fh:
+        _artifacts = pickle.load(fh)
 
-    required = ["model_state", "quantile_transformer", "selected_feature_idx",
-                "angle_scaler", "n_qubits", "n_blocks", "horizons",
-                "recency_lambda"]
-    missing = [k for k in required if k not in artifacts]
+    _backbone = _artifacts.get("backbone") or {}
+    required = ("quantile_transformer", "selected_feature_idx", "angle_scaler",
+                "n_qubits", "n_blocks", "encoder_state", "readout_dim")
+    missing = [k for k in required if k not in _backbone]
     if missing:
-        raise RuntimeError("Artifact is missing required keys: %s" % missing)
+        raise RuntimeError("artifact backbone is missing: %s" % missing)
 
-    _model = QuantumRiskModel(
-        n_qubits=int(artifacts["n_qubits"]),
-        n_blocks=int(artifacts["n_blocks"]),
-        n_horizons=len(artifacts["horizons"]),
-    )
-    _model.load_state_dict(artifacts["model_state"])
-    _model.eval()
+    enc = QuantumEncoder(_backbone["n_qubits"], _backbone["n_blocks"], seed=42,
+                         device=_backbone.get("device", "default.qubit"),
+                         diff_method=_backbone.get("diff_method", "backprop"))
+    enc.load_state_dict(_backbone["encoder_state"])
 
-    print("QeSFRP v0.2 ready: %d qubits, %d blocks, horizons %s"
-          % (artifacts["n_qubits"], artifacts["n_blocks"], artifacts["horizons"]))
+    m = SequentialRiskModel(enc, _backbone["readout_dim"],
+                            len(_artifacts["horizons"]), freeze=True,
+                            use_timing=False, n_asym=6)
+    m.load_state_dict(_artifacts["model_state"])
+    m.eval()
+    _model = m
+    _loaded = True
 
 
-# ============================================================
-# HELPERS
-# ============================================================
+def health():
+    return {
+        "status": "ok" if _loaded else "model_not_loaded",
+        "model_loaded": _loaded,
+        "n_qubits": _backbone.get("n_qubits"),
+        "n_blocks": _backbone.get("n_blocks"),
+        "horizons": _artifacts.get("horizons"),
+        "calibrated": bool(_artifacts.get("calibrators")),
+        "feature_source": "radiomic descriptors (%d per image)" % N_FEATURES,
+        "validated": False,
+    }
 
-def get_age_group(age: float) -> str:
-    if age < 30:
-        return "Under 30"
-    if age < 40:
-        return "30-39"
-    if age < 50:
-        return "40-49"
-    if age < 60:
-        return "50-59"
-    if age < 70:
-        return "60-69"
-    if age < 80:
-        return "70-79"
+
+# ---------------------------------------------------------------- internals
+
+def _age_group(age):
+    if age is None:
+        return None
+    for hi, label in ((30, "Under 30"), (40, "30-39"), (50, "40-49"),
+                      (60, "50-59"), (70, "60-69"), (80, "70-79")):
+        if age < hi:
+            return label
     return "80+"
 
 
-def safe_percent(value: float) -> float:
-    return float(np.clip(value, 0.0, 100.0))
-
-
-def calculate_risk_level(risk_5y: float) -> str:
+def _risk_level(r5):
     for threshold, label in RISK_BANDS:
-        if risk_5y < threshold:
+        if r5 < threshold:
             return label
     return "High Risk"
 
 
-def classify_impact(max_abs_change: float) -> str:
-    if max_abs_change < LOW_IMPACT_THRESHOLD_5Y:
-        return "low"
-    if max_abs_change < MODERATE_IMPACT_THRESHOLD_5Y:
-        return "moderate"
-    return "high"
-
-
-def parse_metadata(metadata_json: str) -> Dict[str, Any]:
+def _descriptor(image_bytes, laterality):
+    """One image's 61 measurements. Writes to a temp file so the extractor
+    sees exactly what it saw during training."""
+    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as fh:
+        fh.write(image_bytes)
+        tmp = fh.name
     try:
-        metadata = json.loads(metadata_json)
-    except Exception as e:
-        raise HTTPException(status_code=400,
-                            detail="metadata_json is not valid JSON: %s" % e)
-
-    if "patient_age" not in metadata:
-        raise HTTPException(status_code=400,
-                            detail="metadata_json must include patient_age")
-    if "exams" not in metadata or not isinstance(metadata["exams"], list):
-        raise HTTPException(status_code=400,
-                            detail="metadata_json must include an exams list")
-    if not metadata["exams"]:
-        raise HTTPException(status_code=400, detail="At least one exam is required")
-
-    for exam in metadata["exams"]:
-        if "exam_date" not in exam:
-            raise HTTPException(status_code=400,
-                                detail="Each exam must include exam_date")
-        if "views" not in exam:
-            raise HTTPException(status_code=400,
-                                detail="Each exam must include views")
-        missing = [v for v in VIEW_KEYS if v not in exam["views"]]
-        if missing:
-            raise HTTPException(
-                status_code=400,
-                detail="Each exam must include all four views %s. Missing: %s"
-                       % (VIEW_KEYS, missing))
-    return metadata
+        return extract_image_features(tmp, laterality)
+    finally:
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
 
 
+def _exam_vector(exam, disable_asym=False):
+    """Four views -> one exam vector, or None if too few views are usable.
 
-
-
-def image_descriptor_from_bytes(image_bytes: bytes, laterality: str) -> np.ndarray:
-    """61 radiomic descriptors, via the training-time extractor."""
-    img = Image.open(io.BytesIO(image_bytes)).convert("L")
-    tmp = io.BytesIO()
-    img.save(tmp, format="PNG")
-    tmp.seek(0)
-    return extract_image_features(tmp, laterality)
-
-
-def build_exam_vector(exam: Dict[str, Any],
-                      file_bytes_by_name: Dict[str, bytes],
-                      disable_asymmetry: bool = False
-                      ) -> Tuple[np.ndarray, Dict[str, Any]]:
-    """One exam -> 305-d vector: view means, then CC and MLO asymmetry.
-
-    Layout matches build_exam_vectors() in training:
-        [mean_all | cc_mean | mlo_mean | cc_asym | mlo_asym]
+    Both sides are needed for an asymmetry comparison. A missing view is
+    filled with the mean of the views that are present, which keeps the layout
+    intact; fewer than two usable views means the exam is skipped rather than
+    silently imputed from nothing.
     """
-    views = {}
+    views = exam.get("views") or {}
+    got = {}
     for vk in VIEW_KEYS:
-        fname = exam["views"][vk]
-        if fname not in file_bytes_by_name:
-            raise HTTPException(status_code=400,
-                                detail="Uploaded files do not include '%s' for view %s"
-                                       % (fname, vk))
+        raw = views.get(vk)
+        if not raw:
+            continue
         lat = "L" if vk.startswith("L") else "R"
-        views[vk] = image_descriptor_from_bytes(file_bytes_by_name[fname], lat)
+        try:
+            got[vk] = _descriptor(raw, lat)
+        except Exception:
+            continue
 
-    mean_all = np.mean(np.vstack([views[v] for v in VIEW_KEYS]), axis=0)
-    cc_mean = 0.5 * (views["L-CC"] + views["R-CC"])
-    mlo_mean = 0.5 * (views["L-MLO"] + views["R-MLO"])
-    cc_asym = np.abs(views["L-CC"] - views["R-CC"])
-    mlo_asym = np.abs(views["L-MLO"] - views["R-MLO"])
+    if len(got) < 2:
+        return None, None
 
-    asym_score = float(np.mean(cc_asym) + np.mean(mlo_asym))
+    fill = np.mean(np.vstack(list(got.values())), axis=0)
+    v = {vk: got.get(vk, fill) for vk in VIEW_KEYS}
 
-    if disable_asymmetry:
+    cc_asym = np.abs(v["L-CC"] - v["R-CC"])
+    mlo_asym = np.abs(v["L-MLO"] - v["R-MLO"])
+    info = {
+        "asymmetry_score": float(np.mean(cc_asym) + np.mean(mlo_asym)),
+        "views_present": len(got),
+    }
+    if disable_asym:
         cc_asym = np.zeros_like(cc_asym)
         mlo_asym = np.zeros_like(mlo_asym)
 
-    vec = np.concatenate([mean_all, cc_mean, mlo_mean,
-                          cc_asym, mlo_asym]).astype(np.float32)
-
-    return vec, {
-        "exam_date": exam["exam_date"],
-        "study_dt": pd.to_datetime(exam["exam_date"]),
-        "asymmetry_score": asym_score,
-        "cc_asymmetry": float(np.mean(cc_asym)),
-        "mlo_asymmetry": float(np.mean(mlo_asym)),
-    }
+    vec = np.concatenate([
+        np.mean(np.vstack([v[k] for k in VIEW_KEYS]), axis=0),
+        0.5 * (v["L-CC"] + v["R-CC"]),
+        0.5 * (v["L-MLO"] + v["R-MLO"]),
+        cc_asym, mlo_asym]).astype(np.float32)
+    return vec, info
 
 
-def compute_recency_weights(dates: List[pd.Timestamp], recency_lambda: float):
-    """Architecture document formula.
-
-        years_before_latest = latest_exam_date - current_exam_date
-        raw_weight          = exp(-0.5 * years_before_latest)
-        normalized          = raw / sum(raw)
-    """
-    latest = max(dates)
-    years_back = np.array([(latest - d).days / 365.25 for d in dates],
-                          dtype=np.float32)
-    raw = np.exp(-recency_lambda * years_back)
-    return years_back, raw, raw / raw.sum()
-
-
-def build_patient_feature(metadata: Dict[str, Any],
-                          file_bytes_by_name: Dict[str, bytes],
-                          disable_asymmetry: bool = False,
-                          exclude_exam_index: int = None
-                          ) -> Tuple[np.ndarray, Dict[str, Any]]:
-    """Assemble the 1528-d sequence vector for one patient.
-
-    Mirrors build_sequence_features() at training time:
-        [current | recency_weighted | delta | slope | prev_delta | scalars]
-    """
-    recency_lambda = float(artifacts["recency_lambda"])
-    max_history = 5
-
-    exams = list(metadata["exams"])
-    if exclude_exam_index is not None:
-        exams = [e for i, e in enumerate(exams) if i != exclude_exam_index]
-    if not exams:
-        raise HTTPException(status_code=400, detail="No exams left to score")
-
-    built = [build_exam_vector(e, file_bytes_by_name, disable_asymmetry)
-             for e in exams]
-    built.sort(key=lambda t: t[1]["study_dt"])
-    built = built[-max_history:]
-
-    mats = np.vstack([b[0] for b in built])
-    dates = [b[1]["study_dt"] for b in built]
-    D = mats.shape[1]
-
-    years_back, raw_w, norm_w = compute_recency_weights(dates, recency_lambda)
-
-    current = mats[-1]
-    recency = np.sum(mats * norm_w[:, None], axis=0)
-
-    if len(built) > 1:
-        delta = current - mats[0]
-        gap = float(years_back[0])
-        slope = delta / max(gap, 0.5)
-        prev = current - mats[-2]
-    else:
-        delta = np.zeros(D, np.float32)
-        slope = np.zeros(D, np.float32)
-        prev = np.zeros(D, np.float32)
-        gap = 0.0
-
-    scalars = np.array([len(built), gap, float(years_back.mean())],
-                       dtype=np.float32)
-
-    vec = np.concatenate([current, recency, delta, slope, prev,
-                          scalars]).astype(np.float32)
-
-    debug = {
-        "n_exams_used": len(built),
-        "exam_dates": [d.strftime("%Y-%m-%d") for d in dates],
-        "years_before_latest": [round(float(v), 3) for v in years_back],
-        "raw_recency_weights": [round(float(v), 4) for v in raw_w],
-        "normalized_recency_weights": [round(float(v), 4) for v in norm_w],
-        "asymmetry_per_exam": [b[1]["asymmetry_score"] for b in built],
-        "history_span_years": round(gap, 3),
-        "feature_dim": int(vec.shape[0]),
-    }
-    return vec, debug
-
-
-# ============================================================
-# MODEL
-# ============================================================
-
-def predict_cumulative_risk(patient_feature_raw: np.ndarray) -> np.ndarray:
-    """Raw sequence vector -> cumulative risk per horizon, as percentages.
-
-    Same transform chain as training: quantile transform, select the qubit
-    features, standardise, clip, scale into the angle range.
-    """
-    qt = artifacts["quantile_transformer"]
-    chosen = artifacts["selected_feature_idx"]
-    ang = artifacts["angle_scaler"]
-
-    x = qt.transform(patient_feature_raw.reshape(1, -1))
+def _encode(vec):
+    """Exam vector -> quantum readout, via the training transform chain."""
+    x = _backbone["quantile_transformer"].transform(vec.reshape(1, -1))
     x = np.nan_to_num(x, nan=0.0, posinf=0.0, neginf=0.0)
-    x = x[:, chosen]
-    x = np.clip(ang.transform(x), -3, 3) * (np.pi / 3)
-
+    if _backbone.get("pca") is not None:
+        x = _backbone["pca"].transform(x)
+    x = x[:, _backbone["selected_feature_idx"]]
+    x = np.clip(_backbone["angle_scaler"].transform(x), -3, 3) * (np.pi / 3)
     with torch.no_grad():
-        logits = _model(torch.tensor(x, dtype=torch.float32))
+        return _model.encoder(torch.tensor(x, dtype=torch.float32))[0].numpy()
+
+
+def _predict(built, disable_asym=False):
+    """Built exams -> yearly risk percentages, before the age multiplier."""
+    lam = float(_artifacts.get("recency_lambda", 0.5))
+    built = built[-5:]
+
+    raw = np.vstack([b["vec"] for b in built])
+    Z = np.vstack([_encode(r) for r in raw])
+    dates = [b["date"] for b in built]
+    latest = max(dates)
+    yb = np.array([(latest - d).days / 365.25 for d in dates], dtype=np.float32)
+    w = np.exp(-lam * yb)
+    w = w / w.sum()
+
+    cur = Z[-1]
+    rec = (Z * w[:, None]).sum(0)
+    dlt = (cur - Z[0]) if len(built) > 1 else np.zeros_like(cur)
+
+    # Asymmetry trend is read from the raw exam vectors, not the readouts: the
+    # encoder was fitted for density and has no reason to preserve a
+    # left-minus-right signal.
+    F = raw.shape[1] // 5
+    a_tot = (np.abs(raw[:, 3 * F:4 * F]).mean(1)
+             + np.abs(raw[:, 4 * F:5 * F]).mean(1))
+    a_mu, a_sd = float(a_tot.mean()), float(a_tot.std() + 1e-8)
+    cur_a = float(a_tot[-1])
+    if len(built) > 1:
+        first = float(a_tot[0])
+        rel = (cur_a - first) / max(abs(first), 1e-6)
+        slope = (cur_a - first) / max(float(yb[0]), 0.5)
+        step = float(a_tot[-1] - a_tot[-2])
+    else:
+        rel = slope = step = 0.0
+    cc_l = float(np.abs(raw[-1, 3 * F:4 * F]).mean())
+    ml_l = float(np.abs(raw[-1, 4 * F:5 * F]).mean())
+    asym = np.nan_to_num(np.array([
+        (cur_a - a_mu) / a_sd, np.clip(rel, -3, 3),
+        np.clip(slope / a_sd, -3, 3), np.clip(step / a_sd, -3, 3),
+        1.0 if rel > RISE else 0.0, (cc_l - ml_l) / a_sd], dtype=np.float32),
+        nan=0.0, posinf=0.0, neginf=0.0)
+
+    scal = np.array([len(built), float(yb[0]), float(yb.mean())],
+                    dtype=np.float32)
+    t = lambda a: torch.tensor(a, dtype=torch.float32).unsqueeze(0)
+    with torch.no_grad():
+        logits = _model(t(cur), t(rec), t(dlt), t(scal), t(asym))
         risk = cumulative_risk(logits).numpy()[0]
 
-    return risk * 100.0
+    return {"%d_year" % h: float(r) * 100.0
+            for h, r in zip(_artifacts["horizons"], risk)}, w
 
 
-def yearly_risk_dict(risk_pct: np.ndarray) -> Dict[str, float]:
-    return {"%d_year" % h: round(float(r), 2)
-            for h, r in zip(artifacts["horizons"], risk_pct)}
+def _calibrate(d):
+    """Map raw output onto observed event rates.
 
-
-def apply_calibration(risk_dict: Dict[str, float]) -> Dict[str, float]:
-
-    cal = artifacts.get("calibrators")
+    Training weights the hazard loss so the model attends to a ~1% event rate.
+    That helps ranking and inflates every probability by roughly that factor,
+    so raw output can read like 40% one-year risk. Isotonic regression is
+    monotone, so this corrects the scale without changing the ordering.
+    """
+    cal = _artifacts.get("calibrators")
     if not cal:
-        return dict(risk_dict)
-
+        return dict(d)
     out, prev = {}, 0.0
-    for k in risk_dict:
-        v = float(risk_dict[k])
+    for k, v in d.items():
+        v = float(v)
         if k in cal:
             v = float(cal[k].predict([v / 100.0])[0]) * 100.0
-        # isotonic is fitted per horizon, so enforce monotonicity across them
         v = max(v, prev)
         prev = v
-        out[k] = round(v, 3)
+        out[k] = v
     return out
 
 
-def make_risk_curve_points(risk_dict: Dict[str, float]) -> List[Dict[str, Any]]:
-    pts = []
-    for k, v in risk_dict.items():
-        pts.append({"year": int(k.split("_")[0]), "label": k.replace("_", " "),
-                    "risk_percent": round(float(v), 2)})
-    return sorted(pts, key=lambda p: p["year"])
+def _finalise(risk, age):
+    risk = _calibrate(risk)
+    grp = _age_group(age)
+    mult = AGE_MULTIPLIERS.get(grp, 1.0) if grp else 1.0
+    out, prev = {}, 0.0
+    for k in sorted(risk, key=lambda s: int(s.split("_")[0])):
+        v = float(np.clip(risk[k] * mult, 0.0, 100.0))
+        v = max(v, prev)
+        prev = v
+        out[k] = round(v, 2)
+    return out
 
 
-def highest_risk_year_from_dict(risk_dict: Dict[str, float]) -> str:
-    return max(risk_dict.items(), key=lambda kv: kv[1])[0]
+# ------------------------------------------------------------- entrypoint
 
+def run_inference(model_input):
+    initialise()
 
-# ============================================================
-# INFERENCE
-# ============================================================
+    exams_in = model_input.get("exams") or []
+    if not exams_in:
+        raise ValueError("at least one exam is required")
 
-def _run_model_once(metadata: Dict[str, Any],
-                  file_bytes_by_name: Dict[str, bytes],
-                  disable_asymmetry: bool = False,
-                  exclude_exam_index: int = None) -> Dict[str, Any]:
-    """Full pipeline once. Also used for the ablation passes."""
-    feat, debug = build_patient_feature(
-        metadata, file_bytes_by_name,
-        disable_asymmetry=disable_asymmetry,
-        exclude_exam_index=exclude_exam_index)
+    age = model_input.get("patient_age")
+    age = float(age) if age is not None else None
 
-    risk_pct = predict_cumulative_risk(feat)
-    uncalibrated = yearly_risk_dict(risk_pct)
-    model_risk = apply_calibration(uncalibrated)
+    built, skipped = [], []
+    for i, ex in enumerate(exams_in):
+        vec, info = _exam_vector(ex)
+        eid = ex.get("exam_id") or ("exam_%d" % (i + 1))
+        date = ex.get("exam_date")
+        if vec is None:
+            skipped.append({"exam_id": eid, "exam_date": date,
+                            "contribution_percent": None})
+            continue
+        built.append({"exam_id": eid, "exam_date": date, "vec": vec,
+                      "date": pd.to_datetime(date), "info": info,
+                      "raw": ex})
 
-    patient_age = float(metadata["patient_age"])
-    age_group = get_age_group(patient_age)
-    age_multiplier = float(AGE_MULTIPLIERS.get(age_group, 1.0))
+    if not built:
+        raise ValueError("no exam had at least two readable views")
 
-    # Architecture document: Final N year risk = N year risk * age_group weight
-    if APPLY_AGE_MULTIPLIER:
-        final_risk = {k: safe_percent(v * age_multiplier)
-                      for k, v in model_risk.items()}
+    built.sort(key=lambda b: b["date"])
+    risk_raw, _ = _predict(built)
+    yearly = _finalise(risk_raw, age)
+    r5 = yearly.get("5_year", list(yearly.values())[-1])
+
+    # Per-exam contribution by leave-one-out. With a single exam there is
+    # nothing to compare against, so it takes the whole share.
+    contributions = {}
+    if len(built) > 1:
+        drops = {}
+        for b in built:
+            others = [x for x in built if x is not b]
+            without = _finalise(_predict(others)[0], age)
+            w5 = without.get("5_year", list(without.values())[-1])
+            drops[b["exam_id"]] = max(r5 - w5, 0.0)
+        total = sum(drops.values())
+        for b in built:
+            contributions[b["exam_id"]] = (
+                round(100.0 * drops[b["exam_id"]] / total, 2)
+                if total >= MIN_DROP_FOR_PERCENT
+                else round(100.0 / len(built), 2))
     else:
-        final_risk = dict(model_risk)
+        contributions[built[0]["exam_id"]] = 100.0
 
-
-    risk_5y = final_risk.get("5_year", list(final_risk.values())[-1])
-
-    return {
-        "patient_feature_raw": feat,
-        "feature_debug": debug,
-        "model_risk": model_risk,
-        "uncalibrated_risk": uncalibrated,
-        "final_risk": final_risk,
-        "risk_level": calculate_risk_level(risk_5y),
-        "age_group": age_group,
-        "age_multiplier": age_multiplier,
-    }
-
-
-def calculate_exam_contributions(metadata, file_bytes_by_name, full_final_risk):
-    """Leave-one-exam-out ablation on the 5-year figure."""
-    exams = metadata["exams"]
-    full_5y = float(full_final_risk.get("5_year", list(full_final_risk.values())[-1]))
-
-    rows = []
-    if len(exams) < 2:
-        return [{
-            "exam_index": 0,
-            "exam_date": exams[0]["exam_date"],
-            "risk_without_exam_5y": None,
-            "risk_drop_5y": None,
-            "contribution_percent": 100.0,
-            "note": "Only one exam supplied; ablation is not meaningful.",
-        }], {"method": "leave_one_exam_out", "usable": False}
-
-    for i, exam in enumerate(exams):
-        out = _run_model_once(metadata, file_bytes_by_name, exclude_exam_index=i)
-        without_5y = float(out["final_risk"].get(
-            "5_year", list(out["final_risk"].values())[-1]))
-        rows.append({
-            "exam_index": i,
-            "exam_id": f"exam_{i + 1}",
-            "exam_date": exam["exam_date"],
-            "risk_without_exam_5y": round(without_5y, 3),
-            "risk_drop_5y": round(full_5y - without_5y, 3),
-        })
-
-    drops = [max(r["risk_drop_5y"], 0.0) for r in rows]
-    total = float(sum(drops))
-    for r, d in zip(rows, drops):
-        if total >= MIN_TOTAL_POSITIVE_DROP_FOR_PERCENT:
-            r["contribution_percent"] = round(100.0 * d / total, 2)
-        else:
-            r["contribution_percent"] = round(100.0 / len(rows), 2)
-        r["impact_level"] = classify_impact(abs(r["risk_drop_5y"]))
-
-    meta = {
-        "method": "leave_one_exam_out",
-        "usable": total >= MIN_TOTAL_POSITIVE_DROP_FOR_PERCENT,
-        "total_positive_drop_5y": round(total, 3),
-        "note": ("Contributions are split evenly when the total measured drop is "
-                 "small, because percentage shares of a near-zero total are noise."),
-    }
-    return rows, meta
-
-
-def calculate_asymmetry_ablation(metadata, file_bytes_by_name, full_final_risk):
-    """Re-score with the asymmetry blocks zeroed."""
-    out = _run_model_once(metadata, file_bytes_by_name, disable_asymmetry=True)
-    without = out["final_risk"]
-    full_5y = float(full_final_risk.get("5_year", list(full_final_risk.values())[-1]))
-    without_5y = float(without.get("5_year", list(without.values())[-1]))
-    change = full_5y - without_5y
+    exams_out = [{"exam_id": b["exam_id"], "exam_date": b["exam_date"],
+                  "contribution_percent": contributions.get(b["exam_id"])}
+                 for b in built] + skipped
 
     return {
-        "method": "zero_asymmetry_feature_ablation",
-        "risk_without_asymmetry": {k: round(float(v), 3) for k, v in without.items()},
-        "risk_change_from_asymmetry": {
-            k: round(float(full_final_risk[k]) - float(without.get(k, 0.0)), 3)
-            for k in full_final_risk},
-        "risk_without_asymmetry_5y": round(without_5y, 3),
-        "asymmetry_risk_change_5y": round(change, 3),
-        "impact_level": classify_impact(abs(change)),
-        "interpretation": ("asymmetry_increased_risk" if change > 0 else
-                           "asymmetry_reduced_risk" if change < 0 else
-                           "no_measured_change"),
-        "note": "Approximate interpretability. Re-runs the model with L/R "
-                "asymmetry evidence removed.",
-    }
-
-
-def get_health():
-    """Small health payload for the model-specific health endpoint."""
-    return {
-        "status": "ok" if artifacts else "model_not_loaded",
-        "model_loaded": bool(artifacts),
-        "version": "0.2",
-        "n_qubits": artifacts.get("n_qubits"),
-        "n_blocks": artifacts.get("n_blocks"),
-        "horizons": artifacts.get("horizons"),
-        "calibrated": bool(artifacts.get("calibrators")),
-    }
-
-
-def run_inference(metadata: Dict[str, Any],
-                  file_bytes_by_name: Dict[str, bytes]) -> Dict[str, Any]:
-
-    if not artifacts:
-        raise RuntimeError("QeSFRP model artifacts are not loaded")
-
-    inference = _run_model_once(metadata, file_bytes_by_name)
-    final_risk = inference["final_risk"]
-
-    exam_rows, _exam_meta = calculate_exam_contributions(
-        metadata, file_bytes_by_name, final_risk
-    )
-
-    exams = []
-    for index, exam in enumerate(metadata["exams"], start=1):
-        row = next(
-            (r for r in exam_rows if r.get("exam_index") == index - 1),
-            None,
-        )
-        exams.append(
-            {
-                "exam_id": row.get("exam_id", f"exam_{index}") if row else f"exam_{index}",
-                "exam_date": exam["exam_date"],
-                "contribution_percent": (
-                    row.get("contribution_percent") if row else None
-                ),
-            }
-        )
-
-    return {
-        "yearly_risk": {
-            f"{year}_year": float(final_risk.get(f"{year}_year", 0.0))
-            for year in range(1, 6)
-        },
-        "risk_level": inference["risk_level"],
-        "exams": exams,
+        "yearly_risk": yearly,
+        "risk_level": _risk_level(r5),
+        "exams": exams_out,
     }
