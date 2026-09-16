@@ -16,7 +16,9 @@ QSVC_MODULE_PATH = "/Users/jackguo/Documents/GitHub/Q-INTERVAL-Lite/QML/QSVC/qsv
 
 CSV_PATHS = {
     "baseline (frozen CNN)":
-        "/Users/jackguo/Documents/GitHub/Q-INTERVAL-Lite/QML/4pca/qml_cnn_pca4_multiclass_pooled.csv"
+        "QML/4pca/qml_cnn_pca4_multiclass_pooled.csv",
+    "DANN ":
+        "QML/4pca/qml_dann_pca4_multiclass_pooled.csv",
 }
 
 FEATURE_MAP = "angle"
