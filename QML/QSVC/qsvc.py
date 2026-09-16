@@ -22,7 +22,7 @@ from sklearn.metrics import (
 # CONFIG  -- change these for each controlled experiment
 # ======================================================================
 
-CSV_PATH            = "QML/4pca/qml_4500_pca4_multiclass.csv"
+CSV_PATH            = "QML/4pca/qml_cnn_pca4_multiclass_pooled.csv"
 LABEL_COLUMN        = "label"
 ALL_FEATURE_COLUMNS = [f"pc{i}" for i in range(1, 5)]   # pc1..pc4, PCA-order
 
