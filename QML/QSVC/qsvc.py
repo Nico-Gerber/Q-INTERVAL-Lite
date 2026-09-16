@@ -38,7 +38,7 @@ SVM_C               = 1.0
 MULTICLASS_STRATEGY = "ovo"
 COMPUTE_PROBABILITY = True
 
-QSVC_MAX_TRAIN_SAMPLES = 1500    # stratified cap on TRAIN set for the quantum kernel
+QSVC_MAX_TRAIN_SAMPLES = 3600    # stratified cap on TRAIN set for the quantum kernel
 
 RANDOM_SEED          = 42
 LABEL_NAMES           = {0: "normal", 1: "benign", 2: "malignant"}
