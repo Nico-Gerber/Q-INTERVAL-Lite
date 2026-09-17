@@ -1,0 +1,36 @@
+test,defect,status,detail
+"encoder factory returns fresh, isolated encoders",1,SKIPPED,"requires torch, which is not installed here"
+gates reject a shared-encoder factory,1,SKIPPED,"requires torch, which is not installed here"
+failed encoder verification blocks training,1,PASS,a factory that raises stops the run before any optimiser step
+locked loader shape prevents the flat .get() bug,2,PASS,"membership lives under [""splits""]; a flat .get(""holdout"") returns None, so protected_patients() is the only supported accessor and it refuses empties"
+"one PreparedData drives folds, calibration and digests",2,PASS,"one PreparedData: 83 eligible images, 18 patients, digests ['fold_0', 'fold_1', 'fold_2']"
+mixed-namespace case from the review now excludes the holdout,3,PASS,"bare holdout ""2"" resolved to rsna:2 and 1 protected image excluded"
+mixed forms with no namespace are refused,3,PASS,a mixed-form file with no namespace is refused rather than half-resolved
+holdout coverage checked separately from development,3,PASS,unexplained holdout absence stops the run; an explained one passes; a missing development patient is only a warning (coverage 0.50)
+a wholly unmatched holdout stays fatal,3,PASS,a wholly unmatched holdout is fatal even with an explicit explanation
+selected checkpoint is restored before export,4,SKIPPED,"requires torch, which is not installed here"
+stages use separate checkpoint directories,4,SKIPPED,"requires torch, which is not installed here"
+"accumulation scaling exact, one live graph",5,SKIPPED,"requires torch, which is not installed here"
+warm-up reaches the first optimiser update,5,SKIPPED,"requires torch, which is not installed here"
+precision policy resolved and reported,5,SKIPPED,"requires torch, which is not installed here"
+runner reports actual batch and precision,5,SKIPPED,"requires torch, which is not installed here"
+unsupported recipes are refused by name,6,PASS,"all 6 unimplemented recipes refused by name, with a reason"
+augmentation cannot be silently ignored,6,PASS,both directions refused: augmentation on the off-arm and off on the on-arm
+the augmenter actually changes pixels,6,PASS,real augmenter changes 20/20; a no-op augmenter is detected and rejected
+RSNA-only enforced even with Mammo-Bench loaded,6,PASS,a Mammo-Bench manifest is loaded for the audit but 6 rows are excluded from training
+inner folds never touch the outer evaluation patients,6,PASS,"2 inner folds, all disjoint from the 6 outer-fold patients"
+nested run performs inner selection then refit,6,SKIPPED,"requires torch, which is not installed here"
+refit training frame invariant to outer labels,8,PASS,"30 outer rows flipped; training frame digest unchanged (8f2a6130bd33), 37 training images, prevalence 0.1622 identical"
+refit never validates on the outer fold,8,SKIPPED,"requires torch, which is not installed here"
+flipping outer labels changes nothing about the refit,8,SKIPPED,"requires torch, which is not installed here"
+LP-to-FT records a separate budget per stage,8,SKIPPED,"requires torch, which is not installed here"
+nested protocol uses the fixed-budget refit,8,SKIPPED,"requires torch, which is not installed here"
+"train mode restored after validation, fine-tune",9,SKIPPED,"requires torch, which is not installed here"
+"train mode restored after validation, linear probe",9,SKIPPED,"requires torch, which is not installed here"
+each epoch records the mode it started from,9,SKIPPED,"requires torch, which is not installed here"
+a lost eval pin is detected,9,SKIPPED,"requires torch, which is not installed here"
+16-bit PNG depth preserved,7,PASS,"16-bit ramp read with 4096 distinct levels, max 65535"
+intensity ramp survives preprocessing,7,PASS,"ramp monotonic with 512 distinct levels after decode, window, resize and normalisation"
+configured policy reaches the pixels,7,PASS,"size, normalisation, interpolation (BILINEAR), orientation (flipped=True) and percentiles all verified at the pixel level"
+bright-corner orientation refused,7,PASS,intensity-based orientation guessing is refused with the Sprint 5 evidence
+dataset carries the configured policy,7,PASS,"ImageDataset.from_config carries mean, std, interpolation and orientation"

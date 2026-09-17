@@ -1,0 +1,17 @@
+id,parent,title,fields_changed,stage_assets
+R0_released_defaults,(base),Released-default Mammo-FM comparator on our splits,"finetune.affine_probability, finetune.encoder_lr, finetune.head_lr, finetune.initialize_head_from_best_probe, finetune.max_epochs, finetune.min_epochs, finetune.patience, model.head, optim.effective_batch, optim.warmup_fraction, optim.weight_decay, run.seeds",train
+R1_rsna_linear_probe,(base),Corrected RSNA image-only linear probe,"linear_probe.encoder_mode, linear_probe.freeze_parameters, linear_probe.freeze_running_buffers, linear_probe.image_augmentation, model.head, run.recipe_id, sampling.rsna_fraction",train
+R2a_lpft_no_aug,R1_rsna_linear_probe,"LP then fine-tune, augmentation off","finetune.affine_probability, finetune.initialize_head_from_best_probe, run.recipe_id",train
+R2_lpft_conservative_aug,R2a_lpft_no_aug,R2a with conservative augmentation,"finetune.affine_probability, run.recipe_id",train
+R3_direct_ft,R2a_lpft_no_aug,Direct fine-tune from the same original foundation encoder,"finetune.initialize_head_from_best_probe, run.recipe_id",train
+R4a_mammobench_only,R2_lpft_conservative_aug,Source-only training (Mammo-Bench),"run.recipe_id, sampling.rsna_fraction",train_mammobench
+R4b_rsna_only,R2_lpft_conservative_aug,RSNA-only adaptation,"run.recipe_id, sampling.rsna_fraction",train
+R4c_joint,R2_lpft_conservative_aug,Joint Mammo-Bench + RSNA,"run.recipe_id, sampling.rsna_fraction",train_mammobench
+R4d_sequential,R4c_joint,Sequential Mammo-Bench then RSNA,"run.recipe_id, sampling.rsna_fraction",train_mammobench
+R4e_sequential_replay,R4d_sequential,Sequential with declared replay fraction,"run.recipe_id, sampling.rsna_fraction",train_mammobench
+R5_three_class,R4b_rsna_only,Three-class / marginal-loss extension,"model.task, run.recipe_id",train
+R6_resolution,R2_lpft_conservative_aug,Resolution comparison at fixed intensity path,"input.size_hw, run.recipe_id",train
+R7_breast_mil,R2_lpft_conservative_aug,Learned breast-level model,"aggregation.method, optim.effective_batch, run.recipe_id, sampling.training_unit",train
+R8_global_local,R7_breast_mil,Native-detail global plus local tiles,"run.recipe_id, tiles.enabled",train
+R9_robustness,R4b_rsna_only,"Regularisation and robustness, one component at a time","optim.ema_enabled, run.recipe_id",train
+R10_architecture_ensemble,R4b_rsna_only,Competitive architecture comparator and final ensemble,"input.size_hw, model.encoder, optim.effective_batch, run.recipe_id",train
