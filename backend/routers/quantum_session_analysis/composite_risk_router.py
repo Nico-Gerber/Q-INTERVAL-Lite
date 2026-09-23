@@ -12,8 +12,8 @@ try:
 except ImportError:
     joblib = None
 
-# Cancer classification reuses the same VQC model as the quantum classifier route.
-from .classifier_router import run_inference as qml_classify_image
+# Cancer classification reuses the same QSVC model as the quantum classifier route.
+from .qsvc_engine import classify_view as qml_classify_image
 
 from .qml_common import (
     BIRADS_CLASSES,

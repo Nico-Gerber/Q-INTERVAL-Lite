@@ -1,6 +1,6 @@
 from typing import Optional
 
-from .classifier_router import run_inference
+from .qsvc_engine import classify_view as run_inference
 from .composite_risk_router import _calculate_risk, _predict_single as predict_risk
 
 
