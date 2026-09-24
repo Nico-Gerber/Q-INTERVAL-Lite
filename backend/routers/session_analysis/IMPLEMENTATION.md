@@ -75,7 +75,7 @@ def run(views: dict, age: Optional[float]) -> dict:
     },
     "explainability": {
         "base_image_base64": str,             # original image as PNG base64
-        "heatmap_base64":    str,             # saliency / CAM heatmap as PNG base64
+        "heatmap_base64":    str,             # occlusion heatmap as PNG base64
         "overlay_base64":    str | None,      # blended overlay — optional, can be ""
     },
     "density": str | None,                    # e.g. "A"–"D"; None if not predicted

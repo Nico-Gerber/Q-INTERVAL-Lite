@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Box, Chip, Container, Typography, Alert, Button, Drawer, TextField, Dialog, DialogTitle, DialogContent, DialogActions, Snackbar } from '@mui/material';
+import { Box, Chip, Container, Typography, Alert, Button, Drawer, TextField, Dialog, DialogTitle, DialogContent, DialogActions, Snackbar, useTheme } from '@mui/material';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Sidebar, Menu, MenuItem, SubMenu } from 'react-pro-sidebar';
 import exportSessionPDF from '../Components/Results/Shared/ExportSession';
@@ -65,6 +65,8 @@ const genSessionId = () => {
 export default function Analysis() {
 
   const { user } = useAuth();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
 
   const [files, setFiles] = useState([]);
   const [preview, setPreview] = useState(null);
@@ -173,7 +175,11 @@ export default function Analysis() {
   const verifiedViewCount = Object.values(verifications).filter((v) => v.status !== 'pending').length;
   const reportVerified = verifiedViewCount === 4;
   const bannerState = verifiedViewCount === 0 ? 'pending' : reportVerified ? 'verified' : 'partial';
-  const bannerColor = bannerState === 'verified' ? '#4fd1a1' : bannerState === 'partial' ? '#5cc8f5' : '#f5c451';
+  const bannerColor = bannerState === 'verified'
+    ? (isDark ? '#4fd1a1' : '#0D7A54')
+    : bannerState === 'partial'
+      ? (isDark ? '#5cc8f5' : '#1372B0')
+      : (isDark ? '#f5c451' : '#8A6100');
   const bannerText = bannerState === 'verified'
     ? 'CLINICIAN-VERIFIED REPORT'
     : bannerState === 'partial'
@@ -820,8 +826,8 @@ export default function Analysis() {
         <Box sx={{
           position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0,
           backgroundImage: (theme) =>
-            `linear-gradient(${theme.palette.primary.main}07 1px, transparent 1px),
-           linear-gradient(90deg, ${theme.palette.primary.main}07 1px, transparent 1px)`,
+            `linear-gradient(${theme.palette.primary.main}${theme.palette.mode === 'dark' ? '07' : '14'} 1px, transparent 1px),
+           linear-gradient(90deg, ${theme.palette.primary.main}${theme.palette.mode === 'dark' ? '07' : '14'} 1px, transparent 1px)`,
           backgroundSize: '60px 60px',
         }} />
 
@@ -981,11 +987,11 @@ export default function Analysis() {
                           <Container maxWidth="xl">
                             <Box sx={{
                               borderRadius: 2.5, p: { xs: 2, md: 3 },
-                              background: (theme) => theme.palette.mode === 'dark' ? '#060f1c' : '#0A1525',
-                              border: (theme) => `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(34,211,238,0.15)'}`,
+                              background: (theme) => theme.palette.mode === 'dark' ? '#060f1c' : '#DCEEF3',
+                              border: (theme) => `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(14,116,144,0.35)'}`,
                               boxShadow: (theme) => theme.palette.mode === 'dark'
                                 ? '0 24px 70px rgba(0,0,0,0.45)'
-                                : '0 24px 70px rgba(0,0,0,0.35)',
+                                : '0 24px 70px rgba(15,23,42,0.16)',
                             }}>
                               <Box sx={{
                                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.25,
@@ -1005,9 +1011,9 @@ export default function Analysis() {
                               <Box sx={{
                                 display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5,
                                 mb: 1.5, px: 2, py: 1.25, borderRadius: 1,
-                                background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(34,211,238,0.08)',
+                                background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(14,116,144,0.10)',
                               }}>
-                                <Typography sx={{ fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.06em', color: (theme) => theme.palette.mode === 'dark' ? '#F0F9FF' : '#CBD8E8' }}>
+                                <Typography sx={{ fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.06em', color: isDark ? '#F0F9FF' : '#0C1E2A' }}>
                                   SESSION ID: {sessionId}
                                 </Typography>
 
@@ -1024,12 +1030,12 @@ export default function Analysis() {
                                       onClick={() => handleDownloadPdfClick(key)}
                                       sx={{
                                         fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5,
-                                        color: reportVerified ? '#F0F9FF' : 'rgba(240,249,255,0.4)',
-                                        borderColor: reportVerified ? 'rgba(240,249,255,0.35)' : 'rgba(240,249,255,0.15)',
+                                        color: reportVerified ? (isDark ? '#F0F9FF' : '#0C1E2A') : (isDark ? 'rgba(240,249,255,0.4)' : 'rgba(12,30,42,0.35)'),
+                                        borderColor: reportVerified ? (isDark ? 'rgba(240,249,255,0.35)' : 'rgba(14,116,144,0.5)') : (isDark ? 'rgba(240,249,255,0.15)' : 'rgba(14,116,144,0.2)'),
                                         cursor: reportVerified ? 'pointer' : 'not-allowed',
                                         '&:hover': {
-                                          borderColor: reportVerified ? '#F0F9FF' : 'rgba(240,249,255,0.15)',
-                                          backgroundColor: reportVerified ? 'rgba(240,249,255,0.08)' : 'transparent',
+                                          borderColor: reportVerified ? (isDark ? '#F0F9FF' : '#0E7490') : (isDark ? 'rgba(240,249,255,0.15)' : 'rgba(14,116,144,0.2)'),
+                                          backgroundColor: reportVerified ? (isDark ? 'rgba(240,249,255,0.08)' : 'rgba(14,116,144,0.08)') : 'transparent',
                                         },
                                       }}
                                     >
@@ -1040,7 +1046,7 @@ export default function Analysis() {
                                   {sessionFinalized ? (
                                     <Button
                                       size="small" variant="outlined" disabled
-                                      sx={{ fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5, color: '#4fd1a1', borderColor: 'rgba(79,209,161,0.5)' }}
+                                      sx={{ fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5, color: isDark ? '#4fd1a1' : '#0D7A54', borderColor: isDark ? 'rgba(79,209,161,0.5)' : 'rgba(13,122,84,0.5)' }}
                                     >
                                       Published to Patient
                                     </Button>
@@ -1051,12 +1057,12 @@ export default function Analysis() {
                                       onClick={handleFinalizeSession}
                                       sx={{
                                         fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5,
-                                        color: reportVerified ? '#F0F9FF' : 'rgba(240,249,255,0.4)',
-                                        borderColor: reportVerified ? 'rgba(240,249,255,0.35)' : 'rgba(240,249,255,0.15)',
+                                        color: reportVerified ? (isDark ? '#F0F9FF' : '#0C1E2A') : (isDark ? 'rgba(240,249,255,0.4)' : 'rgba(12,30,42,0.35)'),
+                                        borderColor: reportVerified ? (isDark ? 'rgba(240,249,255,0.35)' : 'rgba(14,116,144,0.5)') : (isDark ? 'rgba(240,249,255,0.15)' : 'rgba(14,116,144,0.2)'),
                                         cursor: reportVerified ? 'pointer' : 'not-allowed',
                                         '&:hover': {
-                                          borderColor: reportVerified ? '#F0F9FF' : 'rgba(240,249,255,0.15)',
-                                          backgroundColor: reportVerified ? 'rgba(240,249,255,0.08)' : 'transparent',
+                                          borderColor: reportVerified ? (isDark ? '#F0F9FF' : '#0E7490') : (isDark ? 'rgba(240,249,255,0.15)' : 'rgba(14,116,144,0.2)'),
+                                          backgroundColor: reportVerified ? (isDark ? 'rgba(240,249,255,0.08)' : 'rgba(14,116,144,0.08)') : 'transparent',
                                         },
                                       }}
                                     >
@@ -1074,11 +1080,11 @@ export default function Analysis() {
                                   border: '1px solid rgba(79,209,161,0.35)',
                                   background: 'rgba(79,209,161,0.08)',
                                 }}>
-                                  <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: '#4fd1a1', whiteSpace: 'nowrap' }}>
+                                  <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: isDark ? '#4fd1a1' : '#0D7A54', whiteSpace: 'nowrap' }}>
                                     Patient link:
                                   </Typography>
                                   <Typography sx={{
-                                    fontFamily: 'monospace', fontSize: '0.78rem', color: '#CBD8E8',
+                                    fontFamily: 'monospace', fontSize: '0.78rem', color: isDark ? '#CBD8E8' : '#2C5A6E',
                                     wordBreak: 'break-all', flex: 1, minWidth: 0,
                                   }}>
                                     {`${window.location.origin}/report/${accessToken}`}
@@ -1086,7 +1092,7 @@ export default function Analysis() {
                                   <Button
                                     size="small" variant="outlined"
                                     onClick={() => navigator.clipboard?.writeText(`${window.location.origin}/report/${accessToken}`)}
-                                    sx={{ fontSize: '0.7rem', fontWeight: 700, borderRadius: 1.5, color: '#4fd1a1', borderColor: 'rgba(79,209,161,0.5)' }}
+                                    sx={{ fontSize: '0.7rem', fontWeight: 700, borderRadius: 1.5, color: isDark ? '#4fd1a1' : '#0D7A54', borderColor: isDark ? 'rgba(79,209,161,0.5)' : 'rgba(13,122,84,0.5)' }}
                                   >
                                     Copy
                                   </Button>
@@ -1119,14 +1125,14 @@ export default function Analysis() {
                               <Box sx={{
                                 display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5,
                                 mt: 1.5, px: 2, py: 1.25, borderRadius: 1,
-                                background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(34,211,238,0.08)',
+                                background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(14,116,144,0.10)',
                               }}>
-                                <Typography sx={{ fontSize: '0.85rem', color: '#CBD8E8' }}>
+                                <Typography sx={{ fontSize: '0.85rem', color: isDark ? '#CBD8E8' : '#2C5A6E' }}>
                                   Done reviewing? Start a new session to analyse another set of scans.
                                 </Typography>
                                 <Button
                                   size="small" variant="outlined" onClick={handleReset}
-                                  sx={{ fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5, color: '#F0F9FF', borderColor: 'rgba(240,249,255,0.35)', '&:hover': { borderColor: '#F0F9FF', backgroundColor: 'rgba(240,249,255,0.08)' } }}
+                                  sx={{ fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5, color: isDark ? '#F0F9FF' : '#0C1E2A', borderColor: isDark ? 'rgba(240,249,255,0.35)' : 'rgba(14,116,144,0.5)', '&:hover': { borderColor: isDark ? '#F0F9FF' : '#0E7490', backgroundColor: isDark ? 'rgba(240,249,255,0.08)' : 'rgba(14,116,144,0.08)' } }}
                                 >
                                   New Session
                                 </Button>
@@ -1144,11 +1150,11 @@ export default function Analysis() {
                           <Container maxWidth="xl">
                             <Box sx={{
                               borderRadius: 2.5, p: { xs: 2, md: 3 },
-                              background: (theme) => theme.palette.mode === 'dark' ? '#060f1c' : '#0A1525',
-                              border: (theme) => `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(34,211,238,0.15)'}`,
+                              background: (theme) => theme.palette.mode === 'dark' ? '#060f1c' : '#DCEEF3',
+                              border: (theme) => `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(14,116,144,0.35)'}`,
                               boxShadow: (theme) => theme.palette.mode === 'dark'
                                 ? '0 24px 70px rgba(0,0,0,0.45)'
-                                : '0 24px 70px rgba(0,0,0,0.35)',
+                                : '0 24px 70px rgba(15,23,42,0.16)',
                             }}>
                               <Box sx={{
                                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.25,
@@ -1156,10 +1162,10 @@ export default function Analysis() {
                                 border: '1px solid rgba(245,196,81,0.4)',
                                 background: 'rgba(245,196,81,0.08)',
                               }}>
-                                <Box sx={{ width: 8, height: 8, borderRadius: '50%', background: '#f5c451', flexShrink: 0 }} />
+                                <Box sx={{ width: 8, height: 8, borderRadius: '50%', background: isDark ? '#f5c451' : '#8A6100', flexShrink: 0 }} />
                                 <Typography sx={{
                                   fontFamily: 'monospace', fontSize: '0.95rem', fontWeight: 800, letterSpacing: '0.04em',
-                                  color: '#f5c451', textAlign: 'center',
+                                  color: isDark ? '#f5c451' : '#8A6100', textAlign: 'center',
                                 }}>
                                   AI-GENERATED — AWAITING CLINICAL VERIFICATION
                                 </Typography>
@@ -1168,15 +1174,15 @@ export default function Analysis() {
                               <Box sx={{
                                 display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5,
                                 mb: 1.5, px: 2, py: 1.25, borderRadius: 1,
-                                background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(34,211,238,0.08)',
+                                background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(14,116,144,0.10)',
                               }}>
-                                <Typography sx={{ fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.06em', color: (theme) => theme.palette.mode === 'dark' ? '#F0F9FF' : '#CBD8E8' }}>
+                                <Typography sx={{ fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.06em', color: isDark ? '#F0F9FF' : '#0C1E2A' }}>
                                   SESSION ID: {sessionId}
                                 </Typography>
                                 <Button
                                   size="small" variant="outlined" startIcon={<DownloadIcon sx={{ fontSize: 16 }} />}
                                   onClick={handleDownloadPdfClick}
-                                  sx={{ fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5, color: '#F0F9FF', borderColor: 'rgba(240,249,255,0.35)', '&:hover': { borderColor: '#F0F9FF', backgroundColor: 'rgba(240,249,255,0.08)' } }}
+                                  sx={{ fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5, color: isDark ? '#F0F9FF' : '#0C1E2A', borderColor: isDark ? 'rgba(240,249,255,0.35)' : 'rgba(14,116,144,0.5)', '&:hover': { borderColor: isDark ? '#F0F9FF' : '#0E7490', backgroundColor: isDark ? 'rgba(240,249,255,0.08)' : 'rgba(14,116,144,0.08)' } }}
                                 >
                                   Download PDF
                                 </Button>
@@ -1192,14 +1198,14 @@ export default function Analysis() {
                               <Box sx={{
                                 display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5,
                                 mt: 1.5, px: 2, py: 1.25, borderRadius: 1,
-                                background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(34,211,238,0.08)',
+                                background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(14,116,144,0.10)',
                               }}>
-                                <Typography sx={{ fontSize: '0.85rem', color: '#CBD8E8' }}>
+                                <Typography sx={{ fontSize: '0.85rem', color: isDark ? '#CBD8E8' : '#2C5A6E' }}>
                                   Done reviewing? Start a new session to analyse another set of scans.
                                 </Typography>
                                 <Button
                                   size="small" variant="outlined" onClick={handleReset}
-                                  sx={{ fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5, color: '#F0F9FF', borderColor: 'rgba(240,249,255,0.35)', '&:hover': { borderColor: '#F0F9FF', backgroundColor: 'rgba(240,249,255,0.08)' } }}
+                                  sx={{ fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5, color: isDark ? '#F0F9FF' : '#0C1E2A', borderColor: isDark ? 'rgba(240,249,255,0.35)' : 'rgba(14,116,144,0.5)', '&:hover': { borderColor: isDark ? '#F0F9FF' : '#0E7490', backgroundColor: isDark ? 'rgba(240,249,255,0.08)' : 'rgba(14,116,144,0.08)' } }}
                                 >
                                   New Session
                                 </Button>
@@ -1299,12 +1305,11 @@ export default function Analysis() {
                 >
                   <Box sx={{
                     display: 'flex', flexDirection: 'column', gap: '3px',
-                    opacity: dragging ? 1 : 0.55,
                   }}>
                     {[0, 1, 2].map((i) => (
                       <Box key={i} sx={{
                         width: 3, height: 3, borderRadius: '50%',
-                        background: (theme) => theme.palette.primary.main,
+                        background: (theme) => dragging ? theme.palette.grip.active : theme.palette.grip.idle,
                       }} />
                     ))}
                   </Box>

@@ -29,26 +29,38 @@ const MODELS = [
 
 // Classification triad avoids a straight red/green pair (a common colorblind
 // confusion axis); every value still ships with its text label alongside the color.
-const MC = '#FF6A4D';
-const BC = '#E3A63C';
-const NC = '#2FBFA8';
+// Dark-mode swatches stay saturated/pastel (they pop against navy panels).
+// Light-mode swatches are deepened so the same labels keep 4.5:1+ text contrast on white cards.
+const MC_DARK = '#FF6A4D';
+const BC_DARK = '#E3A63C';
+const NC_DARK = '#2FBFA8';
+const MC_LIGHT = '#C43F23';
+const BC_LIGHT = '#8F6300';
+const NC_LIGHT = '#0E7A6C';
 
-const CNN_C = '#5cc8f5';
-const QML_C = '#c07ae0';
+// CNN_DARK/QML_DARK are also used verbatim (never swapped for a light variant)
+// inside the zoom lightbox below, which is always a dark overlay on the image
+// regardless of app theme.
+const CNN_DARK = '#5cc8f5';
+const QML_DARK = '#c07ae0';
+const CNN_LIGHT = '#1372B0';
+const QML_LIGHT = '#7C3AAD';
 
 // Review status uses its own palette, separate from classification colors,
 // so "pending/confirmed/edited" never reads as a classification result.
-const STATUS_PENDING = '#FFB020';
-const STATUS_DONE = '#33C9FF';
+const STATUS_PENDING_DARK = '#FFB020';
+const STATUS_DONE_DARK = '#33C9FF';
+const STATUS_PENDING_LIGHT = '#8F6300';
+const STATUS_DONE_LIGHT = '#0B7FA6';
 
 const pct = (v) => ((v ?? 0) * 100);
 
-const getColor = (r) => (
+const getColor = (r, isDark) => (
     r === 'Malignant'
-        ? MC
+        ? (isDark ? MC_DARK : MC_LIGHT)
         : r === 'Benign'
-            ? BC
-            : NC
+            ? (isDark ? BC_DARK : BC_LIGHT)
+            : (isDark ? NC_DARK : NC_LIGHT)
 );
 
 function Bar({ value, color, track, delay = 0, height = 4 }) {
@@ -263,19 +275,30 @@ export default function ClassificationResults({
             footer: '#3f5d7d',
         }
         : {
-            shell: '#0D1B2E',
-            panel: '#112038',
-            card: '#162840',
-            line: 'rgba(34,211,238,0.18)',
-            selLine: '#2f7fb8',
-            selBg: 'rgba(34,211,238,0.12)',
-            text: '#F0F9FF',
-            body: '#CBD8E8',
-            muted: '#6B90AC',
-            dim: '#8BAFC4',
-            track: 'rgba(255,255,255,0.08)',
-            footer: '#4A6A80',
+            shell: '#EDF6F9',
+            panel: '#DCEEF3',
+            card: '#FFFFFF',
+            line: 'rgba(14,116,144,0.30)',
+            selLine: '#0B5A70',
+            selBg: 'rgba(14,116,144,0.12)',
+            text: '#0C1E2A',
+            body: '#2C5A6E',
+            muted: '#4E7180',
+            dim: '#557788',
+            track: 'rgba(14,116,144,0.15)',
+            footer: '#4E7180',
         };
+
+    // Themed shell colors — switch with the app theme. The zoom lightbox further
+    // below intentionally keeps using CNN_DARK/QML_DARK/STATUS_*_DARK directly,
+    // since that overlay is always a dark scrim on the image regardless of theme.
+    const CNN_C = isDark ? CNN_DARK : CNN_LIGHT;
+    const QML_C = isDark ? QML_DARK : QML_LIGHT;
+    const STATUS_PENDING = isDark ? STATUS_PENDING_DARK : STATUS_PENDING_LIGHT;
+    const STATUS_DONE = isDark ? STATUS_DONE_DARK : STATUS_DONE_LIGHT;
+    const MC = isDark ? MC_DARK : MC_LIGHT;
+    const BC = isDark ? BC_DARK : BC_LIGHT;
+    const NC = isDark ? NC_DARK : NC_LIGHT;
 
     useEffect(() => {
         setMounted(false);
@@ -321,7 +344,7 @@ export default function ClassificationResults({
     if (!activeResult || !activeView) return null;
 
     const resultColor =
-        getColor(activeView.result);
+        getColor(activeView.result, isDark);
 
     const cnnView =
         cnn?.views?.[currentView];
@@ -717,7 +740,7 @@ export default function ClassificationResults({
                                                     background:
                                                         sel
                                                             ? t.selBg
-                                                            : 'rgba(92,200,245,0.08)'
+                                                            : (isDark ? 'rgba(92,200,245,0.08)' : 'rgba(14,116,144,0.08)')
                                                 },
                                             }}
                                         >
@@ -927,7 +950,7 @@ export default function ClassificationResults({
                                         text:
                                             `${cnnView?.result ?? '—'} ${pct(cnnView?.score).toFixed(2)}%`,
                                         color:
-                                            getColor(cnnView?.result),
+                                            getColor(cnnView?.result, isDark),
                                     }}
                                 />
 
@@ -949,7 +972,7 @@ export default function ClassificationResults({
                                         text:
                                             `${qmlView?.result ?? '—'} ${pct(qmlView?.score).toFixed(2)}%`,
                                         color:
-                                            getColor(qmlView?.result),
+                                            getColor(qmlView?.result, isDark),
                                     }}
                                 />
                             </Box>
@@ -1241,7 +1264,7 @@ export default function ClassificationResults({
                                                                             fontWeight: 700,
                                                                             color:
                                                                                 getColor(
-                                                                                    cnnView.result
+                                                                                    cnnView.result, isDark
                                                                                 ),
                                                                             mt: 0.25
                                                                         }}
@@ -1296,7 +1319,7 @@ export default function ClassificationResults({
                                                                             fontWeight: 700,
                                                                             color:
                                                                                 getColor(
-                                                                                    qmlView.result
+                                                                                    qmlView.result, isDark
                                                                                 ),
                                                                             mt: 0.25
                                                                         }}
@@ -1354,7 +1377,7 @@ export default function ClassificationResults({
 
                                                                     const lc =
                                                                         getColor(
-                                                                            label
+                                                                            label, isDark
                                                                         );
 
                                                                     return (
@@ -1549,7 +1572,7 @@ export default function ClassificationResults({
                                                                 sx={{
                                                                     fontSize: 12,
                                                                     fontWeight: 700,
-                                                                    color: '#08131f'
+                                                                    color: isDark ? '#08131f' : '#FFFFFF'
                                                                 }}
                                                             >
                                                                 {draftResult ===
@@ -1631,7 +1654,7 @@ export default function ClassificationResults({
                                             height: 12,
                                             borderRadius: '50%',
                                             background: CNN_C,
-                                            border: '2px solid #08131f',
+                                            border: `2px solid ${t.card}`,
                                             cursor: 'pointer'
                                         },
 
@@ -1640,7 +1663,7 @@ export default function ClassificationResults({
                                             height: 12,
                                             borderRadius: '50%',
                                             background: CNN_C,
-                                            border: '2px solid #08131f',
+                                            border: `2px solid ${t.card}`,
                                             cursor: 'pointer'
                                         },
                                     }}
@@ -1719,7 +1742,7 @@ export default function ClassificationResults({
                                         fontSize: 18,
                                         color:
                                             getColor(
-                                                cnnView?.result
+                                                cnnView?.result, isDark
                                             )
                                     }}
                                 >
@@ -1732,7 +1755,7 @@ export default function ClassificationResults({
                                         fontSize: 18,
                                         color:
                                             getColor(
-                                                qmlView?.result
+                                                qmlView?.result, isDark
                                             )
                                     }}
                                 >
@@ -2108,7 +2131,7 @@ export default function ClassificationResults({
                                                         sx={{
                                                             color:
                                                                 getColor(
-                                                                    v.cnnResult
+                                                                    v.cnnResult, isDark
                                                                 )
                                                         }}
                                                     >
@@ -2132,7 +2155,7 @@ export default function ClassificationResults({
                                                                 sx={{
                                                                     color:
                                                                         getColor(
-                                                                            v.qmlResult
+                                                                            v.qmlResult, isDark
                                                                         )
                                                                 }}
                                                             >
@@ -2176,7 +2199,7 @@ export default function ClassificationResults({
                                                     sx={{
                                                         color:
                                                             getColor(
-                                                                verification.clinicianResult
+                                                                verification.clinicianResult, isDark
                                                             ),
                                                         fontWeight: 700
                                                     }}
@@ -2194,7 +2217,7 @@ export default function ClassificationResults({
                                                         'right',
                                                     color:
                                                         getColor(
-                                                            v.result
+                                                            v.result, isDark
                                                         )
                                                 }}
                                             >
@@ -2402,18 +2425,7 @@ export default function ClassificationResults({
                             </>
                         )}
 
-                        <Label
-                            sx={{
-                                mt: 'auto',
-                                color: MC,
-                                letterSpacing: '0.08em',
-                                fontWeight: 700,
-                                fontSize: 9.5,
-                                whiteSpace: 'nowrap'
-                            }}
-                        >
-                            Research prototype · Not for clinical use
-                        </Label>
+
                     </Box>
                 </Box>
             </Box>
@@ -2588,7 +2600,7 @@ export default function ClassificationResults({
                             sx={{
                                 ...MONO,
                                 fontSize: 10.5,
-                                color: t.muted,
+                                color: 'rgba(255,255,255,0.65)',
                                 whiteSpace: 'nowrap'
                             }}
                         >
@@ -2648,7 +2660,7 @@ export default function ClassificationResults({
                                     borderRadius:
                                         '50%',
                                     background:
-                                        CNN_C,
+                                        CNN_DARK,
                                     border:
                                         '2px solid #000',
                                     cursor:
@@ -2662,7 +2674,7 @@ export default function ClassificationResults({
                                     borderRadius:
                                         '50%',
                                     background:
-                                        CNN_C,
+                                        CNN_DARK,
                                     border:
                                         '2px solid #000',
                                     cursor:
@@ -2675,7 +2687,7 @@ export default function ClassificationResults({
                             sx={{
                                 ...MONO,
                                 fontSize: 10.5,
-                                color: CNN_C,
+                                color: CNN_DARK,
                                 minWidth: 26,
                                 textAlign: 'right',
                                 flexShrink: 0

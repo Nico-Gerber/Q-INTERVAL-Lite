@@ -2,8 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { Box, Typography, useTheme } from '@mui/material';
 
 const MONO = { fontFamily: 'monospace' };
-const LOW = '#4fd1a1', MID = '#f5c451', HIGH = '#ff7a7a';
-const CNN_C = '#5cc8f5', QML_C = '#c07ae0';
+// Dark-mode swatches stay saturated/pastel (they pop against navy panels).
+// Light-mode swatches are deepened so the same labels keep 4.5:1+ text contrast on white cards.
+const LOW_DARK = '#4fd1a1', MID_DARK = '#f5c451', HIGH_DARK = '#ff7a7a';
+const LOW_LIGHT = '#0D7A54', MID_LIGHT = '#8A6100', HIGH_LIGHT = '#B23434';
+const CNN_DARK = '#5cc8f5', QML_DARK = '#c07ae0';
+const CNN_LIGHT = '#1372B0', QML_LIGHT = '#7C3AAD';
 
 const WEIGHTS = [
     { key: 'cnn', label: 'CNN score', weight: 0.6 },
@@ -11,9 +15,9 @@ const WEIGHTS = [
     { key: 'density', label: 'Density', weight: 0.15 },
 ];
 
-const bandColor = (s) => (s >= 66 ? HIGH : s >= 33 ? MID : LOW);
+const bandColor = (s, isDark) => (s >= 66 ? (isDark ? HIGH_DARK : HIGH_LIGHT) : s >= 33 ? (isDark ? MID_DARK : MID_LIGHT) : (isDark ? LOW_DARK : LOW_LIGHT));
 const bandName = (s) => (s >= 66 ? 'High risk' : s >= 33 ? 'Medium risk' : 'Low risk');
-const severityColor = (s) => (s === 'Malignant' ? HIGH : s === 'Benign' ? MID : LOW);
+const severityColor = (s, isDark) => (s === 'Malignant' ? (isDark ? HIGH_DARK : HIGH_LIGHT) : s === 'Benign' ? (isDark ? MID_DARK : MID_LIGHT) : (isDark ? LOW_DARK : LOW_LIGHT));
 
 function Label({ children, sx }) {
     return (
@@ -51,7 +55,7 @@ function BandScale({ score, tokens, height = 12, mounted }) {
             }} />
         );
     }
-    const c = bandColor(score);
+    const c = bandColor(score, tokens.isDark);
     return (
         <Box sx={{ position: 'relative', height }}>
             <Box sx={{ position: 'absolute', inset: 0, display: 'flex', gap: '3px' }}>
@@ -78,16 +82,24 @@ export default function MammoRiskResults({ currentModel, results, sessionId }) {
     const [mounted, setMounted] = useState(false);
 
     const t = isDark ? {
+        isDark: true,
         shell: '#0a1728', panel: '#08131f', card: '#0c1c2e', line: '#17304d',
         text: '#eaf4ff', body: '#c3d8ec', muted: '#5f7fa6', dim: '#8fabc9',
         track: '#132840', footer: '#3f5d7d',
     } : {
-        shell: '#0D1B2E', panel: '#112038', card: '#162840',
-        line: 'rgba(34,211,238,0.18)',
-        text: '#F0F9FF', body: '#CBD8E8',
-        muted: '#6B90AC', dim: '#8BAFC4',
-        track: 'rgba(255,255,255,0.08)', footer: '#4A6A80',
+        isDark: false,
+        shell: '#EDF6F9', panel: '#DCEEF3', card: '#FFFFFF',
+        line: 'rgba(14,116,144,0.30)',
+        text: '#0C1E2A', body: '#2C5A6E',
+        muted: '#4E7180', dim: '#557788',
+        track: 'rgba(14,116,144,0.15)', footer: '#4E7180',
     };
+
+    const LOW = isDark ? LOW_DARK : LOW_LIGHT;
+    const MID = isDark ? MID_DARK : MID_LIGHT;
+    const HIGH = isDark ? HIGH_DARK : HIGH_LIGHT;
+    const CNN_C = isDark ? CNN_DARK : CNN_LIGHT;
+    const QML_C = isDark ? QML_DARK : QML_LIGHT;
 
     const cnn = results?.resultFile?.cnn;
     const qml = results?.resultFile?.qml;
@@ -229,8 +241,8 @@ export default function MammoRiskResults({ currentModel, results, sessionId }) {
     /* ── Comparison ───────────────────────────────────────── */
     if (isBoth) {
         const rows = [
-            { k: 'Highest severity', c: C.severity, q: Q.severity, cc: severityColor(C.severity), qc: severityColor(Q.severity) },
-            { k: 'Risk level', c: C.level, q: Q.level, cc: C.malignant ? t.dim : bandColor(C.score ?? 0), qc: Q.malignant ? t.dim : bandColor(Q.score ?? 0) },
+            { k: 'Highest severity', c: C.severity, q: Q.severity, cc: severityColor(C.severity, isDark), qc: severityColor(Q.severity, isDark) },
+            { k: 'Risk level', c: C.level, q: Q.level, cc: C.malignant ? t.dim : bandColor(C.score ?? 0, isDark), qc: Q.malignant ? t.dim : bandColor(Q.score ?? 0, isDark) },
             { k: 'Highest density', c: C.density, q: Q.density, cc: t.text, qc: t.text },
             { k: 'Highest BI-RADS', c: C.birads, q: Q.birads, cc: t.text, qc: t.text },
         ];
@@ -268,7 +280,7 @@ export default function MammoRiskResults({ currentModel, results, sessionId }) {
                                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
                                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 2 }}>
                                         <Label sx={{ color: c }}>{name} risk index</Label>
-                                        <Typography sx={{ ...MONO, fontSize: 22, color: m.score === null ? t.dim : bandColor(m.score) }}>
+                                        <Typography sx={{ ...MONO, fontSize: 22, color: m.score === null ? t.dim : bandColor(m.score, isDark) }}>
                                             {m.score === null ? 'N/A' : m.score.toFixed(2)}
                                         </Typography>
                                     </Box>
@@ -285,7 +297,7 @@ export default function MammoRiskResults({ currentModel, results, sessionId }) {
                                             </Typography>
                                         </Box>
                                     ) : (
-                                        <Label sx={{ color: bandColor(m.score) }}>{bandName(m.score)}</Label>
+                                        <Label sx={{ color: bandColor(m.score, isDark) }}>{bandName(m.score)}</Label>
                                     )}
                                 </Box>
                             </React.Fragment>
@@ -301,7 +313,7 @@ export default function MammoRiskResults({ currentModel, results, sessionId }) {
 
     /* ── Single model ─────────────────────────────────────── */
     const score = A.score;
-    const c = score === null ? t.dim : bandColor(score);
+    const c = score === null ? t.dim : bandColor(score, isDark);
 
     return (
         <Box sx={cardSx}>
@@ -315,7 +327,7 @@ export default function MammoRiskResults({ currentModel, results, sessionId }) {
                 }}>
                     <Label sx={{ color: t.muted }}>Inputs</Label>
                     {[
-                        { k: 'Highest severity', v: A.severity, c: severityColor(A.severity) },
+                        { k: 'Highest severity', v: A.severity, c: severityColor(A.severity, isDark) },
                         { k: 'Highest density', v: A.density, c: t.text },
                         { k: 'Highest BI-RADS', v: A.birads, c: t.text },
                     ].map(({ k, v, c: vc }) => (

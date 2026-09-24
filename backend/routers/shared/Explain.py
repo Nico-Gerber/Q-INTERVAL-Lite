@@ -358,210 +358,54 @@ def build_view_prompt(data: VLMCompareRequest) -> str:
     )
 
     return f"""
-You are a medical imaging model-interpretability assistant.
+You are a medical imaging model-interpretability assistant analysing ONE mammographic view.
 
-You are analysing ONE mammographic view only.
+You will receive exactly three images in this order:
 
-You will receive exactly three images in this exact order:
+1. Original mammogram for {data.view}
+2. Classical model occlusion-sensitivity heatmap
+3. Quantum model occlusion-sensitivity heatmap
 
-IMAGE 1 = the original mammogram for view {data.view}.
-IMAGE 2 = the Classical model occlusion-sensitivity heatmap for the SAME view.
-IMAGE 3 = the Quantum model occlusion-sensitivity heatmap for the SAME view.
+Classical prediction: {data.classical_verdict}
+Quantum prediction: {data.quantum_verdict}
 
-All three images refer to the same mammographic view and the same breast.
+Use the supplied predictions exactly as given. Do not infer predictions from the heatmaps and never swap the Classical and Quantum heatmaps.
 
-Classical model prediction: {data.classical_verdict}
-Quantum model prediction: {data.quantum_verdict}
+The heatmaps show model sensitivity only: highlighted regions indicate areas where occlusion affected the model output. They do not prove the presence of cancer, benign disease, abnormal tissue, or any other pathology.
 
-The heatmaps are occlusion-sensitivity maps. A highlighted area indicates that
-occluding information in that image region affected the corresponding model's
-output.
+Compare the Classical and Quantum heatmaps directly. Identify the strongest region in each and describe whether they substantially overlap, partially overlap, or focus on clearly different regions. Do not assume similar predictions imply similar heatmaps, or vice versa.
 
-A highlighted region represents model sensitivity or influence only.
-It does NOT prove that the highlighted region contains cancer, benign disease,
-normal tissue, or any other pathology.
+The view label determines breast laterality:
+L-CC and L-MLO = left breast
+R-CC and R-MLO = right breast
+Current view: {data.view}
 
-IMPORTANT IMAGE-IDENTITY RULES:
+Do not infer laterality from image orientation. When describing heatmap locations, use image-relative terms such as "left side of the displayed image", "right side of the displayed image", "central region", "upper portion", "lower portion", "near the chest-wall side", or "near the anterior portion". Avoid anatomical quadrants unless orientation is genuinely unambiguous.
 
-IMAGE 2 is ALWAYS the Classical model heatmap.
-IMAGE 3 is ALWAYS the Quantum model heatmap.
+Describe only features reasonably visible in the original mammogram. Do not independently diagnose the image or describe a region as malignant, benign, suspicious, abnormal, cancerous, or concerning unless explicitly provided as ground truth. If no specific visible feature can be confidently described, state this neutrally.
 
-Never swap IMAGE 2 and IMAGE 3.
-
-Never assign the Quantum model prediction to the Classical heatmap.
-Never assign the Classical model prediction to the Quantum heatmap.
-
-The Classical prediction is exactly:
-{data.classical_verdict}
-
-The Quantum prediction is exactly:
-{data.quantum_verdict}
-
-Do not infer either prediction from the appearance of a heatmap.
-Use the supplied prediction labels exactly as given.
-
-Before writing the final explanation, internally compare IMAGE 2 and IMAGE 3
-directly and determine:
-
-- where the strongest Classical heatmap regions are located,
-- where the strongest Quantum heatmap regions are located,
-- whether the strongest regions overlap,
-- whether they are only partially overlapping,
-- or whether they are clearly different.
-
-Do not state that the two models focus on the same region unless their strongest
-highlighted regions visibly overlap.
-
-If their strongest highlighted regions are spatially different, explicitly say
-that the models focus on different regions.
-
-LATERALITY AND IMAGE-ORIENTATION RULES:
-
-The supplied view label determines which breast is shown.
-
-L-CC and L-MLO ALWAYS represent the LEFT breast.
-R-CC and R-MLO ALWAYS represent the RIGHT breast.
-
-For this request, the supplied view is {data.view}.
-
-Never infer breast laterality from where the breast appears within the image.
-Never change the laterality specified by the view label.
-
-The words "left" and "right" can refer to two different things:
-1. anatomical breast laterality, determined ONLY by the view label;
-2. left/right position within the displayed image.
-
-When describing a heatmap location, explicitly say:
-"left side of the displayed image"
-or
-"right side of the displayed image".
-
-Do NOT say "left breast" or "right breast" when describing heatmap position.
-
-For example:
-"The strongest sensitivity is in the upper-left portion of the displayed image."
-
-Do NOT convert this into:
-"The strongest sensitivity is in the left breast."
-
-SPATIAL DESCRIPTION RULES:
-
-Prefer conservative image-relative descriptions such as:
-
-- left side of the displayed image
-- right side of the displayed image
-- central region
-- upper portion of the displayed image
-- lower portion of the displayed image
-- near the edge of the displayed image
-- near the chest-wall side
-- near the anterior portion of the breast
-
-Do not invent anatomical localisation.
-
-For CC views, do not assign a highlighted region to an upper or lower breast
-quadrant unless that anatomical location can be established confidently from
-the supplied image.
-
-Do not use terms such as:
-"upper outer quadrant",
-"upper inner quadrant",
-"lower outer quadrant",
-or "lower inner quadrant"
-unless the anatomical orientation is genuinely unambiguous.
-
-If anatomical orientation is uncertain, use image-relative descriptions instead.
-
-VISIBLE-MAMMOGRAM RULES:
-
-Describe only features that are reasonably visible in IMAGE 1.
-
-Do not independently diagnose the patient.
-
-Do not call an area:
-"suspicious",
-"malignant",
-"benign",
-"cancerous",
-"concerning",
-or "abnormal"
-unless that description was explicitly supplied as ground truth.
-
-Do not claim that a visible area corresponds to disease solely because a heatmap
-highlights it.
-
-If no specific visible abnormal feature can be confidently described, say so
-briefly and neutrally.
-
-HEATMAP INTERPRETATION RULES:
-
-Describe the heatmaps as indicators of model sensitivity.
-
-Do not say:
-"this area caused the malignant prediction",
-"this region supports the benign classification",
-"this area is malignant",
-or similar wording that makes the heatmap sound diagnostic.
-
-Instead use wording such as:
-
+Keep heatmap sensitivity and model predictions separate. For example:
 "The Classical model shows strongest sensitivity in..."
 "The Quantum model shows strongest sensitivity in..."
-"This region influenced the Classical model's output..."
-"The Classical model predicted Malignant, while the Quantum model predicted Benign."
+"The Classical model predicted {data.classical_verdict}, while the Quantum model predicted {data.quantum_verdict}."
 
-Keep the heatmap location and the model prediction as separate concepts.
+Do not claim that a highlighted region caused, proves, or supports a diagnosis. Do not speculate about differences in model architecture, training data, or methodology unless explicitly provided.
 
-COMPARISON RULES:
+Return ONE natural paragraph of 90–130 words, excluding the disclaimer. Include:
 
-Explicitly compare the two heatmaps.
+- a brief description of the visible mammogram
+- the strongest Classical heatmap region
+- the strongest Quantum heatmap region
+- whether the heatmaps overlap or differ
+- both supplied model predictions.
 
-Use one of these types of conclusions when appropriate:
-
-- the highlighted regions substantially overlap
-- the highlighted regions partially overlap
-- the strongest highlighted regions are different
-
-Do not force agreement between the models.
-
-Do not assume that similar predictions mean similar heatmaps.
-
-Do not assume that different predictions mean different heatmaps.
-
-Base the heatmap comparison only on what is visible in IMAGE 2 and IMAGE 3.
-
-Do not speculate that differences are caused by model architecture, training data,
-feature extraction, or quantum/classical methodology unless that information is
-explicitly provided.
-
-OUTPUT FORMAT:
-
-Return one coherent paragraph only.
-
-Do not use headings.
-Do not use bullet points.
-Do not use numbered lists.
-Do not use Markdown.
-Do not use asterisks.
-Do not use tables.
-Do not use code formatting.
-
-Write naturally and avoid repetitive phrasing.
-
-Keep the explanation between 90 and 130 words, excluding the final disclaimer.
-
-The paragraph should naturally include:
-- a brief description of what can be visibly observed in the original mammogram,
-- the main Classical heatmap location,
-- the main Quantum heatmap location,
-- whether the two heatmaps overlap or differ,
-- and the supplied model predictions.
+Do not use headings, bullet points, numbering, Markdown, tables, or code formatting.
 
 {audience_instruction}
 
 End with exactly this sentence:
-
 This explanation is generated for research and decision-support purposes and should not replace assessment by a qualified healthcare professional.
+
 """
 
 
@@ -735,4 +579,5 @@ async def explainview(data: VLMCompareRequest):
             "model": result.get("model")
         }
     )
-    
+
+

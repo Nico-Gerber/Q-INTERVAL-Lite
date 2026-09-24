@@ -81,8 +81,8 @@ const sharedComponents = (isDark) => ({
       '*': { fontFamily: '"Plus Jakarta Sans", sans-serif' },
       '*::-webkit-scrollbar': { width: '6px' },
       '*::-webkit-scrollbar-track': { background: 'transparent' },
-      '*::-webkit-scrollbar-thumb': { background: isDark ? 'rgba(34,211,238,0.2)' : 'rgba(14,116,144,0.3)', borderRadius: '3px' },
-      '*::-webkit-scrollbar-thumb:hover': { background: isDark ? 'rgba(34,211,238,0.35)' : 'rgba(14,116,144,0.5)' },
+      '*::-webkit-scrollbar-thumb': { background: isDark ? 'rgba(34,211,238,0.2)' : 'rgba(14,116,144,0.42)', borderRadius: '3px' },
+      '*::-webkit-scrollbar-thumb:hover': { background: isDark ? 'rgba(34,211,238,0.35)' : 'rgba(14,116,144,0.6)' },
     },
   },
   MuiButton: {
@@ -116,9 +116,40 @@ const sharedComponents = (isDark) => ({
     styleOverrides: {
       root: {
         backgroundImage: 'none',
-        backgroundColor: isDark ? '#112038' : '#DAF0F7',
-        border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(8,145,178,0.12)'}`,
-        boxShadow: isDark ? 'none' : '0 1px 4px rgba(8,145,178,0.06)',
+        backgroundColor: isDark ? '#112038' : '#FFFFFF',
+        border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(14,116,144,0.45)'}`,
+        boxShadow: isDark ? 'none' : '0 4px 16px rgba(15,23,42,0.08)',
+      },
+    },
+  },
+  // Elevated/floating surfaces (menus, dropdowns, dialogs) — a visibly stronger
+  // border + shadow than a plain Paper/Card so they read as floating above the
+  // page even though the light palette itself is very pale. Dark mode keeps its
+  // existing (borderless-shadow) look untouched.
+  MuiPopover: {
+    styleOverrides: {
+      paper: {
+        backgroundColor: isDark ? '#112038' : '#FFFFFF',
+        border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(14,116,144,0.7)'}`,
+        boxShadow: isDark ? 'none' : '0 16px 40px rgba(15,23,42,0.18), 0 4px 12px rgba(15,23,42,0.08)',
+      },
+    },
+  },
+  MuiMenu: {
+    styleOverrides: {
+      paper: {
+        backgroundColor: isDark ? '#112038' : '#FFFFFF',
+        border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(14,116,144,0.7)'}`,
+        boxShadow: isDark ? 'none' : '0 16px 40px rgba(15,23,42,0.18), 0 4px 12px rgba(15,23,42,0.08)',
+      },
+    },
+  },
+  MuiDialog: {
+    styleOverrides: {
+      paper: {
+        backgroundColor: isDark ? '#112038' : '#FFFFFF',
+        border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(14,116,144,0.7)'}`,
+        boxShadow: isDark ? 'none' : '0 24px 60px rgba(15,23,42,0.22), 0 6px 16px rgba(15,23,42,0.1)',
       },
     },
   },
@@ -133,7 +164,7 @@ const sharedComponents = (isDark) => ({
     },
   },
   MuiChip: { styleOverrides: { root: { borderRadius: '999px', fontFamily: '"Plus Jakarta Sans", sans-serif' } } },
-  MuiDivider: { styleOverrides: { root: { borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(8,145,178,0.14)' } } },
+  MuiDivider: { styleOverrides: { root: { borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(14,116,144,0.28)' } } },
   MuiAlert: {
     styleOverrides: {
       root: { borderRadius: 10 },
@@ -146,12 +177,12 @@ const sharedComponents = (isDark) => ({
     styleOverrides: {
       root: {
         backgroundImage: 'none',
-        backgroundColor: isDark ? '#112038' : '#DAF0F7',
-        border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(8,145,178,0.12)'}`,
+        backgroundColor: isDark ? '#112038' : '#FFFFFF',
+        border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(14,116,144,0.45)'}`,
         transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
         '&:hover': {
-          borderColor: isDark ? 'rgba(34,211,238,0.3)' : 'rgba(8,145,178,0.4)',
-          boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.35)' : '0 6px 24px rgba(8,145,178,0.1)',
+          borderColor: isDark ? 'rgba(34,211,238,0.3)' : 'rgba(14,116,144,0.65)',
+          boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.35)' : '0 10px 28px rgba(15,23,42,0.14)',
         },
       },
     },
@@ -160,9 +191,9 @@ const sharedComponents = (isDark) => ({
     styleOverrides: {
       root: {
         borderRadius: '10px',
-        backgroundColor: isDark ? '#112038' : '#DAF0F7',
-        '& .MuiOutlinedInput-notchedOutline': { borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(8,145,178,0.18)' },
-        '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(8,145,178,0.35)' },
+        backgroundColor: isDark ? '#112038' : '#FFFFFF',
+        '& .MuiOutlinedInput-notchedOutline': { borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(14,116,144,0.55)' },
+        '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(14,116,144,0.75)' },
         '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: isDark ? '#22D3EE' : '#0891B2', boxShadow: `0 0 0 3px ${isDark ? 'rgba(34,211,238,0.12)' : 'rgba(8,145,178,0.12)'}` },
       },
     },
@@ -187,6 +218,7 @@ const darkTheme = createTheme({
     background: {
       default: '#0D1B2E',
       paper:   '#112038',
+      elevated: '#112038',
       heroGradient: 'linear-gradient(160deg, #0D1B2E 0%, #112038 55%, #0D1B2E 100%)',
       hero:         'linear-gradient(160deg, #0D1B2E 0%, #112038 55%, #0D1B2E 100%)',
       heroGlow:     'radial-gradient(circle, rgba(34,211,238,0.10) 0%, transparent 70%)',
@@ -200,6 +232,8 @@ const darkTheme = createTheme({
       disabled:  '#4A6A80',
     },
     divider: 'rgba(255,255,255,0.08)',
+    // Sidebar drag handle — unchanged from its previous inline value.
+    grip: { idle: 'rgba(34,211,238,0.55)', active: '#22D3EE' },
   },
   typography: sharedTypography,
   shape: sharedShape,
@@ -215,7 +249,8 @@ const lightTheme = createTheme({
     success: { main: '#0891B2' },
     background: {
       default: '#E8F6FA',
-      paper:   '#DAF0F7',
+      paper:   '#FFFFFF',
+      elevated: '#FFFFFF',
       heroGradient: 'linear-gradient(160deg, #E8F6FA 0%, #F0FBFF 50%, #E8F6FA 100%)',
       hero:         'linear-gradient(160deg, #E8F6FA 0%, #F0FBFF 50%, #E8F6FA 100%)',
       heroGlow:     'radial-gradient(circle, rgba(8,145,178,0.14) 0%, transparent 70%)',
@@ -228,7 +263,10 @@ const lightTheme = createTheme({
       secondary: '#2C5A6E',
       disabled:  '#5A8A9E',
     },
-    divider: 'rgba(8,145,178,0.14)',
+    divider: 'rgba(14,116,144,0.28)',
+    // Sidebar drag handle — opaque enough in light mode to clear 3:1 against the page background
+    // (a translucent handle, like the old shared value, reads as invisible on a near-white page).
+    grip: { idle: 'rgba(14,116,144,0.85)', active: '#0E7490' },
   },
   typography: sharedTypography,
   shape: sharedShape,

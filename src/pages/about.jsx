@@ -13,7 +13,7 @@ const About = () => (
         '&::before': { content: '""', position: 'absolute', top: '-40%', left: '50%', transform: 'translateX(-50%)', width: '500px', height: '500px', borderRadius: '50%', background: (theme) => `radial-gradient(circle, ${theme.palette.primary.main}0F 0%, transparent 70%)`, pointerEvents: 'none' },
       }}
     >
-      <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none', backgroundImage: (theme) => `linear-gradient(${theme.palette.primary.main}07 1px, transparent 1px), linear-gradient(90deg, ${theme.palette.primary.main}07 1px, transparent 1px)`, backgroundSize: '60px 60px' }} />
+      <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none', backgroundImage: (theme) => `linear-gradient(${theme.palette.primary.main}${theme.palette.mode === 'dark' ? '07' : '14'} 1px, transparent 1px), linear-gradient(90deg, ${theme.palette.primary.main}${theme.palette.mode === 'dark' ? '07' : '14'} 1px, transparent 1px)`, backgroundSize: '60px 60px' }} />
       <Chip
         label="----"
         size="small"

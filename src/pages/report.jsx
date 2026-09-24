@@ -147,8 +147,8 @@ export default function Report() {
       <Box sx={{
         position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0,
         backgroundImage: (theme) =>
-          `linear-gradient(${theme.palette.primary.main}07 1px, transparent 1px),
-           linear-gradient(90deg, ${theme.palette.primary.main}07 1px, transparent 1px)`,
+          `linear-gradient(${theme.palette.primary.main}${theme.palette.mode === 'dark' ? '07' : '14'} 1px, transparent 1px),
+           linear-gradient(90deg, ${theme.palette.primary.main}${theme.palette.mode === 'dark' ? '07' : '14'} 1px, transparent 1px)`,
         backgroundSize: '60px 60px',
       }} />
 

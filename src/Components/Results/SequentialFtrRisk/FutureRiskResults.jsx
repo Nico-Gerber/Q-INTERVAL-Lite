@@ -8,10 +8,14 @@ const MODELS = [
     { id: 'Both', label: 'Comparison' },
 ];
 
-const LOW = '#4fd1a1', MID = '#f5c451', HIGH = '#ff7a7a';
-const CNN_C = '#5cc8f5', QML_C = '#c07ae0';
+// Dark-mode swatches stay saturated/pastel (they pop against navy panels).
+// Light-mode swatches are deepened so the same labels keep 4.5:1+ text contrast on white cards.
+const LOW_DARK = '#4fd1a1', MID_DARK = '#f5c451', HIGH_DARK = '#ff7a7a';
+const LOW_LIGHT = '#0D7A54', MID_LIGHT = '#8A6100', HIGH_LIGHT = '#B23434';
+const CNN_DARK = '#5cc8f5', QML_DARK = '#c07ae0';
+const CNN_LIGHT = '#1372B0', QML_LIGHT = '#7C3AAD';
 
-const getRiskColor = (s) => (s >= 66 ? HIGH : s >= 33 ? MID : LOW);
+const getRiskColor = (s, isDark) => (s >= 66 ? (isDark ? HIGH_DARK : HIGH_LIGHT) : s >= 33 ? (isDark ? MID_DARK : MID_LIGHT) : (isDark ? LOW_DARK : LOW_LIGHT));
 const riskBand = (s) => (s >= 66 ? 'High' : s >= 33 ? 'Moderate' : 'Low');
 
 function horizonsFromYearly(yearly) {
@@ -180,13 +184,20 @@ export default function FutureRiskResults({
         selLine: '#2f7fb8', selBg: '#0f2740', text: '#eaf4ff', body: '#c3d8ec',
         muted: '#5f7fa6', dim: '#8fabc9', track: '#132840', footer: '#3f5d7d',
     } : {
-        shell: '#0D1B2E', panel: '#112038', card: '#162840',
-        line: 'rgba(34,211,238,0.18)',
-        selLine: '#22D3EE', selBg: 'rgba(34,211,238,0.12)',
-        text: '#F0F9FF', body: '#CBD8E8',
-        muted: '#6B90AC', dim: '#8BAFC4',
-        track: 'rgba(255,255,255,0.08)', footer: '#4A6A80',
+        shell: '#EDF6F9', panel: '#DCEEF3', card: '#FFFFFF',
+        line: 'rgba(14,116,144,0.30)',
+        selLine: '#0B5A70', selBg: 'rgba(14,116,144,0.12)',
+        text: '#0C1E2A', body: '#2C5A6E',
+        muted: '#4E7180', dim: '#557788',
+        track: 'rgba(14,116,144,0.15)', footer: '#4E7180',
     };
+
+    const LOW = isDark ? LOW_DARK : LOW_LIGHT;
+    const MID = isDark ? MID_DARK : MID_LIGHT;
+    const HIGH = isDark ? HIGH_DARK : HIGH_LIGHT;
+    const CNN_C = isDark ? CNN_DARK : CNN_LIGHT;
+    const QML_C = isDark ? QML_DARK : QML_LIGHT;
+    const riskColor = (s) => getRiskColor(s, isDark);
 
     const qmlData = results?.resultFile?.qml;
     const cnnData = results?.resultFile?.cnn;
@@ -243,7 +254,7 @@ export default function FutureRiskResults({
             { color: CNN_C, points: cnnHorizons },
             { color: QML_C, points: qmlHorizons },
         ]
-        : [{ color: getRiskColor(activeRisk), points: activeHorizons }];
+        : [{ color: riskColor(activeRisk), points: activeHorizons }];
 
     const span = examHistory.length
         ? `${Math.max(1, examHistory[0].year - examHistory[examHistory.length - 1].year)} years · ${examHistory.length} exams`
@@ -302,7 +313,7 @@ export default function FutureRiskResults({
                                         px: 1.9, py: 0.9, borderRadius: 1.5, cursor: 'pointer',
                                         background: sel ? t.selBg : 'transparent',
                                         transition: 'background 0.15s ease',
-                                        '&:hover': { background: sel ? t.selBg : 'rgba(92,200,245,0.08)' },
+                                        '&:hover': { background: sel ? t.selBg : (isDark ? 'rgba(92,200,245,0.08)' : 'rgba(14,116,144,0.08)') },
                                     }}>
                                         <Typography sx={{
                                             fontSize: 13, lineHeight: 1, whiteSpace: 'nowrap',
@@ -438,10 +449,10 @@ export default function FutureRiskResults({
                                 <Label sx={{ color: t.muted }}>Quantum</Label>
                                 <Label sx={{ color: t.muted }}>Verdict</Label>
 
-                                <Typography sx={{ ...MONO, fontSize: 18, color: getRiskColor(cnnRisk5y) }}>
+                                <Typography sx={{ ...MONO, fontSize: 18, color: riskColor(cnnRisk5y) }}>
                                     {cnnRisk5y.toFixed(2)}%
                                 </Typography>
-                                <Typography sx={{ ...MONO, fontSize: 18, color: getRiskColor(qmlRisk5y) }}>
+                                <Typography sx={{ ...MONO, fontSize: 18, color: riskColor(qmlRisk5y) }}>
                                     {qmlRisk5y.toFixed(2)}%
                                 </Typography>
                                 <Typography sx={{ ...MONO, fontSize: 18, color: verdictColor }}>
@@ -451,7 +462,7 @@ export default function FutureRiskResults({
                         ) : (
                             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
                                 {[
-                                    { k: '5-year risk', v: `${activeRisk.toFixed(2)}%`, c: getRiskColor(activeRisk) },
+                                    { k: '5-year risk', v: `${activeRisk.toFixed(2)}%`, c: riskColor(activeRisk) },
                                     { k: 'Band', v: riskBand(activeRisk), c: t.text },
                                 ].map(({ k, v, c }) => (
                                     <Box key={k} sx={{ display: 'flex', flexDirection: 'column', gap: 0.4 }}>
@@ -479,7 +490,7 @@ export default function FutureRiskResults({
                                             <Typography sx={{ fontSize: 13, color: t.body }}>Year {d.year}</Typography>
                                             <Typography sx={{
                                                 ...MONO, fontSize: 12,
-                                                color: isBoth ? (delta >= 0 ? CNN_C : QML_C) : getRiskColor(d.risk),
+                                                color: isBoth ? (delta >= 0 ? CNN_C : QML_C) : riskColor(d.risk),
                                             }}>
                                                 {isBoth
                                                     ? `${delta >= 0 ? 'C +' : 'Q +'}${Math.abs(delta).toFixed(1)}`
@@ -499,7 +510,7 @@ export default function FutureRiskResults({
                                             ))
                                         ) : (
                                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                                <Bar value={d.risk} max={axisMax} color={getRiskColor(d.risk)} track={t.track} delay={i * 110} />
+                                                <Bar value={d.risk} max={axisMax} color={riskColor(d.risk)} track={t.track} delay={i * 110} />
                                             </Box>
                                         )}
                                     </Box>
