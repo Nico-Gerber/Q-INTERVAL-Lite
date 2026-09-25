@@ -17,6 +17,8 @@ import MammoRiskResults from '../Components/Results/SessionAnalysis/RiskAssessme
 import ScanningLoader from '../Components/Results/Shared/LoadingAnimation';
 import MultiImageUploadDated from '../Components/ImageUpload/FutureRiskUpload';
 import MultiViewUpload from '../Components/ImageUpload/SessionAnalysisUpload';
+import { validateSessionAnalysis, validateFutureRisk } from '../Components/AnalysisTool/analysisValidation';
+import { postAnalysis, describeAnalysisFailure } from '../Components/AnalysisTool/analysisErrors';
 
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
@@ -71,6 +73,8 @@ export default function Analysis() {
   const [files, setFiles] = useState([]);
   const [preview, setPreview] = useState(null);
   const [status, setStatus] = useState(null);
+  // Failure from the last analysis run, shown on the upload step: { kind, message }
+  const [analysisError, setAnalysisError] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const [LLMloading, setLLMLoading] = useState(false);
@@ -371,32 +375,31 @@ export default function Analysis() {
     }
   };
 
+  // Failed runs return to the upload step with every input kept. A failure the
+  // backend pins to one image is flagged on that slot instead of a banner.
+  const withViewError = (viewMap, viewKey, message) => ({
+    ...viewMap,
+    [viewKey]: { ...viewMap[viewKey], error: message },
+  });
+
   const handleAnalyse = async () => {
 
 
-    // UNCOMMENT WHEN END POINTS COME if (analysisMode === 'future-risk' && files.length === 0) return;
-    if (analysisMode === 'classification' && Object.values(views).some(v => v === null)) return;
+    // Same rules the upload step uses to explain what is missing.
+    const inputCheck = analysisMode === 'future-risk'
+      ? validateFutureRisk(sessions, patientAge)
+      : validateSessionAnalysis(views);
+    if (!inputCheck.isValid) return;
 
     setLoading(true);
     setStatus(null);
+    setAnalysisError(null);
 
     if (analysisMode === 'future-risk') {
       // sessions that have a date AND at least one uploaded image
       const datedSessions = sessions.filter(
         s => s.scanDate && Object.values(s.views).some(v => (v?.file ?? v) instanceof File)
       );
-
-      if (datedSessions.length === 0) {
-        setStatus({ ok: false, msg: 'Add at least one session with a date and one mammogram image.' });
-        setLoading(false);
-        return;
-      }
-
-      if (!patientAge) {
-        setStatus({ ok: false, msg: 'Enter patient age before running future-risk analysis.' });
-        setLoading(false);
-        return;
-      }
 
       setActiveStep(2);
       setSessionId(genSessionId());
@@ -443,29 +446,10 @@ export default function Analysis() {
       };
 
       try {
-        const [cnnRes, qmlRes] = await Promise.all([
-          fetch(`${API_BASE}/future-risk`, {
-            method: 'POST',
-            body: buildFutureRiskFormData(),
-          }),
-          fetch(`${API_BASE}/qml-future-risk-view-aware/`, {
-            method: 'POST',
-            body: buildFutureRiskFormData(),
-          }),
-        ]);
-
         const [cnnApi, qmlApi] = await Promise.all([
-          cnnRes.json(),
-          qmlRes.json(),
+          postAnalysis(`${API_BASE}/future-risk`, buildFutureRiskFormData()),
+          postAnalysis(`${API_BASE}/qml-future-risk-view-aware/`, buildFutureRiskFormData()),
         ]);
-
-        if (!cnnRes.ok) {
-          throw new Error(cnnApi?.detail ?? 'Classical future-risk request failed.');
-        }
-
-        if (!qmlRes.ok) {
-          throw new Error(qmlApi?.detail ?? 'Quantum future-risk request failed.');
-        }
 
         setResult({
           resultFile: {
@@ -475,12 +459,17 @@ export default function Analysis() {
         });
 
       } catch (err) {
-        setStatus({
-          ok: false,
-          msg:
-            err?.message ||
-            'Cannot reach the server. Make sure the backend is running.',
-        });
+        console.error(err);
+        const failure = describeAnalysisFailure(err, { subject: 'Future risk analysis', kept: 'inputs' });
+        const failedSession = failure.examNumber ? datedSessions[failure.examNumber - 1] : null;
+        if (failure.slotMessage && failure.viewKey && failedSession?.views[failure.viewKey]) {
+          setSessions(prev => prev.map(s => s.id === failedSession.id
+            ? { ...s, views: withViewError(s.views, failure.viewKey, failure.slotMessage) }
+            : s));
+        } else {
+          setAnalysisError(failure);
+        }
+        setActiveStep(1);
       } finally {
         setLoading(false);
       }
@@ -502,30 +491,10 @@ export default function Analysis() {
 
 
       try {
-        const [qmlRes, cnnRes] = await Promise.all([
-          fetch(`${API_BASE}/quantum-session-analysis/predict-four-views`, {
-            method: 'POST',
-            body: formData
-          }),
-
-          fetch(`${API_BASE}/session-analysis/predict-four-views`, {
-            method: 'POST',
-            body: formData
-          }),
-        ]);
-
         const [qmlData, cnnData] = await Promise.all([
-          qmlRes.json(),
-          cnnRes.json(),
+          postAnalysis(`${API_BASE}/quantum-session-analysis/predict-four-views`, formData),
+          postAnalysis(`${API_BASE}/session-analysis/predict-four-views`, formData),
         ]);
-
-        if (!qmlRes.ok) {
-          throw new Error(qmlData?.detail || 'Quantum analysis failed');
-        }
-
-        if (!cnnRes.ok) {
-          throw new Error(cnnData?.detail || 'Classical analysis failed');
-        }
 
         setResult({
           resultFile: {
@@ -542,12 +511,13 @@ export default function Analysis() {
 
       } catch (err) {
         console.error(err);
-
-        setStatus({
-          ok: false,
-          msg: err?.message || 'Cannot reach the server. Make sure the backend is running.'
-        });
-
+        const failure = describeAnalysisFailure(err, { subject: 'The analysis', kept: 'images' });
+        if (failure.slotMessage && failure.viewKey && views[failure.viewKey]) {
+          setViews(prev => withViewError(prev, failure.viewKey, failure.slotMessage));
+        } else {
+          setAnalysisError(failure);
+        }
+        setActiveStep(1);
       } finally {
         setLoading(false);
       }
@@ -559,6 +529,7 @@ export default function Analysis() {
     setFiles([]);
     setPreview(null);
     setStatus(null);
+    setAnalysisError(null);
     setResult(null);
     setSessionId(null);
     setDbSessionId(null);
@@ -946,6 +917,7 @@ export default function Analysis() {
                       views={views} setViews={setViews}
                       setActiveStep={setActiveStep}
                       handleAnalyse={handleAnalyse}
+                      analysisError={analysisError}
                     />
 
                   </Container>
@@ -962,6 +934,7 @@ export default function Analysis() {
                       handleAnalyse={handleAnalyse}
                       patientAge={patientAge}
                       setPatientAge={setPatientAge}
+                      analysisError={analysisError}
                     />
                   </Container>
                 ) : null

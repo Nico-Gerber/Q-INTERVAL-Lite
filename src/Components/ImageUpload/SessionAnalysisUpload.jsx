@@ -1,5 +1,5 @@
-import React, { useCallback, useState } from 'react';
-import { Box, Typography, Button, Alert, Tooltip } from '@mui/material';
+import React, { useCallback, useRef, useState } from 'react';
+import { Box, Typography, Button, Tooltip } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   CheckCircleOutline as CheckIcon,
@@ -10,6 +10,9 @@ import {
   GridView as GridViewIcon,
 } from '@mui/icons-material';
 import { useDropzone } from 'react-dropzone';
+import ValidationMessage, { AnalysisFailureMessage } from '../Shared/ValidationMessage';
+import { validateSessionAnalysis } from '../AnalysisTool/analysisValidation';
+import { ACCEPTED_FILE_TYPES, MAX_FILE_BYTES, UNREADABLE_IMAGE_MSG, rejectionMessage, isImageReadable, batchProblemMessage, smartDropCapacity } from './uploadChecks';
 
 const fadeUp = {
   hidden:  { opacity: 0, y: 12 },
@@ -77,14 +80,20 @@ const ProofName = ({ name, sideIdx, viewIdx }) => {
 // ── ViewSlot — manual ─────────────────────────────────────────────────────────
 const SLOT_H = 108;
 
-const ViewSlot = ({ viewKey, label, fullLabel, description, item, onDrop, onRemove }) => {
+const ViewSlot = ({ viewKey, label, fullLabel, description, item, onDrop, onRemove, showRequired }) => {
   const [err, setErr] = useState(null);
-  const handleDrop = useCallback((acc, rej) => {
+  const handleDrop = useCallback(async (acc, rej) => {
     setErr(null);
-    if (rej.length) { setErr(rej[0].errors[0].message === 'File is larger than 10485760 bytes' ? 'File exceeds 10 MB' : rej[0].errors[0].message); return; }
-    if (acc.length) onDrop(viewKey, acc[0]);
+    if (rej.length) { setErr(rejectionMessage(rej[0])); return; }
+    if (!acc.length) return;
+    if (!(await isImageReadable(acc[0]))) { setErr(UNREADABLE_IMAGE_MSG); return; }
+    onDrop(viewKey, acc[0]);
   }, [viewKey, onDrop]);
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop: handleDrop, accept: { 'image/jpeg': [], 'image/png': [], 'application/dicom': ['.dcm'] }, maxFiles: 1, maxSize: 10485760, multiple: false });
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop: handleDrop, accept: ACCEPTED_FILE_TYPES, maxFiles: 1, maxSize: MAX_FILE_BYTES, multiple: false });
+  // Upload-time rejection, or a backend report that the placed image is unusable.
+  const message = err ?? item?.error ?? null;
+  const msgId = `slot-${viewKey}-msg`;
+  const missing = showRequired && !item && !err;
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.6, minWidth: 0 }}>
@@ -95,6 +104,7 @@ const ViewSlot = ({ viewKey, label, fullLabel, description, item, onDrop, onRemo
         <Tooltip title={`${fullLabel} — ${description}`} placement="top" arrow>
           <InfoIcon sx={{ fontSize: 12, color: 'text.disabled', cursor: 'help', ml: 0.2 }} />
         </Tooltip>
+        {missing && <Typography variant="caption" sx={{ ml: 'auto', color: 'warning.main', fontWeight: 700, fontSize: '0.6rem', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Required</Typography>}
       </Box>
 
       {/* Slot frame — position:relative + explicit height is the ONLY thing sizing this */}
@@ -105,12 +115,12 @@ const ViewSlot = ({ viewKey, label, fullLabel, description, item, onDrop, onRemo
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               transition={{ duration: 0.16 }}
               style={{ position: 'absolute', inset: 0 }}>
-              <Box {...getRootProps()} sx={{
+              <Box {...getRootProps({ 'aria-label': `Upload ${fullLabel} (${label}) image`, 'aria-describedby': message ? msgId : undefined })} sx={{
                 position: 'absolute', inset: 0,
                 border: '2px dashed', borderRadius: 2, cursor: 'pointer',
-                borderColor: isDragActive ? 'primary.main' : err ? 'error.main' : (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.11)' : 'rgba(8,145,178,0.55)',
+                borderColor: isDragActive ? 'primary.main' : err ? 'error.main' : missing ? 'warning.main' : (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.11)' : 'rgba(8,145,178,0.55)',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 0.5,
-                backgroundColor: isDragActive ? (t) => `${t.palette.primary.main}0E` : err ? 'rgba(239,68,68,0.04)' : (t) => t.palette.mode === 'dark' ? 'background.default' : 'rgba(232,246,250,0.5)',
+                backgroundColor: isDragActive ? (t) => `${t.palette.primary.main}0E` : err ? 'rgba(239,68,68,0.04)' : missing ? (t) => `${t.palette.warning.main}0A` : (t) => t.palette.mode === 'dark' ? 'background.default' : 'rgba(232,246,250,0.5)',
                 transition: 'all 0.18s',
                 '&:hover': { borderColor: 'primary.main', backgroundColor: (t) => `${t.palette.primary.main}09` },
               }}>
@@ -127,7 +137,7 @@ const ViewSlot = ({ viewKey, label, fullLabel, description, item, onDrop, onRemo
               style={{ position: 'absolute', inset: 0 }}>
               <Box sx={{
                 position: 'absolute', inset: 0,
-                border: '2px solid', borderColor: (t) => `${t.palette.primary.main}45`, borderRadius: 2,
+                border: '2px solid', borderColor: item.error ? 'error.main' : (t) => `${t.palette.primary.main}45`, borderRadius: 2,
                 display: 'flex', flexDirection: 'column', overflow: 'hidden',
                 backgroundColor: (t) => `${t.palette.primary.main}08`,
               }}>
@@ -139,9 +149,9 @@ const ViewSlot = ({ viewKey, label, fullLabel, description, item, onDrop, onRemo
                   display: 'flex', alignItems: 'center', gap: 0.75, minWidth: 0,
                   backgroundColor: 'background.paper',
                 }}>
-                  <Box sx={{ position: 'absolute', top: 5, left: 5, px: 0.8, py: 0.2, borderRadius: '999px', backgroundColor: (t) => `${t.palette.primary.main}CC`, display: 'flex', alignItems: 'center', gap: 0.4 }}>
-                    <CheckIcon sx={{ fontSize: 9, color: '#fff' }} />
-                    <Typography sx={{ fontSize: '0.55rem', color: '#fff', fontWeight: 700, letterSpacing: '0.05em' }}>READY</Typography>
+                  <Box sx={{ position: 'absolute', top: 5, left: 5, px: 0.8, py: 0.2, borderRadius: '999px', backgroundColor: item.error ? 'error.main' : (t) => `${t.palette.primary.main}CC`, display: 'flex', alignItems: 'center', gap: 0.4 }}>
+                    {item.error ? <WarnIcon sx={{ fontSize: 9, color: '#fff' }} /> : <CheckIcon sx={{ fontSize: 9, color: '#fff' }} />}
+                    <Typography sx={{ fontSize: '0.55rem', color: '#fff', fontWeight: 700, letterSpacing: '0.05em' }}>{item.error ? 'REPLACE' : 'READY'}</Typography>
                   </Box>
                   <Typography variant="caption" noWrap sx={{ flex: 1, minWidth: 0, color: 'text.primary', fontWeight: 500, fontSize: '0.63rem' }}>{item.file.name}</Typography>
                   <Button size="small" variant="outlined" color="error" onClick={() => { setErr(null); onRemove(viewKey); }} sx={{ fontSize: '0.57rem', py: 0.15, px: 0.6, minWidth: 0, flexShrink: 0 }}>Remove</Button>
@@ -154,7 +164,7 @@ const ViewSlot = ({ viewKey, label, fullLabel, description, item, onDrop, onRemo
 
       {/* Error alert — outside locked frame so it can grow freely */}
       <AnimatePresence>
-        {err && <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}><Alert severity="error" icon={<WarnIcon sx={{ fontSize: 13 }} />} sx={{ py: 0.2, fontSize: '0.66rem' }}>{err}</Alert></motion.div>}
+        {message && <ValidationMessage key="msg" id={msgId}>{message}</ValidationMessage>}
       </AnimatePresence>
     </Box>
   );
@@ -167,7 +177,7 @@ const RoutedRow = ({ cfg, item, proof, onRemove }) => {
     ? `Matched "${proof.sideProof}" → ${proof.side === 'L' ? 'Left' : 'Right'}, "${proof.viewProof}" → ${proof.view}${!proof.adjacent ? ' (tokens not adjacent — double-check)' : ''}`
     : proof?.manual ? 'Placed manually' : cfg.label;
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.25, py: 0.9, borderRadius: 1.5, backgroundColor: 'background.default', border: '1px solid', borderColor: 'divider' }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.25, py: 0.9, borderRadius: 1.5, backgroundColor: 'background.default', border: '1px solid', borderColor: item.error ? 'error.main' : 'divider' }}>
       <Box component="img" src={item.preview} alt={cfg.label} sx={{ width: 34, height: 34, objectFit: 'cover', borderRadius: 1, flexShrink: 0, border: '1px solid', borderColor: (t) => `${t.palette.primary.main}40` }} />
       <Tooltip arrow placement="top" title={tipText}>
         <Box sx={{ flexShrink: 0, px: 0.85, py: 0.3, borderRadius: '999px', cursor: 'help', backgroundColor: (t) => `${t.palette.primary.main}18`, border: '1px solid', borderColor: (t) => `${t.palette.primary.main}50`, display: 'flex', alignItems: 'center', gap: 0.4 }}>
@@ -175,7 +185,10 @@ const RoutedRow = ({ cfg, item, proof, onRemove }) => {
           <Typography sx={{ fontSize: '0.63rem', fontWeight: 800, color: 'primary.main', letterSpacing: '0.04em' }}>{cfg.label}</Typography>
         </Box>
       </Tooltip>
-      <Typography variant="caption" noWrap sx={{ color: 'text.primary', fontWeight: 500, fontSize: '0.67rem', flex: 1, minWidth: 0 }}>{item.file.name}</Typography>
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Typography variant="caption" noWrap sx={{ color: 'text.primary', fontWeight: 500, fontSize: '0.67rem', display: 'block' }}>{item.file.name}</Typography>
+        {item.error && <Typography variant="caption" role="alert" sx={{ color: 'error.main', fontSize: '0.6rem', display: 'block' }}>{item.error}</Typography>}
+      </Box>
       <Button size="small" variant="outlined" color="error" onClick={() => onRemove(cfg.key)} sx={{ fontSize: '0.57rem', py: 0.15, px: 0.6, minWidth: 0, flexShrink: 0 }}>Remove</Button>
     </Box>
   );
@@ -187,11 +200,12 @@ const TABS = [
   { val: 'smart',  Icon: AutoAwesomeIcon, label: 'Smart',  blurb: 'Drop all four at once — sorted by filename.' },
 ];
 
-export default function MultiViewUpload({ views, setViews, setActiveStep, handleAnalyse }) {
+export default function MultiViewUpload({ views, setViews, setActiveStep, handleAnalyse, analysisError }) {
   const [uploadMode, setUploadMode] = useState('manual');
   const [proofMap, setProofMap]     = useState({});
   const [pending, setPending]       = useState([]);
   const [smartError, setSmartError] = useState(null);
+  const [attempted, setAttempted]   = useState(false);
 
   const handleRemoveView = useCallback((key) => {
     setViews((p) => ({ ...p, [key]: null }));
@@ -202,19 +216,27 @@ export default function MultiViewUpload({ views, setViews, setActiveStep, handle
     setViews((p) => ({ ...p, [key]: { file, preview: URL.createObjectURL(file), id: crypto.randomUUID() } }));
   }, [setViews]);
 
-  const handleSmartDrop = useCallback((acc, rej) => {
+  // Read after the async decode check so a drop never routes against stale state.
+  const latest = useRef();
+  latest.current = { views, proofMap, pending };
+
+  const handleSmartDrop = useCallback(async (acc, rej) => {
     setSmartError(null);
-    if (rej.length) setSmartError(rej[0].errors[0].message === 'File is larger than 10485760 bytes' ? 'One or more files exceed 10 MB and were skipped.' : 'Some files were rejected (unsupported type).');
-    const nv = { ...views }, np = { ...proofMap }, npe = [...pending];
-    acc.forEach((f) => {
+    const readable = await Promise.all(acc.map(isImageReadable));
+    const { views: curViews, proofMap: curProof, pending: curPending } = latest.current;
+    const usable   = acc.filter((_, i) => readable[i]);
+    const capacity = smartDropCapacity(Object.values(curViews).filter(Boolean).length, curPending.length);
+    setSmartError(batchProblemMessage(rej, acc.filter((_, i) => !readable[i]), usable.slice(capacity)));
+    const nv = { ...curViews }, np = { ...curProof }, npe = [...curPending];
+    usable.slice(0, capacity).forEach((f) => {
       const det = detectView(f.name), preview = URL.createObjectURL(f), id = crypto.randomUUID();
       if (det.ok && nv[det.key] == null) { nv[det.key] = { file: f, preview, id }; np[det.key] = { ...det, fileName: f.name }; }
       else npe.push({ id, file: f, preview, reason: det.ok ? 'duplicate' : 'unrecognized', detection: det });
     });
     setViews(nv); setProofMap(np); setPending(npe);
-  }, [views, proofMap, pending, setViews]);
+  }, [setViews]);
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop: handleSmartDrop, accept: { 'image/jpeg': [], 'image/png': [], 'application/dicom': ['.dcm'] }, maxSize: 10485760, multiple: true });
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop: handleSmartDrop, accept: ACCEPTED_FILE_TYPES, maxSize: MAX_FILE_BYTES, multiple: true });
 
   const assignPending = (pid, key) => {
     const it = pending.find((p) => p.id === pid); if (!it) return;
@@ -228,7 +250,18 @@ export default function MultiViewUpload({ views, setViews, setActiveStep, handle
   const allFilled       = filledCount === 4;
   const freeSlots       = VIEW_CONFIG.filter((c) => !views[c.key]);
   const hasSmartContent = filledCount > 0 || pending.length > 0;
+  const smartRoom       = smartDropCapacity(filledCount, pending.length) > 0;
   const isSmrt          = uploadMode === 'smart';
+
+  // Missing-view feedback waits until the user presses Analyse; the status bar
+  // states the requirement upfront. Bad-file errors still show at upload time.
+  const validation  = validateSessionAnalysis(views);
+  const showSummary = attempted && !validation.isValid;
+  const runAnalysis = () => {
+    if (!validation.isValid) { setAttempted(true); return; }
+    setActiveStep((p) => p + 1);
+    handleAnalyse();
+  };
 
   return (
     <Box>
@@ -339,7 +372,7 @@ export default function MultiViewUpload({ views, setViews, setActiveStep, handle
                   {VIEW_CONFIG.map((cfg, i) => (
                     <motion.div key={cfg.key} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.26, delay: i * 0.05 }}>
                       <ViewSlot viewKey={cfg.key} label={cfg.label} fullLabel={cfg.fullLabel} description={cfg.description}
-                        item={views[cfg.key]} onDrop={handleManualDrop} onRemove={handleRemoveView} />
+                        item={views[cfg.key]} onDrop={handleManualDrop} onRemove={handleRemoveView} showRequired={showSummary} />
                     </motion.div>
                   ))}
                 </Box>
@@ -349,7 +382,7 @@ export default function MultiViewUpload({ views, setViews, setActiveStep, handle
               <motion.div key="smart" variants={fadeUp} initial="hidden" animate="visible" exit="exit">
 
                 {/* Add-more strip — hidden once all 4 slots are filled */}
-                {filledCount < 4 && (
+                {smartRoom && (
                   <Box {...getRootProps()} sx={{
                     border: '2px dashed', borderRadius: 2.5, cursor: 'pointer',
                     borderColor: isDragActive ? 'primary.main' : (t) => `${t.palette.primary.main}50`,
@@ -381,15 +414,15 @@ export default function MultiViewUpload({ views, setViews, setActiveStep, handle
                 )}
 
                 {/* Hidden input when strip is hidden (all 4 filled) */}
-                {filledCount === 4 && <input {...getInputProps()} style={{ display: 'none' }} />}
+                {!smartRoom && <input {...getInputProps()} style={{ display: 'none' }} />}
 
                 <AnimatePresence>
-                  {smartError && <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}><Alert severity="warning" icon={<WarnIcon />} sx={{ mt: 1, py: 0.2, fontSize: '0.7rem' }}>{smartError}</Alert></motion.div>}
+                  {smartError && <ValidationMessage key="smart-err" onClose={() => setSmartError(null)} sx={{ mt: smartRoom ? 1.25 : 0, mb: !smartRoom && filledCount > 0 ? 1.25 : 0, fontSize: '0.7rem' }}>{smartError}</ValidationMessage>}
                 </AnimatePresence>
 
                 {/* Routed rows — compact, proof on pill hover */}
                 {filledCount > 0 && (
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: hasSmartContent && filledCount < 4 ? 1.25 : 0 }}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: hasSmartContent && smartRoom ? 1.25 : 0 }}>
                     <AnimatePresence>
                       {VIEW_CONFIG.filter((c) => views[c.key]).map((cfg) => (
                         <motion.div key={cfg.key} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 6 }} transition={{ duration: 0.16 }}>
@@ -438,11 +471,19 @@ export default function MultiViewUpload({ views, setViews, setActiveStep, handle
         </Box>
       </Box>
 
+      {/* ── Readiness / failure feedback — sits right above the Analyse button ── */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: 1.75, '&:empty': { display: 'none' } }}>
+        <AnimatePresence>
+          {analysisError && <AnalysisFailureMessage key="failure" failure={analysisError} onRetry={runAnalysis} retryDisabled={!validation.isValid} />}
+          {showSummary && <ValidationMessage key="summary" id="session-validation-summary" severity="warning" dense={false}>{validation.summary}</ValidationMessage>}
+        </AnimatePresence>
+      </Box>
+
       {/* ── Navigation ── */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3, delay: 0.12 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1.75 }}>
           <Button variant="text" onClick={() => setActiveStep((p) => p - 1)} sx={{ letterSpacing: '0.04em', fontSize: '0.8rem' }}>← Back to Configuration</Button>
-          <Button variant="contained" disabled={!allFilled} onClick={() => { setActiveStep((p) => p + 1); handleAnalyse(); }} sx={{ px: 3, fontWeight: 700 }}>Analyse →</Button>
+          <Button variant="contained" aria-describedby={showSummary ? 'session-validation-summary' : undefined} onClick={runAnalysis} sx={{ px: 3, fontWeight: 700 }}>Analyse →</Button>
         </Box>
       </motion.div>
     </Box>

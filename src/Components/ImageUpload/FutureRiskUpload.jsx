@@ -1,6 +1,6 @@
 import React, { useCallback, useRef, useState } from 'react';
 import {
-  Box, Typography, Button, Alert, Tooltip, TextField,
+  Box, Typography, Button, Tooltip, TextField, Link,
 } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -16,9 +16,11 @@ import {
   DeleteOutline as DeleteIcon,
 } from '@mui/icons-material';
 import { useDropzone } from 'react-dropzone';
+import ValidationMessage, { AnalysisFailureMessage } from '../Shared/ValidationMessage';
+import { VIEW_KEYS, MIN_SESSIONS, AGE_MIN, AGE_MAX, MIN_EXAM_DATE, validateFutureRisk } from '../AnalysisTool/analysisValidation';
+import { ACCEPTED_FILE_TYPES, MAX_FILE_BYTES, UNREADABLE_IMAGE_MSG, rejectionMessage, isImageReadable, batchProblemMessage, smartDropCapacity } from './uploadChecks';
 
 const MAX_SESSIONS = 5;
-const MIN_SESSIONS = 2;
 const SLOT_H = 88;
 const TODAY = new Date().toISOString().split('T')[0];
 
@@ -98,14 +100,20 @@ const ModeToggle = ({ mode, setMode }) => (
 );
 
 // ── ViewSlot ──────────────────────────────────────────────────────────────────
-const ViewSlot = ({ viewKey, label, fullLabel, description, item, onDrop, onRemove }) => {
+const ViewSlot = ({ viewKey, label, fullLabel, description, item, onDrop, onRemove, showRequired, idPrefix }) => {
   const [err, setErr] = useState(null);
-  const handleDrop = useCallback((acc, rej) => {
+  const handleDrop = useCallback(async (acc, rej) => {
     setErr(null);
-    if (rej.length) { setErr(rej[0].errors[0].message === 'File is larger than 10485760 bytes' ? 'File exceeds 10 MB' : rej[0].errors[0].message); return; }
-    if (acc.length) onDrop(viewKey, acc[0]);
+    if (rej.length) { setErr(rejectionMessage(rej[0])); return; }
+    if (!acc.length) return;
+    if (!(await isImageReadable(acc[0]))) { setErr(UNREADABLE_IMAGE_MSG); return; }
+    onDrop(viewKey, acc[0]);
   }, [viewKey, onDrop]);
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop: handleDrop, accept: { 'image/jpeg': [], 'image/png': [], 'application/dicom': ['.dcm'] }, maxFiles: 1, maxSize: 10485760, multiple: false });
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop: handleDrop, accept: ACCEPTED_FILE_TYPES, maxFiles: 1, maxSize: MAX_FILE_BYTES, multiple: false });
+  // Upload-time rejection, or a backend report that the placed image is unusable.
+  const message = err ?? item?.error ?? null;
+  const msgId = `${idPrefix}-${viewKey}-msg`;
+  const missing = showRequired && !item && !err;
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.6, minWidth: 0 }}>
       <Box sx={{ height: 20, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 0.7 }}>
@@ -114,12 +122,13 @@ const ViewSlot = ({ viewKey, label, fullLabel, description, item, onDrop, onRemo
         <Tooltip title={`${fullLabel} — ${description}`} placement="top" arrow>
           <InfoIcon sx={{ fontSize: 12, color: 'text.disabled', cursor: 'help', ml: 0.2 }} />
         </Tooltip>
+        {missing && <Typography variant="caption" sx={{ ml: 'auto', color: 'warning.main', fontWeight: 700, fontSize: '0.6rem', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Required</Typography>}
       </Box>
       <Box sx={{ height: SLOT_H, flexShrink: 0, position: 'relative', borderRadius: 2, overflow: 'hidden' }}>
         <AnimatePresence mode="wait">
           {!item ? (
             <motion.div key="e" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.16 }} style={{ position: 'absolute', inset: 0 }}>
-              <Box {...getRootProps()} sx={{ position: 'absolute', inset: 0, border: '2px dashed', borderRadius: 2, cursor: 'pointer', borderColor: isDragActive ? 'primary.main' : err ? 'error.main' : (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.11)' : 'rgba(8,145,178,0.60)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 0.5, backgroundColor: isDragActive ? (t) => `${t.palette.primary.main}0E` : err ? 'rgba(239,68,68,0.04)' : 'background.default', transition: 'all 0.18s', '&:hover': { borderColor: 'primary.main', backgroundColor: (t) => `${t.palette.primary.main}09` } }}>
+              <Box {...getRootProps({ 'aria-label': `Upload ${fullLabel} (${label}) image`, 'aria-describedby': message ? msgId : undefined })} sx={{ position: 'absolute', inset: 0, border: '2px dashed', borderRadius: 2, cursor: 'pointer', borderColor: isDragActive ? 'primary.main' : err ? 'error.main' : missing ? 'warning.main' : (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.11)' : 'rgba(8,145,178,0.60)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 0.5, backgroundColor: isDragActive ? (t) => `${t.palette.primary.main}0E` : err ? 'rgba(239,68,68,0.04)' : missing ? (t) => `${t.palette.warning.main}0A` : 'background.default', transition: 'all 0.18s', '&:hover': { borderColor: 'primary.main', backgroundColor: (t) => `${t.palette.primary.main}09` } }}>
                 <input {...getInputProps()} />
                 <GalleryIcon sx={{ fontSize: 18, color: isDragActive ? 'primary.main' : 'text.disabled' }} />
                 <Typography variant="caption" sx={{ color: isDragActive ? 'primary.main' : 'text.secondary', fontWeight: 500, fontSize: '0.65rem', textAlign: 'center', px: 0.75 }}>{isDragActive ? 'Drop here' : description}</Typography>
@@ -128,11 +137,11 @@ const ViewSlot = ({ viewKey, label, fullLabel, description, item, onDrop, onRemo
             </motion.div>
           ) : (
             <motion.div key="f" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.16 }} style={{ position: 'absolute', inset: 0 }}>
-              <Box sx={{ position: 'absolute', inset: 0, border: '2px solid', borderColor: (t) => `${t.palette.primary.main}45`, borderRadius: 2, display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: (t) => `${t.palette.primary.main}08` }}>
+              <Box sx={{ position: 'absolute', inset: 0, border: '2px solid', borderColor: item.error ? 'error.main' : (t) => `${t.palette.primary.main}45`, borderRadius: 2, display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: (t) => `${t.palette.primary.main}08` }}>
                 <Box component="img" src={item.preview} alt={label} sx={{ flex: 1, width: '100%', objectFit: 'cover', display: 'block', minHeight: 0 }} />
                 <Box sx={{ px: 1, py: 0.4, flexShrink: 0, borderTop: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', gap: 0.75, minWidth: 0, backgroundColor: 'background.paper' }}>
-                  <Box sx={{ position: 'absolute', top: 5, left: 5, px: 0.8, py: 0.2, borderRadius: '999px', backgroundColor: (t) => `${t.palette.primary.main}CC`, display: 'flex', alignItems: 'center', gap: 0.4 }}>
-                    <CheckIcon sx={{ fontSize: 9, color: '#fff' }} /><Typography sx={{ fontSize: '0.55rem', color: '#fff', fontWeight: 700, letterSpacing: '0.05em' }}>READY</Typography>
+                  <Box sx={{ position: 'absolute', top: 5, left: 5, px: 0.8, py: 0.2, borderRadius: '999px', backgroundColor: item.error ? 'error.main' : (t) => `${t.palette.primary.main}CC`, display: 'flex', alignItems: 'center', gap: 0.4 }}>
+                    {item.error ? <WarnIcon sx={{ fontSize: 9, color: '#fff' }} /> : <CheckIcon sx={{ fontSize: 9, color: '#fff' }} />}<Typography sx={{ fontSize: '0.55rem', color: '#fff', fontWeight: 700, letterSpacing: '0.05em' }}>{item.error ? 'REPLACE' : 'READY'}</Typography>
                   </Box>
                   <Typography variant="caption" noWrap sx={{ flex: 1, minWidth: 0, color: 'text.primary', fontWeight: 500, fontSize: '0.62rem' }}>{item.file.name}</Typography>
                   <Button size="small" variant="outlined" color="error" onClick={() => { setErr(null); onRemove(viewKey); }} sx={{ fontSize: '0.56rem', py: 0.1, px: 0.55, minWidth: 0, flexShrink: 0 }}>Remove</Button>
@@ -143,7 +152,7 @@ const ViewSlot = ({ viewKey, label, fullLabel, description, item, onDrop, onRemo
         </AnimatePresence>
       </Box>
       <AnimatePresence>
-        {err && <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}><Alert severity="error" icon={<WarnIcon sx={{ fontSize: 13 }} />} sx={{ py: 0.2, fontSize: '0.65rem' }}>{err}</Alert></motion.div>}
+        {message && <ValidationMessage key="msg" id={msgId} sx={{ fontSize: '0.65rem' }}>{message}</ValidationMessage>}
       </AnimatePresence>
     </Box>
   );
@@ -154,7 +163,7 @@ const RoutedRow = ({ cfg, item, proof, onRemove }) => {
   const sp = proof && !proof.manual;
   const tip = sp ? `Matched "${proof.sideProof}" → ${sideName(proof.side)}, "${proof.viewProof}" → ${proof.view}${!proof.adjacent ? ' (not adjacent — verify)' : ''}` : proof?.manual ? 'Placed manually' : cfg.label;
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.25, py: 0.9, borderRadius: 1.5, backgroundColor: 'background.default', border: '1px solid', borderColor: 'divider' }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.25, py: 0.9, borderRadius: 1.5, backgroundColor: 'background.default', border: '1px solid', borderColor: item.error ? 'error.main' : 'divider' }}>
       <Box component="img" src={item.preview} alt={cfg.label} sx={{ width: 32, height: 32, objectFit: 'cover', borderRadius: 1, flexShrink: 0, border: '1px solid', borderColor: (t) => `${t.palette.primary.main}40` }} />
       <Tooltip arrow placement="top" title={tip}>
         <Box sx={{ flexShrink: 0, px: 0.85, py: 0.25, borderRadius: '999px', cursor: 'help', backgroundColor: (t) => `${t.palette.primary.main}18`, border: '1px solid', borderColor: (t) => `${t.palette.primary.main}50`, display: 'flex', alignItems: 'center', gap: 0.4 }}>
@@ -162,7 +171,10 @@ const RoutedRow = ({ cfg, item, proof, onRemove }) => {
           <Typography sx={{ fontSize: '0.62rem', fontWeight: 800, color: 'primary.main', letterSpacing: '0.04em' }}>{cfg.label}</Typography>
         </Box>
       </Tooltip>
-      <Typography variant="caption" noWrap sx={{ color: 'text.primary', fontWeight: 500, fontSize: '0.66rem', flex: 1, minWidth: 0 }}>{item.file.name}</Typography>
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Typography variant="caption" noWrap sx={{ color: 'text.primary', fontWeight: 500, fontSize: '0.66rem', display: 'block' }}>{item.file.name}</Typography>
+        {item.error && <Typography variant="caption" role="alert" sx={{ color: 'error.main', fontSize: '0.6rem', display: 'block' }}>{item.error}</Typography>}
+      </Box>
       <Button size="small" variant="outlined" color="error" onClick={() => onRemove(cfg.key)} sx={{ fontSize: '0.56rem', py: 0.1, px: 0.55, minWidth: 0, flexShrink: 0 }}>Remove</Button>
     </Box>
   );
@@ -183,14 +195,16 @@ const ArrowBtn = ({ dir, onClick, disabled }) => (
 );
 
 // ── Main export ───────────────────────────────────────────────────────────────
-export default function FutureRiskUpload({ sessions, setSessions, setActiveStep, handleAnalyse, patientAge, setPatientAge }) {
+export default function FutureRiskUpload({ sessions, setSessions, setActiveStep, handleAnalyse, patientAge, setPatientAge, analysisError }) {
   const [uploadMode, setUploadMode] = useState('manual');
-  const [activeIdx, setActiveIdx] = useState(0);
+  // After a failed run, open on the session holding the image the backend rejected.
+  const [activeIdx, setActiveIdx] = useState(() => Math.max(0, sessions.findIndex(s => VIEW_KEYS.some(k => s.views[k]?.error))));
   const [proofMaps, setProofMaps] = useState({});
   const [pendings, setPendings] = useState({});
   const [dateProofs, setDateProofs] = useState({});
   const [smartErrs, setSmartErrs] = useState({});
-  const [ageTouched, setAgeTouched] = useState(false);
+  const [attempted, setAttempted] = useState(false);
+  const ageInputRef = useRef(null);
   const slideDir = useRef(1);
 
   const goTo = (i) => {
@@ -207,12 +221,23 @@ export default function FutureRiskUpload({ sessions, setSessions, setActiveStep,
   const currentSmartErr = smartErrs[sid] ?? null;
   const filledCount = currentSession ? Object.values(currentSession.views).filter(Boolean).length : 0;
   const hasSmartContent = filledCount > 0 || currentPending.length > 0;
+  const smartRoom = smartDropCapacity(filledCount, currentPending.length) > 0;
 
-  const sessionComplete = (s) => s.scanDate !== '' && Object.values(s.views).every(v => v !== null);
-  const completedCount = sessions.filter(sessionComplete).length;
-  const canContinue = sessions.length >= MIN_SESSIONS && sessions.every(sessionComplete);
-  const ageValid = patientAge !== '' && Number(patientAge) >= 18 && Number(patientAge) <= 100;
+  const validation = validateFutureRisk(sessions, patientAge);
+  const completedCount = validation.sessionErrors.filter(e => e.isValid).length;
+  const canContinue = !validation.sessionCountError && validation.invalidSessions.length === 0;
   const isSmrt = uploadMode === 'smart';
+
+  // Missing / incomplete feedback only appears once the user presses Analyse.
+  // Bad-file errors still show at upload time.
+  const currentIdx = sessions.indexOf(currentSession);
+  const currentCheck = currentSession && attempted ? validation.sessionErrors[currentIdx] : null;
+  const dateError = currentCheck?.dateError ?? null;
+  const viewsError = currentCheck?.viewsError ?? null;
+  const dateInputId = `session-date-${sid}`;
+  const dateErrId = `${dateInputId}-msg`;
+  const showAgeError = attempted && Boolean(validation.ageError);
+  const showSessionSummary = attempted && validation.invalidSessions.length > 0;
   const freeSlots = VIEW_CONFIG.filter(c => !currentSession?.views[c.key]);
 
   // ── Session management ─────────────────────────────────────────────────────
@@ -249,21 +274,31 @@ export default function FutureRiskUpload({ sessions, setSessions, setActiveStep,
   }, [activeIdx, sid, setSessions]);
 
   // ── Smart handlers ─────────────────────────────────────────────────────────
-  const handleSmartDrop = useCallback((accepted, rejected) => {
-    const sess = sessions[activeIdx];
+  // Read after the async decode check so a drop never routes against stale state.
+  const latest = useRef();
+  latest.current = { sessions, activeIdx, proofMaps, pendings, dateProofs };
+
+  const handleSmartDrop = useCallback(async (accepted, rejected) => {
+    const targetId = latest.current.sessions[latest.current.activeIdx]?.id;
+    if (!targetId) return;
+    const readable = await Promise.all(accepted.map(isImageReadable));
+
+    const cur = latest.current;
+    const sess = cur.sessions.find(s => s.id === targetId);
     if (!sess) return;
     const id_ = sess.id;
 
-    if (rejected.length) setSmartErrs(p => ({ ...p, [id_]: rejected[0].errors[0].message === 'File is larger than 10485760 bytes' ? 'One or more files exceed 10 MB.' : 'Some files were rejected.' }));
-    else setSmartErrs(p => ({ ...p, [id_]: null }));
+    const usable = accepted.filter((_, i) => readable[i]);
+    const capacity = smartDropCapacity(Object.values(sess.views).filter(Boolean).length, (cur.pendings[id_] ?? []).length);
+    setSmartErrs(p => ({ ...p, [id_]: batchProblemMessage(rejected, accepted.filter((_, i) => !readable[i]), usable.slice(capacity)) }));
 
     const nv = { ...sess.views };
-    const np = { ...(proofMaps[id_] ?? {}) };
-    const npe = [...(pendings[id_] ?? [])];
+    const np = { ...(cur.proofMaps[id_] ?? {}) };
+    const npe = [...(cur.pendings[id_] ?? [])];
     let nd = sess.scanDate;
-    let ndp = dateProofs[id_] ?? null;
+    let ndp = cur.dateProofs[id_] ?? null;
 
-    accepted.forEach(f => {
+    usable.slice(0, capacity).forEach(f => {
       const vd = detectView(f.name);
       const dd = detectDate(f.name);
       const preview = URL.createObjectURL(f);
@@ -273,11 +308,11 @@ export default function FutureRiskUpload({ sessions, setSessions, setActiveStep,
       else npe.push({ id: fid, file: f, preview, reason: vd.ok ? 'duplicate' : 'unrecognized', detection: vd });
     });
 
-    setSessions(prev => prev.map((s, i) => i === activeIdx ? { ...s, views: nv, scanDate: nd } : s));
+    setSessions(prev => prev.map(s => s.id === id_ ? { ...s, views: nv, scanDate: nd } : s));
     setProofMaps(p => ({ ...p, [id_]: np }));
     setPendings(p => ({ ...p, [id_]: npe }));
     setDateProofs(p => ({ ...p, [id_]: ndp }));
-  }, [sessions, activeIdx, proofMaps, pendings, dateProofs, setSessions]);
+  }, [setSessions]);
 
   const assignPending = (pid, viewKey) => {
     const it = currentPending.find(p => p.id === pid); if (!it) return;
@@ -287,7 +322,17 @@ export default function FutureRiskUpload({ sessions, setSessions, setActiveStep,
   };
   const discardPending = (pid) => setPendings(p => ({ ...p, [sid]: (p[sid] ?? []).filter(x => x.id !== pid) }));
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop: handleSmartDrop, accept: { 'image/jpeg': [], 'image/png': [], 'application/dicom': ['.dcm'] }, maxSize: 10485760, multiple: true });
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop: handleSmartDrop, accept: ACCEPTED_FILE_TYPES, maxSize: MAX_FILE_BYTES, multiple: true });
+
+  // Analysis stays blocked while anything is invalid; a click reveals every problem
+  // and jumps to the first session that needs attention (others are off-screen).
+  const handleAnalyseClick = () => {
+    if (validation.isValid) { handleAnalyse(); return; }
+    setAttempted(true);
+    const first = validation.invalidSessions[0];
+    if (first) goTo(first.index);
+    else if (validation.ageError) ageInputRef.current?.focus();
+  };
 
   return (
     <Box>
@@ -324,11 +369,12 @@ export default function FutureRiskUpload({ sessions, setSessions, setActiveStep,
         <Box sx={{ p: 1.5 }}>
           {/* Session date row */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-            <Typography variant="caption" sx={{ fontWeight: 800, fontSize: '0.75rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'text.primary', whiteSpace: 'nowrap' }}>
+            <Typography component="label" htmlFor={dateInputId} variant="caption" sx={{ fontWeight: 800, fontSize: '0.75rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'text.primary', whiteSpace: 'nowrap' }}>
               Session {activeIdx + 1} date
             </Typography>
-            <TextField type="date" size="small" value={currentSession?.scanDate ?? ''} onChange={e => updateDate(e.target.value)} inputProps={{ max: TODAY }}
-              sx={{ '& .MuiInputBase-root': { fontSize: '0.7rem', height: 28, backgroundColor: currentSession?.scanDate ? (t) => `${t.palette.primary.main}10` : (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(8,145,178,0.05)', borderRadius: 1 }, '& .MuiOutlinedInput-notchedOutline': { borderWidth: 2, borderColor: currentSession?.scanDate ? (t) => `${t.palette.primary.main}80` : (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(8,145,178,0.50)' }, '& input': { color: 'text.primary', px: 0.75, py: 0 }, '& input::-webkit-calendar-picker-indicator': { filter: (t) => t.palette.mode === 'dark' ? 'invert(0.5)' : 'none', cursor: 'pointer', width: 13 } }}
+            <TextField id={dateInputId} type="date" size="small" value={currentSession?.scanDate ?? ''} onChange={e => updateDate(e.target.value)}
+              inputProps={{ min: MIN_EXAM_DATE, max: TODAY, 'aria-invalid': Boolean(dateError), 'aria-describedby': dateError ? dateErrId : undefined }}
+              sx={{ '& .MuiInputBase-root': { fontSize: '0.7rem', height: 28, backgroundColor: dateError ? (t) => `${t.palette.warning.main}10` : currentSession?.scanDate ? (t) => `${t.palette.primary.main}10` : (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(8,145,178,0.05)', borderRadius: 1 }, '& .MuiOutlinedInput-notchedOutline': { borderWidth: 2, borderColor: dateError ? (t) => t.palette.warning.main : currentSession?.scanDate ? (t) => `${t.palette.primary.main}80` : (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(8,145,178,0.50)' }, '& input': { color: 'text.primary', px: 0.75, py: 0 }, '& input::-webkit-calendar-picker-indicator': { filter: (t) => t.palette.mode === 'dark' ? 'invert(0.5)' : 'none', cursor: 'pointer', width: 13 } }}
             />
             {isSmrt && currentDateProof && (
               <Tooltip arrow title={`Date "${currentDateProof}" detected from filename`}>
@@ -346,6 +392,9 @@ export default function FutureRiskUpload({ sessions, setSessions, setActiveStep,
               </Tooltip>
             )}
           </Box>
+          <AnimatePresence>
+            {dateError && <ValidationMessage key={`date-${sid}`} id={dateErrId} severity="warning" sx={{ mb: 1 }}>{dateError}</ValidationMessage>}
+          </AnimatePresence>
 
           {/* Carousel: ← content → */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
@@ -359,12 +408,13 @@ export default function FutureRiskUpload({ sessions, setSessions, setActiveStep,
                       {VIEW_CONFIG.map(cfg => (
                         <ViewSlot key={cfg.key} viewKey={cfg.key} label={cfg.label} fullLabel={cfg.fullLabel} description={cfg.description}
                           item={currentSession?.views[cfg.key] ?? null} onDrop={handleManualDrop} onRemove={handleRemoveView}
+                          showRequired={Boolean(currentCheck)} idPrefix={`session-${sid}`}
                         />
                       ))}
                     </Box>
                   ) : (
                     <Box>
-                      {filledCount < 4 && (
+                      {smartRoom && (
                         <Box {...getRootProps()} sx={{ border: '2px dashed', borderRadius: 2.5, cursor: 'pointer', borderColor: isDragActive ? 'primary.main' : (t) => `${t.palette.primary.main}50`, height: hasSmartContent ? 'auto' : 230, py: hasSmartContent ? 1 : 0, px: 2, display: 'flex', flexDirection: hasSmartContent ? 'row' : 'column', alignItems: 'center', justifyContent: 'center', gap: hasSmartContent ? 1 : 1.1, backgroundColor: isDragActive ? (t) => `${t.palette.primary.main}12` : (t) => `${t.palette.primary.main}07`, transition: 'all 0.2s', '&:hover': { borderColor: 'primary.main', backgroundColor: (t) => `${t.palette.primary.main}0E` } }}>
                           <input {...getInputProps()} />
                           <Box sx={{ width: hasSmartContent ? 26 : 44, height: hasSmartContent ? 26 : 44, borderRadius: hasSmartContent ? 1.25 : 2.25, flexShrink: 0, backgroundColor: (t) => `${t.palette.primary.main}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
@@ -378,14 +428,14 @@ export default function FutureRiskUpload({ sessions, setSessions, setActiveStep,
                             </>)}
                         </Box>
                       )}
-                      {filledCount === 4 && <input {...getInputProps()} style={{ display: 'none' }} />}
+                      {!smartRoom && <input {...getInputProps()} style={{ display: 'none' }} />}
 
                       <AnimatePresence>
-                        {currentSmartErr && <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}><Alert severity="warning" icon={<WarnIcon />} sx={{ mt: 1, py: 0.2, fontSize: '0.7rem' }}>{currentSmartErr}</Alert></motion.div>}
+                        {currentSmartErr && <ValidationMessage key="smart-err" onClose={() => setSmartErrs(p => ({ ...p, [sid]: null }))} sx={{ mt: smartRoom ? 1.25 : 0, mb: !smartRoom && filledCount > 0 ? 1.25 : 0, fontSize: '0.7rem' }}>{currentSmartErr}</ValidationMessage>}
                       </AnimatePresence>
 
                       {filledCount > 0 && (
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: hasSmartContent && filledCount < 4 ? 1.25 : 0 }}>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: hasSmartContent && smartRoom ? 1.25 : 0 }}>
                           <AnimatePresence>
                             {VIEW_CONFIG.filter(c => currentSession?.views[c.key]).map(cfg => (
                               <motion.div key={cfg.key} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 6 }} transition={{ duration: 0.16 }}>
@@ -432,14 +482,22 @@ export default function FutureRiskUpload({ sessions, setSessions, setActiveStep,
 
             <ArrowBtn dir="right" onClick={() => goTo(activeIdx + 1)} disabled={activeIdx === sessions.length - 1} />
           </Box>
+          <AnimatePresence>
+            {viewsError && <ValidationMessage key={`views-${sid}`} severity="warning" sx={{ mt: 1, mx: 4.25 }}>{viewsError}</ValidationMessage>}
+          </AnimatePresence>
 
           {/* Pagination dots + add — below the carousel */}
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 0.8, mt: 0.75 }}>
-            {sessions.map((s, i) => (
-              <Tooltip key={s.id} title={`Session ${i + 1}${sessionComplete(s) ? ' — complete' : ''}`} arrow>
-                <Box onClick={() => goTo(i)} sx={{ width: 9, height: 9, borderRadius: '50%', cursor: 'pointer', transition: 'all 0.2s', flexShrink: 0, backgroundColor: sessionComplete(s) ? 'primary.main' : i === activeIdx ? 'primary.main' : (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.18)' : 'rgba(8,145,178,0.3)', transform: i === activeIdx ? 'scale(1.3)' : 'scale(1)', opacity: i === activeIdx ? 1 : sessionComplete(s) ? 0.85 : 0.4, boxShadow: i === activeIdx ? (t) => `0 0 6px ${t.palette.primary.main}BB` : 'none' }} />
-              </Tooltip>
-            ))}
+            {sessions.map((s, i) => {
+              const complete = validation.sessionErrors[i].isValid;
+              const flagged = !complete && attempted;
+              const title = `Session ${i + 1}${complete ? ' — complete' : flagged ? ' — needs attention' : ''}`;
+              return (
+                <Tooltip key={s.id} title={title} arrow>
+                  <Box onClick={() => goTo(i)} aria-label={title} sx={{ width: 9, height: 9, borderRadius: '50%', cursor: 'pointer', transition: 'all 0.2s', flexShrink: 0, backgroundColor: complete ? 'primary.main' : flagged ? 'warning.main' : i === activeIdx ? 'primary.main' : (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.18)' : 'rgba(8,145,178,0.3)', transform: i === activeIdx ? 'scale(1.3)' : 'scale(1)', opacity: i === activeIdx ? 1 : complete || flagged ? 0.85 : 0.4, boxShadow: i === activeIdx ? (t) => `0 0 6px ${t.palette.primary.main}BB` : 'none' }} />
+                </Tooltip>
+              );
+            })}
             {sessions.length < MAX_SESSIONS && (
               <Tooltip title={`Add session (${sessions.length}/${MAX_SESSIONS})`} arrow>
                 <Box onClick={addSession} sx={{ width: 26, height: 26, borderRadius: '50%', cursor: 'pointer', border: '1.5px solid', borderColor: (t) => `${t.palette.primary.main}60`, backgroundColor: (t) => `${t.palette.primary.main}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'primary.main', '&:hover': { backgroundColor: 'primary.main', color: 'primary.contrastText', borderColor: 'primary.main' }, transition: 'all 0.18s' }}>
@@ -448,7 +506,30 @@ export default function FutureRiskUpload({ sessions, setSessions, setActiveStep,
               </Tooltip>
             )}
           </Box>
+          {attempted && validation.sessionCountError && (
+            <ValidationMessage severity="warning" sx={{ mt: 1 }}>{validation.sessionCountError}</ValidationMessage>
+          )}
         </Box>
+      </Box>
+
+      {/* Readiness / failure feedback — sits right above the Analyse button.
+          Session problems are detailed inside each card; this only points to them. */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: 1.75, '&:empty': { display: 'none' } }}>
+        <AnimatePresence>
+          {analysisError && <AnalysisFailureMessage key="failure" failure={analysisError} onRetry={handleAnalyseClick} retryDisabled={!validation.isValid} />}
+          {showSessionSummary && (
+            <ValidationMessage key="summary" id="future-risk-validation-summary" severity="warning" dense={false}>
+              {'Complete '}
+              {validation.invalidSessions.map((e, n) => (
+                <React.Fragment key={e.index}>
+                  {n > 0 && (n === validation.invalidSessions.length - 1 ? ' and ' : ', ')}
+                  <Link component="button" type="button" onClick={() => goTo(e.index)} sx={{ fontSize: 'inherit', fontWeight: 700, verticalAlign: 'baseline' }}>{e.label}</Link>
+                </React.Fragment>
+              ))}
+              {' before running Sequential Future Risk Analysis.'}
+            </ValidationMessage>
+          )}
+        </AnimatePresence>
       </Box>
 
       {/* Navigation + Patient Age */}
@@ -459,7 +540,7 @@ export default function FutureRiskUpload({ sessions, setSessions, setActiveStep,
           {/* Patient Age — centred between the nav buttons */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.75 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
-              <Typography variant="caption" sx={{ fontWeight: 700, fontSize: '0.7rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: ageTouched && !ageValid ? 'error.main' : 'text.secondary', whiteSpace: 'nowrap' }}>
+              <Typography component="label" htmlFor="patient-age" variant="caption" sx={{ fontWeight: 700, fontSize: '0.7rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: showAgeError ? 'error.main' : 'text.secondary', whiteSpace: 'nowrap' }}>
                 Patient Age
               </Typography>
               <Box sx={{
@@ -469,23 +550,24 @@ export default function FutureRiskUpload({ sessions, setSessions, setActiveStep,
               }} />
             </Box>
             <TextField
+              id="patient-age" inputRef={ageInputRef}
               type="number" size="small" value={patientAge}
-              onChange={e => { setPatientAge(e.target.value); if (ageTouched) setAgeTouched(false); }}
-              inputProps={{ min: 18, max: 100 }}
-              error={ageTouched && !ageValid}
-              helperText={ageTouched && !ageValid ? 'Required, 18–100' : undefined}
+              onChange={e => setPatientAge(e.target.value)}
+              inputProps={{ min: AGE_MIN, max: AGE_MAX }}
+              error={showAgeError}
+              helperText={showAgeError ? validation.ageError : undefined}
               FormHelperTextProps={{ sx: { position: 'absolute', top: '100%', mt: 0.4, fontSize: '0.65rem', mx: 0, whiteSpace: 'nowrap' } }}
               sx={{
                 width: 108, position: 'relative',
                 '& .MuiInputBase-root': {
                   fontSize: '0.78rem', height: 30, borderRadius: 1,
-                  backgroundColor: (t) => ageTouched && !ageValid
+                  backgroundColor: (t) => showAgeError
                     ? `${t.palette.error.main}10`
                     : patientAge ? `${t.palette.primary.main}10` : t.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(8,145,178,0.05)',
                 },
                 '& .MuiOutlinedInput-notchedOutline': {
                   borderWidth: 2,
-                  borderColor: (t) => ageTouched && !ageValid
+                  borderColor: (t) => showAgeError
                     ? t.palette.error.main
                     : patientAge ? `${t.palette.primary.main}80` : t.palette.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(8,145,178,0.50)',
                 },
@@ -495,11 +577,9 @@ export default function FutureRiskUpload({ sessions, setSessions, setActiveStep,
           </Box>
 
           <Button
-            variant="contained" disabled={!canContinue}
-            onClick={() => {
-              if (!ageValid) { setAgeTouched(true); return; }
-              handleAnalyse();
-            }}
+            variant="contained"
+            onClick={handleAnalyseClick}
+            aria-describedby={showSessionSummary ? 'future-risk-validation-summary' : undefined}
             sx={{ px: 3, fontWeight: 700 }}
           >
             Analyse →

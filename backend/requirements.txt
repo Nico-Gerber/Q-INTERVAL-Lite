@@ -15,3 +15,4 @@ grad-cam
 albumentations
 pandas
 httpx
+python-dotenv
