@@ -282,7 +282,7 @@ export default function MultiViewUpload({ views, setViews, setActiveStep, handle
             return (
               <Box key={val} onClick={() => setUploadMode(val)} sx={{
                 position: 'relative', cursor: 'pointer', flex: 1,
-                display: 'flex', alignItems: 'center', gap: 1, px: 1.75, py: 1.1,
+                display: 'flex', alignItems: 'center', gap: 1, px: { xs: 1.25, sm: 1.75 }, py: 1.1,
                 // Active tab: noticeably stronger background tint
                 backgroundColor: active
                   ? (t) => t.palette.mode === 'dark' ? 'rgba(34,211,238,0.10)' : 'rgba(8,145,178,0.18)'
@@ -298,7 +298,7 @@ export default function MultiViewUpload({ views, setViews, setActiveStep, handle
                 {/* Icon badge */}
                 <Box sx={{
                   width: 32, height: 32, borderRadius: 1.5, flexShrink: 0,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  display: { xs: 'none', sm: 'flex' }, alignItems: 'center', justifyContent: 'center',
                   background: active
                     ? (t) => t.palette.mode === 'dark' ? 'linear-gradient(135deg,#22D3EE,#0891B2)' : 'linear-gradient(135deg,#0891B2,#0E7490)'
                     : (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(8,145,178,0.09)',
@@ -368,7 +368,7 @@ export default function MultiViewUpload({ views, setViews, setActiveStep, handle
             {/* ─── MANUAL: 2×2 grid ─── */}
             {!isSmrt ? (
               <motion.div key="manual" variants={fadeUp} initial="hidden" animate="visible" exit="exit">
-                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.25 }}>
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 1.25 }}>
                   {VIEW_CONFIG.map((cfg, i) => (
                     <motion.div key={cfg.key} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.26, delay: i * 0.05 }}>
                       <ViewSlot viewKey={cfg.key} label={cfg.label} fullLabel={cfg.fullLabel} description={cfg.description}
@@ -444,9 +444,9 @@ export default function MultiViewUpload({ views, setViews, setActiveStep, handle
                         </Box>
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.65 }}>
                           {pending.map((p) => (
-                            <Box key={p.id} sx={{ display: 'flex', alignItems: 'center', gap: 0.85, px: 0.85, py: 0.65, borderRadius: 1.5, backgroundColor: 'background.default', border: '1px solid', borderColor: 'divider' }}>
+                            <Box key={p.id} sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 0.85, px: 0.85, py: 0.65, borderRadius: 1.5, backgroundColor: 'background.default', border: '1px solid', borderColor: 'divider' }}>
                               <Box component="img" src={p.preview} alt="preview" sx={{ width: 34, height: 34, objectFit: 'cover', borderRadius: 0.75, flexShrink: 0 }} />
-                              <Box sx={{ minWidth: 0, flex: 1 }}>
+                              <Box sx={{ minWidth: 0, flex: '1 1 140px' }}>
                                 <Typography variant="caption" noWrap sx={{ color: 'text.primary', fontWeight: 600, fontSize: '0.64rem', display: 'block' }}>{p.file.name}</Typography>
                                 <Typography variant="caption" sx={{ color: 'warning.main', fontSize: '0.59rem' }}>
                                   {p.reason === 'duplicate' ? `${p.detection.key} already filled — pick another slot` : `Couldn't read ${p.detection.missing ? p.detection.missing.join(' & ') : 'view'} from the name`}
@@ -481,7 +481,7 @@ export default function MultiViewUpload({ views, setViews, setActiveStep, handle
 
       {/* ── Navigation ── */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3, delay: 0.12 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1.75 }}>
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column-reverse', sm: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'stretch', sm: 'center' }, gap: 1, mt: 1.75 }}>
           <Button variant="text" onClick={() => setActiveStep((p) => p - 1)} sx={{ letterSpacing: '0.04em', fontSize: '0.8rem' }}>← Back to Configuration</Button>
           <Button variant="contained" aria-describedby={showSummary ? 'session-validation-summary' : undefined} onClick={runAnalysis} sx={{ px: 3, fontWeight: 700 }}>Analyse →</Button>
         </Box>

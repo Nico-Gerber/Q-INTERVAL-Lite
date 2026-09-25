@@ -466,7 +466,7 @@ export default function ClassificationResults({
             <Box
                 sx={{
                     flex: 1,
-                    minHeight: 0,
+                    minHeight: { xs: 320, sm: 460, md: 0 },
                     position: 'relative',
                     overflow: 'hidden',
                     borderRadius: 2.5,
@@ -616,8 +616,8 @@ export default function ClassificationResults({
         >
             <Box
                 sx={{
-                    height,
-                    maxHeight: '86vh',
+                    height: { xs: 'auto', md: height },
+                    maxHeight: { xs: 'none', md: '86vh' },
                     display: 'flex',
                     flexDirection: 'column',
                     borderRadius: 1.5,
@@ -633,12 +633,12 @@ export default function ClassificationResults({
                     sx={{
                         flex: 'none',
                         minHeight: 58,
-                        pl: 3.5,
-                        pr: 2.5,
+                        pl: { xs: 2, md: 3.5 },
+                        pr: { xs: 2, md: 2.5 },
                         py: 1.5,
                         display: 'flex',
                         alignItems: 'baseline',
-                        gap: 2.75,
+                        gap: { xs: 1.5, md: 2.75 },
                         flexWrap: 'wrap',
                         background: t.panel,
                         borderBottom:
@@ -692,7 +692,8 @@ export default function ClassificationResults({
                             sx={{
                                 ml: 'auto',
                                 color: t.dim,
-                                whiteSpace: 'nowrap'
+                                whiteSpace: 'nowrap',
+                                display: { xs: 'none', sm: 'block' }
                             }}
                         >
                             ID: {sessionId}
@@ -725,7 +726,7 @@ export default function ClassificationResults({
                                                 onModelSelect(id)
                                             }
                                             sx={{
-                                                px: 1.9,
+                                                px: { xs: 1.2, sm: 1.9 },
                                                 py: 0.9,
                                                 borderRadius: 1.5,
                                                 cursor: 'pointer',
@@ -775,23 +776,24 @@ export default function ClassificationResults({
                     sx={{
                         flex: 1,
                         minHeight: 0,
-                        display: 'flex'
+                        display: 'flex',
+                        flexDirection: { xs: 'column', md: 'row' }
                     }}
                 >
-                    {/* view sidebar */}
+                    {/* view sidebar — a horizontal thumbnail strip below md */}
 
                     <Box
                         sx={{
-                            width: 148,
+                            width: { xs: '100%', md: 148 },
                             flex: 'none',
                             position: 'relative',
                             px: 2,
                             pt: 3.5,
-                            pb: 2.5,
-                            borderRight:
-                                `1px solid ${t.line}`,
+                            pb: { xs: 1.5, md: 2.5 },
+                            borderRight: { xs: 'none', md: `1px solid ${t.line}` },
+                            borderBottom: { xs: `1px solid ${t.line}`, md: 'none' },
                             display: 'flex',
-                            flexDirection: 'column',
+                            flexDirection: { xs: 'row', md: 'column' },
                             gap: 1,
                         }}
                     >
@@ -830,6 +832,7 @@ export default function ClassificationResults({
                                     sx={{
                                         flex: 1,
                                         minHeight: 0,
+                                        minWidth: 0,
                                         display: 'flex',
                                         flexDirection: 'column',
                                         gap: 0.6,
@@ -838,7 +841,8 @@ export default function ClassificationResults({
                                 >
                                     <Box
                                         sx={{
-                                            flex: 1,
+                                            flex: { xs: 'none', md: 1 },
+                                            height: { xs: 84, sm: 110, md: 'auto' },
                                             minHeight: 0,
                                             position: 'relative',
                                             borderRadius: 1,
@@ -922,9 +926,9 @@ export default function ClassificationResults({
 
                     <Box
                         sx={{
-                            flex: 1,
+                            flex: { xs: 'none', md: 1 },
                             minWidth: 0,
-                            p: 3.5,
+                            p: { xs: 2, sm: 2.5, md: 3.5 },
                             display: 'flex',
                             flexDirection: 'column',
                             gap: 1.5
@@ -936,9 +940,10 @@ export default function ClassificationResults({
                                     flex: 1,
                                     minHeight: 0,
                                     display: 'flex',
+                                    flexDirection: { xs: 'column', sm: 'row' },
                                     alignItems: 'stretch',
                                     gap: 1.75,
-                                    px: 2
+                                    px: { xs: 0, md: 2 }
                                 }}
                             >
                                 <ImagePane
@@ -957,9 +962,10 @@ export default function ClassificationResults({
                                 <Box
                                     sx={{
                                         flex: 'none',
-                                        width: 0,
-                                        borderLeft:
-                                            `1px dashed ${t.line}`,
+                                        width: { xs: 'auto', sm: 0 },
+                                        height: { xs: 0, sm: 'auto' },
+                                        borderLeft: { xs: 'none', sm: `1px dashed ${t.line}` },
+                                        borderTop: { xs: `1px dashed ${t.line}`, sm: 'none' },
                                     }}
                                 />
 
@@ -987,6 +993,7 @@ export default function ClassificationResults({
                         <Box
                             sx={{
                                 display: 'flex',
+                                flexWrap: 'wrap',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 gap: 1.5
@@ -1688,16 +1695,16 @@ export default function ClassificationResults({
 
                     <Box
                         sx={{
-                            width: 352,
+                            width: { xs: '100%', md: 352 },
                             flex: 'none',
-                            p: 3,
-                            borderLeft:
-                                `1px solid ${t.line}`,
+                            p: { xs: 2, sm: 2.5, md: 3 },
+                            borderLeft: { xs: 'none', md: `1px solid ${t.line}` },
+                            borderTop: { xs: `1px solid ${t.line}`, md: 'none' },
                             background: t.panel,
                             display: 'flex',
                             flexDirection: 'column',
                             gap: 2,
-                            overflowY: 'auto',
+                            overflowY: { xs: 'visible', md: 'auto' },
                         }}
                     >
                         {/* headline metrics */}
@@ -2443,7 +2450,9 @@ export default function ClassificationResults({
                         border:
                             `1px solid ${t.line}`,
                         borderRadius: 2,
-                        overflow: 'hidden'
+                        overflow: 'hidden',
+                        m: { xs: 2, sm: 4 },
+                        width: { xs: 'calc(100% - 32px)', sm: 'calc(100% - 64px)' }
                     }
                 }}
             >
@@ -2563,7 +2572,9 @@ export default function ClassificationResults({
                             position: 'absolute',
                             top: 14,
                             left: 14,
+                            maxWidth: 'calc(100% - 28px)',
                             display: 'flex',
+                            flexWrap: 'wrap',
                             alignItems: 'center',
                             gap: 1.25,
                             background:

@@ -192,8 +192,8 @@ export default function MammoRiskResults({ currentModel, results, sessionId }) {
 
         return (
             <Box sx={{
-                minHeight: 58, position: 'relative', pl: 3.5, pr: 2.5, py: 1.5,
-                display: 'flex', alignItems: 'baseline', gap: 2.75, flexWrap: 'wrap',
+                minHeight: 58, position: 'relative', pl: { xs: 2, md: 3.5 }, pr: { xs: 2, md: 2.5 }, py: 1.5,
+                display: 'flex', alignItems: 'baseline', gap: { xs: 1.5, md: 2.75 }, flexWrap: 'wrap',
                 background: t.panel, borderBottom: `1px solid ${t.line}`,
             }}>
                 <Typography sx={{ fontSize: 20, fontWeight: 800, letterSpacing: '-0.01em', color: t.text, whiteSpace: 'nowrap' }}>
@@ -211,7 +211,8 @@ export default function MammoRiskResults({ currentModel, results, sessionId }) {
 
 
                 <Box sx={{
-                    position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)',
+                    position: { xs: 'static', lg: 'absolute' }, left: '50%', top: '50%',
+                    transform: { xs: 'none', lg: 'translate(-50%, -50%)' },
                     display: 'flex', alignItems: 'center', gap: 1.25,
                 }}>
                     <Label sx={{ color: t.muted, whiteSpace: 'nowrap' }}>
@@ -230,7 +231,7 @@ export default function MammoRiskResults({ currentModel, results, sessionId }) {
                 </Box>
 
                 {sessionId && (
-                    <Label sx={{ ml: 'auto', color: t.dim, whiteSpace: 'nowrap' }}>
+                    <Label sx={{ ml: 'auto', color: t.dim, whiteSpace: 'nowrap', display: { xs: 'none', sm: 'block' } }}>
                         ID: {sessionId}
                     </Label>
                 )}
@@ -252,7 +253,7 @@ export default function MammoRiskResults({ currentModel, results, sessionId }) {
             <Box sx={cardSx}>
                 <TopBar />
                 <Box sx={{ display: 'flex', flexWrap: 'wrap' }}>
-                    <Box sx={{ flex: 1, minWidth: 380, p: '28px', display: 'flex', flexDirection: 'column', gap: 1.75 }}>
+                    <Box sx={{ flex: 1, minWidth: { xs: 0, sm: 380 }, p: { xs: 2, md: '28px' }, display: 'flex', flexDirection: 'column', gap: 1.75 }}>
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: 2, px: 0.5 }}>
                             <Label sx={{ color: t.muted }}>Metric</Label>
                             <Label sx={{ color: CNN_C }}>Classical</Label>
@@ -271,8 +272,10 @@ export default function MammoRiskResults({ currentModel, results, sessionId }) {
                     </Box>
 
                     <Box sx={{
-                        width: 520, flexGrow: 1, borderLeft: `1px solid ${t.line}`, background: t.panel,
-                        p: 3, display: 'flex', flexDirection: 'column', gap: 2.25,
+                        // Sits beside the metrics table from lg; below that it wraps underneath.
+                        width: { xs: '100%', sm: 520 }, flexGrow: 1, background: t.panel,
+                        borderLeft: { xs: 'none', lg: `1px solid ${t.line}` }, borderTop: { xs: `1px solid ${t.line}`, lg: 'none' },
+                        p: { xs: 2, md: 3 }, display: 'flex', flexDirection: 'column', gap: 2.25,
                     }}>
                         {[{ m: C, name: 'Classical', c: CNN_C }, { m: Q, name: 'Quantum', c: QML_C }].map(({ m, name, c }, i) => (
                             <React.Fragment key={name}>
@@ -322,7 +325,8 @@ export default function MammoRiskResults({ currentModel, results, sessionId }) {
             <Box sx={{ display: 'flex', flexWrap: 'wrap' }}>
                 {/* inputs */}
                 <Box sx={{
-                    width: 232, flex: 'none', p: '28px 20px', borderRight: `1px solid ${t.line}`,
+                    width: { xs: '100%', md: 232 }, flex: 'none', p: { xs: 2, md: '28px 20px' },
+                    borderRight: { xs: 'none', md: `1px solid ${t.line}` }, borderBottom: { xs: `1px solid ${t.line}`, md: 'none' },
                     display: 'flex', flexDirection: 'column', gap: 2,
                 }}>
                     <Label sx={{ color: t.muted }}>Inputs</Label>
@@ -345,8 +349,8 @@ export default function MammoRiskResults({ currentModel, results, sessionId }) {
                 </Box>
 
                 {/* index + band */}
-                <Box sx={{ flex: 1, minWidth: 800, p: '28px', display: 'flex', flexDirection: 'column', gap: 2.75 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 2.5 }}>
+                <Box sx={{ flex: 1, minWidth: 0, p: { xs: 2, md: '28px' }, display: 'flex', flexDirection: 'column', gap: 2.75 }}>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', justifyContent: 'space-between', gap: 2.5 }}>
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.6 }}>
                             <Label sx={{ color: t.muted }}>Composite risk index</Label>
                             <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 2.5, flexWrap: 'wrap' }}>

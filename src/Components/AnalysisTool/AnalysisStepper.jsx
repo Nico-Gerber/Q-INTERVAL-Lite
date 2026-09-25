@@ -37,7 +37,7 @@ const STEPS = [
 
 export default function AnalysisStepper({ activeStep }) {
   return (
-    <Container maxWidth="sm" sx={{ pt: 2, pb: 1.5 }}>
+    <Container maxWidth="sm" sx={{ pt: 2, pb: 1.5, px: { xs: 1, sm: 2 } }}>
       <Stepper
         activeStep={activeStep}
         alternativeLabel
@@ -68,11 +68,11 @@ export default function AnalysisStepper({ activeStep }) {
                0 0 12px 3px ${theme.palette.primary.main}55`,
           },
           '& .MuiStepLabel-label': {
-            fontSize: '0.72rem',
+            fontSize: { xs: '0.64rem', sm: '0.72rem' },
             fontWeight: 600,
             color: 'text.disabled',
             mt: 0.5,
-            letterSpacing: '0.06em',
+            letterSpacing: { xs: '0.03em', sm: '0.06em' },
             textTransform: 'uppercase',
           },
           '& .MuiStepLabel-label.Mui-active': {
@@ -94,6 +94,7 @@ export default function AnalysisStepper({ activeStep }) {
                 StepIconComponent={CustomStepIcon}
                 optional={
                   <Typography variant="caption" sx={{
+                    display: { xs: 'none', sm: 'block' },
                     fontSize: '0.66rem',
                     fontWeight: isActive ? 600 : 400,
                     color: isActive

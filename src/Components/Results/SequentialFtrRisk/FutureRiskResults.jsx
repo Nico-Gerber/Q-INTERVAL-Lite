@@ -272,14 +272,15 @@ export default function FutureRiskResults({
             transition: 'opacity 0.45s ease, transform 0.45s ease',
         }}>
             <Box sx={{
-                height, maxHeight: '86vh', display: 'flex', flexDirection: 'column',
+                // Fixed-height shell from md up; below that the panels stack and it grows.
+                height: { xs: 'auto', md: height }, maxHeight: { xs: 'none', md: '86vh' }, display: 'flex', flexDirection: 'column',
                 borderRadius: 1.5, overflow: 'hidden',
                 background: t.shell, border: `1px solid ${t.line}`,
             }}>
                 {/* ── top bar ── */}
                 <Box sx={{
-                    flex: 'none', minHeight: 58, pl: 3.5, pr: 2.5, py: 1.5,
-                    display: 'flex', alignItems: 'baseline', gap: 2.75, flexWrap: 'wrap',
+                    flex: 'none', minHeight: 58, pl: { xs: 2, md: 3.5 }, pr: { xs: 2, md: 2.5 }, py: 1.5,
+                    display: 'flex', alignItems: 'baseline', gap: { xs: 1.5, md: 2.75 }, flexWrap: 'wrap',
                     background: t.panel, borderBottom: `1px solid ${t.line}`,
                 }}>
                     <Typography sx={{ fontSize: 20, fontWeight: 800, letterSpacing: '-0.01em', color: t.text, whiteSpace: 'nowrap' }}>
@@ -296,7 +297,7 @@ export default function FutureRiskResults({
                     </Typography>
 
                     {sessionId && (
-                        <Label sx={{ ml: 'auto', color: t.dim, whiteSpace: 'nowrap' }}>
+                        <Label sx={{ ml: 'auto', color: t.dim, whiteSpace: 'nowrap', display: { xs: 'none', sm: 'block' } }}>
                             ID: {sessionId}
                         </Label>
                     )}
@@ -310,7 +311,7 @@ export default function FutureRiskResults({
                                 const sel = currentModel === id;
                                 return (
                                     <Box key={id} onClick={() => onModelSelect(id)} sx={{
-                                        px: 1.9, py: 0.9, borderRadius: 1.5, cursor: 'pointer',
+                                        px: { xs: 1.2, sm: 1.9 }, py: 0.9, borderRadius: 1.5, cursor: 'pointer',
                                         background: sel ? t.selBg : 'transparent',
                                         transition: 'background 0.15s ease',
                                         '&:hover': { background: sel ? t.selBg : (isDark ? 'rgba(92,200,245,0.08)' : 'rgba(14,116,144,0.08)') },
@@ -327,11 +328,12 @@ export default function FutureRiskResults({
                 </Box>
 
                 {/* ── body ── */}
-                <Box sx={{ flex: 1, minHeight: 0, display: 'flex' }}>
+                <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: { xs: 'column', md: 'row' } }}>
 
                     {/* exam rail */}
                     <Box sx={{
-                        width: 172, flex: 'none', p: '24px 20px', borderRight: `1px solid ${t.line}`,
+                        width: { xs: '100%', md: 172 }, flex: 'none', p: { xs: 2, md: '24px 20px' },
+                        borderRight: { xs: 'none', md: `1px solid ${t.line}` }, borderBottom: { xs: `1px solid ${t.line}`, md: 'none' },
                         display: 'flex', flexDirection: 'column', gap: 1.5,
                     }}>
                         <Box>
@@ -387,8 +389,11 @@ export default function FutureRiskResults({
                     </Box>
 
                     {/* chart */}
-                    <Box sx={{ flex: 1, minWidth: 0, p: 3.5, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+                    <Box sx={{
+                        flex: { xs: 'none', md: 1 }, height: { xs: 360, sm: 440, md: 'auto' },
+                        minWidth: 0, p: { xs: 2, sm: 2.5, md: 3.5 }, display: 'flex', flexDirection: 'column', gap: 1.5,
+                    }}>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: { xs: 1, sm: 2 } }}>
                             <Label sx={{ color: CNN_C, letterSpacing: '0.12em', fontSize: 12 }}>
                                 {isBoth ? 'Risk over time · both models' : 'Cumulative risk over time'}
                             </Label>
@@ -419,7 +424,7 @@ export default function FutureRiskResults({
                             </Box>
                         )}
 
-                        <Box sx={{ flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, py: 0.75 }}>
+                        <Box sx={{ flex: 'none', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: { xs: 1, sm: 2 }, py: 0.75 }}>
                             <Label sx={{ color: t.muted, fontSize: 14 }}>Horizon · {activeHorizons.length || 5} years</Label>
 
                             {isBoth && (
@@ -440,8 +445,9 @@ export default function FutureRiskResults({
 
                     {/* breakdown */}
                     <Box sx={{
-                        width: 352, flex: 'none', p: 3, borderLeft: `1px solid ${t.line}`,
-                        background: t.panel, display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto',
+                        width: { xs: '100%', md: 352 }, flex: 'none', p: { xs: 2, sm: 2.5, md: 3 },
+                        borderLeft: { xs: 'none', md: `1px solid ${t.line}` }, borderTop: { xs: `1px solid ${t.line}`, md: 'none' },
+                        background: t.panel, display: 'flex', flexDirection: 'column', gap: 2, overflowY: { xs: 'visible', md: 'auto' },
                     }}>
                         {isBoth ? (
                             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1.5, rowGap: 0.4 }}>

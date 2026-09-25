@@ -775,6 +775,7 @@ export default function Analysis() {
         backgroundColor: 'background.default',
         minHeight: '100vh',
         flex: 1,
+        minWidth: 0,
         position: 'relative',
         overflow: 'clip',
         background: (theme) => theme.palette.background.hero,
@@ -891,7 +892,7 @@ export default function Analysis() {
         </motion.div>
 
         {/* ── Step content — AnimatePresence swaps between steps ── */}
-        <Box sx={{ position: 'relative', zIndex: 1, pb: stepPb[activeStep], px: 2 }}>
+        <Box sx={{ position: 'relative', zIndex: 1, pb: stepPb[activeStep], px: { xs: 0.5, sm: 2 } }}>
           <AnimatePresence mode="wait">
             <motion.div
               key={activeStep}
@@ -959,7 +960,7 @@ export default function Analysis() {
 
                           <Container maxWidth="xl">
                             <Box sx={{
-                              borderRadius: 2.5, p: { xs: 2, md: 3 },
+                              borderRadius: 2.5, p: { xs: 1.25, sm: 2, md: 3 },
                               background: (theme) => theme.palette.mode === 'dark' ? '#060f1c' : '#DCEEF3',
                               border: (theme) => `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(14,116,144,0.35)'}`,
                               boxShadow: (theme) => theme.palette.mode === 'dark'
@@ -968,7 +969,7 @@ export default function Analysis() {
                             }}>
                               <Box sx={{
                                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.25,
-                                mb: 1.5, px: 3, py: 1.75, borderRadius: 1.5,
+                                mb: 1.5, px: { xs: 1.5, sm: 3 }, py: 1.75, borderRadius: 1.5,
                                 border: `1px solid ${bannerColor}66`,
                                 background: `${bannerColor}14`,
                               }}>
@@ -986,7 +987,7 @@ export default function Analysis() {
                                 mb: 1.5, px: 2, py: 1.25, borderRadius: 1,
                                 background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(14,116,144,0.10)',
                               }}>
-                                <Typography sx={{ fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.06em', color: isDark ? '#F0F9FF' : '#0C1E2A' }}>
+                                <Typography sx={{ fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.06em', color: isDark ? '#F0F9FF' : '#0C1E2A', overflowWrap: 'anywhere' }}>
                                   SESSION ID: {sessionId}
                                 </Typography>
 
@@ -1122,7 +1123,7 @@ export default function Analysis() {
 
                           <Container maxWidth="xl">
                             <Box sx={{
-                              borderRadius: 2.5, p: { xs: 2, md: 3 },
+                              borderRadius: 2.5, p: { xs: 1.25, sm: 2, md: 3 },
                               background: (theme) => theme.palette.mode === 'dark' ? '#060f1c' : '#DCEEF3',
                               border: (theme) => `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(14,116,144,0.35)'}`,
                               boxShadow: (theme) => theme.palette.mode === 'dark'
@@ -1131,7 +1132,7 @@ export default function Analysis() {
                             }}>
                               <Box sx={{
                                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.25,
-                                mb: 1.5, px: 3, py: 1.75, borderRadius: 1.5,
+                                mb: 1.5, px: { xs: 1.5, sm: 3 }, py: 1.75, borderRadius: 1.5,
                                 border: '1px solid rgba(245,196,81,0.4)',
                                 background: 'rgba(245,196,81,0.08)',
                               }}>
@@ -1149,7 +1150,7 @@ export default function Analysis() {
                                 mb: 1.5, px: 2, py: 1.25, borderRadius: 1,
                                 background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(14,116,144,0.10)',
                               }}>
-                                <Typography sx={{ fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.06em', color: isDark ? '#F0F9FF' : '#0C1E2A' }}>
+                                <Typography sx={{ fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.06em', color: isDark ? '#F0F9FF' : '#0C1E2A', overflowWrap: 'anywhere' }}>
                                   SESSION ID: {sessionId}
                                 </Typography>
                                 <Button

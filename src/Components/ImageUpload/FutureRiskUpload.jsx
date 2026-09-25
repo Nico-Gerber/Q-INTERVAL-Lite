@@ -80,13 +80,13 @@ const ModeToggle = ({ mode, setMode }) => (
       return (
         <Box key={val} onClick={() => setMode(val)} sx={{
           position: 'relative', cursor: 'pointer', flex: 1,
-          display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 1.1,
+          display: 'flex', alignItems: 'center', gap: 1, px: { xs: 1.25, sm: 1.5 }, py: 1.1,
           backgroundColor: active ? (t) => t.palette.mode === 'dark' ? 'rgba(34,211,238,0.10)' : 'rgba(8,145,178,0.20)' : 'transparent',
           transition: 'background-color 0.18s',
           '&:hover': !active ? { backgroundColor: (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(8,145,178,0.05)' } : {},
           '&::after': active ? { content: '""', position: 'absolute', bottom: -1, left: 0, right: 0, height: 3, background: (t) => t.palette.mode === 'dark' ? 'linear-gradient(90deg,#22D3EE,#0891B2)' : 'linear-gradient(90deg,#0891B2,#0E7490)' } : {},
         }}>
-          <Box sx={{ width: 32, height: 32, borderRadius: 1.5, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', background: active ? (t) => t.palette.mode === 'dark' ? 'linear-gradient(135deg,#22D3EE,#0891B2)' : 'linear-gradient(135deg,#0891B2,#0E7490)' : (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(8,145,178,0.09)', boxShadow: active ? '0 3px 10px rgba(34,211,238,0.32)' : 'none' }}>
+          <Box sx={{ width: 32, height: 32, borderRadius: 1.5, flexShrink: 0, display: { xs: 'none', sm: 'flex' }, alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', background: active ? (t) => t.palette.mode === 'dark' ? 'linear-gradient(135deg,#22D3EE,#0891B2)' : 'linear-gradient(135deg,#0891B2,#0E7490)' : (t) => t.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(8,145,178,0.09)', boxShadow: active ? '0 3px 10px rgba(34,211,238,0.32)' : 'none' }}>
             <Icon sx={{ fontSize: 16, color: active ? '#fff' : 'text.disabled', transition: 'color 0.2s' }} />
           </Box>
           <Box sx={{ minWidth: 0 }}>
@@ -188,8 +188,8 @@ const slideVariants = {
 };
 
 // ── Arrow button ──────────────────────────────────────────────────────────────
-const ArrowBtn = ({ dir, onClick, disabled }) => (
-  <Box onClick={disabled ? undefined : onClick} sx={{ width: 28, height: 28, borderRadius: '50%', flexShrink: 0, cursor: disabled ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: disabled ? 'transparent' : 'primary.main', border: '1px solid', borderColor: disabled ? 'transparent' : 'primary.main', color: disabled ? 'transparent' : 'primary.contrastText', opacity: disabled ? 0.1 : 1, transition: 'all 0.15s', boxShadow: disabled ? 'none' : (t) => `0 2px 8px ${t.palette.primary.main}55`, '&:hover': disabled ? {} : { filter: 'brightness(1.15)' } }}>
+const ArrowBtn = ({ dir, onClick, disabled, sx }) => (
+  <Box onClick={disabled ? undefined : onClick} sx={{ width: 28, height: 28, borderRadius: '50%', flexShrink: 0, cursor: disabled ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: disabled ? 'transparent' : 'primary.main', border: '1px solid', borderColor: disabled ? 'transparent' : 'primary.main', color: disabled ? 'transparent' : 'primary.contrastText', opacity: disabled ? 0.1 : 1, transition: 'all 0.15s', boxShadow: disabled ? 'none' : (t) => `0 2px 8px ${t.palette.primary.main}55`, '&:hover': disabled ? {} : { filter: 'brightness(1.15)' }, ...sx }}>
     {dir === 'left' ? <ChevronLeftIcon sx={{ fontSize: 18 }} /> : <ChevronRightIcon sx={{ fontSize: 18 }} />}
   </Box>
 );
@@ -368,7 +368,7 @@ export default function FutureRiskUpload({ sessions, setSessions, setActiveStep,
         {/* Body */}
         <Box sx={{ p: 1.5 }}>
           {/* Session date row */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1, mb: 1 }}>
             <Typography component="label" htmlFor={dateInputId} variant="caption" sx={{ fontWeight: 800, fontSize: '0.75rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'text.primary', whiteSpace: 'nowrap' }}>
               Session {activeIdx + 1} date
             </Typography>
@@ -398,13 +398,13 @@ export default function FutureRiskUpload({ sessions, setSessions, setActiveStep,
 
           {/* Carousel: ← content → */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-            <ArrowBtn dir="left" onClick={() => goTo(activeIdx - 1)} disabled={activeIdx === 0} />
+            <ArrowBtn dir="left" onClick={() => goTo(activeIdx - 1)} disabled={activeIdx === 0} sx={{ display: { xs: 'none', sm: 'flex' } }} />
 
             <Box sx={{ flex: 1, minWidth: 0, overflow: 'hidden', minHeight: 240, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
               <AnimatePresence mode="wait" custom={slideDir.current}>
                 <motion.div key={`${sid}-${isSmrt ? 's' : 'm'}`} custom={slideDir.current} variants={slideVariants} initial="enter" animate="center" exit="exit">
                   {!isSmrt ? (
-                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.25 }}>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 1.25 }}>
                       {VIEW_CONFIG.map(cfg => (
                         <ViewSlot key={cfg.key} viewKey={cfg.key} label={cfg.label} fullLabel={cfg.fullLabel} description={cfg.description}
                           item={currentSession?.views[cfg.key] ?? null} onDrop={handleManualDrop} onRemove={handleRemoveView}
@@ -456,9 +456,9 @@ export default function FutureRiskUpload({ sessions, setSessions, setActiveStep,
                               </Box>
                               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.6 }}>
                                 {currentPending.map(p => (
-                                  <Box key={p.id} sx={{ display: 'flex', alignItems: 'center', gap: 0.85, px: 0.85, py: 0.6, borderRadius: 1.5, backgroundColor: 'background.default', border: '1px solid', borderColor: 'divider' }}>
+                                  <Box key={p.id} sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 0.85, px: 0.85, py: 0.6, borderRadius: 1.5, backgroundColor: 'background.default', border: '1px solid', borderColor: 'divider' }}>
                                     <Box component="img" src={p.preview} alt="preview" sx={{ width: 32, height: 32, objectFit: 'cover', borderRadius: 0.75, flexShrink: 0 }} />
-                                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                                    <Box sx={{ minWidth: 0, flex: '1 1 140px' }}>
                                       <Typography variant="caption" noWrap sx={{ color: 'text.primary', fontWeight: 600, fontSize: '0.64rem', display: 'block' }}>{p.file.name}</Typography>
                                       <Typography variant="caption" sx={{ color: 'warning.main', fontSize: '0.59rem' }}>{p.reason === 'duplicate' ? `${p.detection.key} already filled` : `Missing ${p.detection.missing?.join(' & ') ?? 'view'} in filename`}</Typography>
                                     </Box>
@@ -480,14 +480,17 @@ export default function FutureRiskUpload({ sessions, setSessions, setActiveStep,
               </AnimatePresence>
             </Box>
 
-            <ArrowBtn dir="right" onClick={() => goTo(activeIdx + 1)} disabled={activeIdx === sessions.length - 1} />
+            <ArrowBtn dir="right" onClick={() => goTo(activeIdx + 1)} disabled={activeIdx === sessions.length - 1} sx={{ display: { xs: 'none', sm: 'flex' } }} />
           </Box>
           <AnimatePresence>
-            {viewsError && <ValidationMessage key={`views-${sid}`} severity="warning" sx={{ mt: 1, mx: 4.25 }}>{viewsError}</ValidationMessage>}
+            {viewsError && <ValidationMessage key={`views-${sid}`} severity="warning" sx={{ mt: 1, mx: { xs: 0, sm: 4.25 } }}>{viewsError}</ValidationMessage>}
           </AnimatePresence>
 
           {/* Pagination dots + add — below the carousel */}
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 0.8, mt: 0.75 }}>
+            {/* On phones the carousel arrows live here, beside the dots, rather than
+                halfway down a tall single-column session card. */}
+            <ArrowBtn dir="left" onClick={() => goTo(activeIdx - 1)} disabled={activeIdx === 0} sx={{ display: { xs: 'flex', sm: 'none' }, mr: 0.5 }} />
             {sessions.map((s, i) => {
               const complete = validation.sessionErrors[i].isValid;
               const flagged = !complete && attempted;
@@ -505,6 +508,7 @@ export default function FutureRiskUpload({ sessions, setSessions, setActiveStep,
                 </Box>
               </Tooltip>
             )}
+            <ArrowBtn dir="right" onClick={() => goTo(activeIdx + 1)} disabled={activeIdx === sessions.length - 1} sx={{ display: { xs: 'flex', sm: 'none' }, ml: 0.5 }} />
           </Box>
           {attempted && validation.sessionCountError && (
             <ValidationMessage severity="warning" sx={{ mt: 1 }}>{validation.sessionCountError}</ValidationMessage>
@@ -534,11 +538,11 @@ export default function FutureRiskUpload({ sessions, setSessions, setActiveStep,
 
       {/* Navigation + Patient Age */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3, delay: 0.12 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1.75 }}>
-          <Button variant="text" onClick={() => setActiveStep(p => p - 1)} sx={{ letterSpacing: '0.04em', fontSize: '0.8rem' }}>← Back to Configuration</Button>
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'stretch', sm: 'center' }, gap: { xs: 1.25, sm: 1 }, mt: 1.75 }}>
+          <Button variant="text" onClick={() => setActiveStep(p => p - 1)} sx={{ letterSpacing: '0.04em', fontSize: '0.8rem', order: { xs: 3, sm: 0 } }}>← Back to Configuration</Button>
 
           {/* Patient Age — centred between the nav buttons */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.75 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.75, order: { xs: 1, sm: 0 } }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
               <Typography component="label" htmlFor="patient-age" variant="caption" sx={{ fontWeight: 700, fontSize: '0.7rem', letterSpacing: '0.06em', textTransform: 'uppercase', color: showAgeError ? 'error.main' : 'text.secondary', whiteSpace: 'nowrap' }}>
                 Patient Age
@@ -556,7 +560,7 @@ export default function FutureRiskUpload({ sessions, setSessions, setActiveStep,
               inputProps={{ min: AGE_MIN, max: AGE_MAX }}
               error={showAgeError}
               helperText={showAgeError ? validation.ageError : undefined}
-              FormHelperTextProps={{ sx: { position: 'absolute', top: '100%', mt: 0.4, fontSize: '0.65rem', mx: 0, whiteSpace: 'nowrap' } }}
+              FormHelperTextProps={{ sx: { position: { xs: 'static', sm: 'absolute' }, top: '100%', mt: 0.4, fontSize: '0.65rem', mx: 0, whiteSpace: { xs: 'normal', sm: 'nowrap' } } }}
               sx={{
                 width: 108, position: 'relative',
                 '& .MuiInputBase-root': {
@@ -580,7 +584,7 @@ export default function FutureRiskUpload({ sessions, setSessions, setActiveStep,
             variant="contained"
             onClick={handleAnalyseClick}
             aria-describedby={showSessionSummary ? 'future-risk-validation-summary' : undefined}
-            sx={{ px: 3, fontWeight: 700 }}
+            sx={{ px: 3, fontWeight: 700, order: { xs: 2, sm: 0 } }}
           >
             Analyse →
           </Button>

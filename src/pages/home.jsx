@@ -694,7 +694,7 @@ export default function Home() {
       <SectionArrows current={currentSection} total={SECTION_IDS.length} onUp={goUp} onDown={goDown} />
 
       {/* ── 1. HERO ── */}
-      <Box id="hero" sx={{ height: sectionH, position: 'relative', background: (theme) => theme.palette.background.hero, display: 'flex', flexDirection: 'column', '&::before': { content: '""', position: 'absolute', top: '-30%', left: '50%', transform: 'translateX(-50%)', width: '800px', height: '800px', borderRadius: '50%', background: (theme) => `radial-gradient(circle, ${theme.palette.primary.main}12 0%, transparent 70%)`, pointerEvents: 'none', zIndex: 0 } }}>
+      <Box id="hero" sx={{ height: sectionH, position: 'relative', overflowX: 'clip', background: (theme) => theme.palette.background.hero, display: 'flex', flexDirection: 'column', '&::before': { content: '""', position: 'absolute', top: '-30%', left: '50%', transform: 'translateX(-50%)', width: '800px', height: '800px', borderRadius: '50%', background: (theme) => `radial-gradient(circle, ${theme.palette.primary.main}12 0%, transparent 70%)`, pointerEvents: 'none', zIndex: 0 } }}>
         <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0, overflow: 'hidden', backgroundImage: (theme) => `linear-gradient(${theme.palette.primary.main}${theme.palette.mode === 'dark' ? '06' : '14'} 1px, transparent 1px), linear-gradient(90deg, ${theme.palette.primary.main}${theme.palette.mode === 'dark' ? '06' : '14'} 1px, transparent 1px)`, backgroundSize: '60px 60px' }} />
         <NeuralCanvas />
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', px: 2, py: 2, position: 'relative', zIndex: 1 }}>
