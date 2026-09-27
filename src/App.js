@@ -32,7 +32,7 @@ function RequireAuth({ children }) {
   return children;
 }
 
-export const ColorModeContext = createContext({ toggleColorMode: () => {}, mode: 'dark' });
+export const ColorModeContext = createContext({ toggleColorMode: () => { }, mode: 'dark' });
 export const useColorMode = () => useContext(ColorModeContext);
 
 function ScrollToTop() {
@@ -43,17 +43,17 @@ function ScrollToTop() {
 
 // ── Shared across both themes ──────────────────────────────────────────────
 const sharedPalette = {
-  secondary:      { main: '#9333EA', light: '#C084FC', dark: '#7E22CE', contrastText: '#FFFFFF' },
-  cnn:            { main: '#3B82F6', light: '#93C5FD', dark: '#1D4ED8', contrastText: '#FFFFFF' },
-  qml:            { main: '#9333EA', light: '#C084FC', dark: '#7E22CE', contrastText: '#FFFFFF' },
+  secondary: { main: '#9333EA', light: '#C084FC', dark: '#7E22CE', contrastText: '#FFFFFF' },
+  cnn: { main: '#3B82F6', light: '#93C5FD', dark: '#1D4ED8', contrastText: '#FFFFFF' },
+  qml: { main: '#9333EA', light: '#C084FC', dark: '#7E22CE', contrastText: '#FFFFFF' },
   classification: { main: '#0891B2', light: '#22D3EE', dark: '#0E7490', contrastText: '#FFFFFF' },
-  risk:           { main: '#F59E0B', light: '#FCD34D', dark: '#B45309', contrastText: '#0B1120' },
-  compositeRisk:  { main: '#D97706', light: '#FBBF24', dark: '#92400E', contrastText: '#FFFFFF' },
+  risk: { main: '#F59E0B', light: '#FCD34D', dark: '#B45309', contrastText: '#0B1120' },
+  compositeRisk: { main: '#D97706', light: '#FBBF24', dark: '#92400E', contrastText: '#FFFFFF' },
   sequentialRisk: { main: '#4F46E5', light: '#818CF8', dark: '#3730A3', contrastText: '#FFFFFF' },
-  improving:      { main: '#FB923C', light: '#FDBA74', dark: '#EA580C', contrastText: '#0B1120' },
-  comingSoon:     { main: '#64748B', light: '#94A3B8', dark: '#475569', contrastText: '#FFFFFF' },
-  error:          { main: '#EF4444', light: '#FCA5A5', dark: '#B91C1C', contrastText: '#FFFFFF' },
-  warning:        { main: '#FBBF24', light: '#FDE68A', dark: '#D97706', contrastText: '#0B1120' },
+  improving: { main: '#FB923C', light: '#FDBA74', dark: '#EA580C', contrastText: '#0B1120' },
+  comingSoon: { main: '#64748B', light: '#94A3B8', dark: '#475569', contrastText: '#FFFFFF' },
+  error: { main: '#EF4444', light: '#FCA5A5', dark: '#B91C1C', contrastText: '#FFFFFF' },
+  warning: { main: '#FBBF24', light: '#FDE68A', dark: '#D97706', contrastText: '#0B1120' },
 };
 
 const sharedTypography = {
@@ -169,8 +169,8 @@ const sharedComponents = (isDark) => ({
     styleOverrides: {
       root: { borderRadius: 10 },
       standardSuccess: { backgroundColor: isDark ? 'rgba(34,211,238,0.08)' : 'rgba(8,145,178,0.1)', color: isDark ? '#22D3EE' : '#0891B2' },
-      standardError:   { backgroundColor: isDark ? 'rgba(239,68,68,0.1)'   : 'rgba(239,68,68,0.08)',  color: isDark ? '#EF4444' : '#DC2626' },
-      standardWarning: { backgroundColor: isDark ? 'rgba(251,191,36,0.08)' : 'rgba(251,191,36,0.1)',  color: isDark ? '#FBBF24' : '#D97706' },
+      standardError: { backgroundColor: isDark ? 'rgba(239,68,68,0.1)' : 'rgba(239,68,68,0.08)', color: isDark ? '#EF4444' : '#DC2626' },
+      standardWarning: { backgroundColor: isDark ? 'rgba(251,191,36,0.08)' : 'rgba(251,191,36,0.1)', color: isDark ? '#FBBF24' : '#D97706' },
     },
   },
   MuiCard: {
@@ -201,15 +201,84 @@ const sharedComponents = (isDark) => ({
   MuiStepper: {
     styleOverrides: {
       root: {
-        '& .MuiStepIcon-root.Mui-active':    { color: isDark ? '#22D3EE' : '#0891B2' },
+        '& .MuiStepIcon-root.Mui-active': { color: isDark ? '#22D3EE' : '#0891B2' },
         '& .MuiStepIcon-root.Mui-completed': { color: isDark ? '#22D3EE' : '#0891B2' },
       },
     },
   },
 });
 
+// ── Results & review palette ───────────────────────────────────────────────
+// Single source for the analysis result panels, the report shell and My Sessions.
+// Dark swatches stay saturated so they pop against navy panels; light swatches are
+// deepened so the same labels keep 4.5:1+ text contrast on white cards.
+const ACCENTS = {
+  dark: {
+    malignant: '#FF6A4D', benign: '#E3A63C', normal: '#2FBFA8',
+    riskLow: '#4fd1a1', riskMid: '#f5c451', riskHigh: '#ff7a7a',
+    classical: '#5cc8f5', quantum: '#c07ae0',
+    reviewPending: '#FFB020', reviewDone: '#33C9FF',
+  },
+  light: {
+    malignant: '#C43F23', benign: '#8F6300', normal: '#0E7A6C',
+    riskLow: '#0D7A54', riskMid: '#8A6100', riskHigh: '#B23434',
+    classical: '#1372B0', quantum: '#7C3AAD',
+    reviewPending: '#8F6300', reviewDone: '#0B7FA6',
+  },
+};
+const BRIGHT = ACCENTS.dark;
+
+// Built from a finished palette so light-mode surfaces can point at the global
+// text/background colours instead of repeating them.
+const resultsPalette = (palette) => {
+  const isDark = palette.mode === 'dark';
+  const a = isDark ? ACCENTS.dark : ACCENTS.light;
+  return {
+    verdict: { malignant: a.malignant, benign: a.benign, normal: a.normal },
+    riskBand: { low: a.riskLow, mid: a.riskMid, high: a.riskHigh },
+    modelAccent: { classical: a.classical, quantum: a.quantum, classicalEdge: '#24506f', quantumEdge: '#4a3060' },
+    review: { pending: a.reviewPending, done: a.reviewDone, override: isDark ? '#FFB020' : '#8A6100' },
+    reportStatus: { verified: a.riskLow, partial: a.classical, pending: a.riskMid },
+    // Surfaces that are always dark (the zoom lightbox over the image) use the
+    // bright set whatever the app theme is.
+    onImage: { classical: BRIGHT.classical, quantum: BRIGHT.quantum },
+    // Translucent washes are mixed from the bright set in both themes.
+    tint: { low: BRIGHT.riskLow, mid: BRIGHT.riskMid, high: BRIGHT.riskHigh, caution: '#FBBF24' },
+    results: isDark ? {
+      frame: '#060f1c', frameBorder: 'rgba(255,255,255,0.05)', frameShadow: '0 24px 70px rgba(0,0,0,0.45)',
+      shell: '#0a1728', panel: '#08131f', card: '#0c1c2e',
+      line: '#17304d', lineStrong: '#1f3a5c', lineHover: '#2d4a6b',
+      selLine: '#2f7fb8', selBg: '#0f2740', selBorder: '#3f8fc4', selRing: 'rgba(92,200,245,0.18)', hoverBg: 'rgba(92,200,245,0.08)',
+      text: '#eaf4ff', body: '#c3d8ec', muted: '#5f7fa6', dim: '#8fabc9',
+      label: '#8fabc9', caption: '#5f7fa6', track: '#132840', footer: '#3f5d7d',
+      onAccent: '#08131f', inputBg: 'rgba(255,255,255,0.04)',
+      noteBorder: '#2d4a6b', noteBg: 'rgba(95,127,166,0.12)',
+      dialogBg: '#0a1728', dialogBorder: '#17304d',
+      cautionText: '#FDE68A', cautionTextStrong: '#FFD98A', cautionIcon: '#FBBF24', danger: '#F87171',
+      bar: 'rgba(255,255,255,0.04)', barText: '#CBD8E8',
+      buttonBorder: 'rgba(240,249,255,0.35)', buttonHoverBorder: '#F0F9FF', buttonHoverBg: 'rgba(240,249,255,0.08)',
+      buttonDisabledText: 'rgba(240,249,255,0.4)', buttonDisabledBorder: 'rgba(240,249,255,0.15)',
+    } : {
+      frame: '#DCEEF3', frameBorder: 'rgba(14,116,144,0.35)', frameShadow: '0 24px 70px rgba(15,23,42,0.16)',
+      shell: '#EDF6F9', panel: '#DCEEF3', card: palette.background.paper,
+      line: 'rgba(14,116,144,0.30)', lineStrong: 'rgba(14,116,144,0.40)', lineHover: 'rgba(14,116,144,0.55)',
+      selLine: '#0B5A70', selBg: 'rgba(14,116,144,0.12)', selBorder: '#3f8fc4', selRing: 'rgba(92,200,245,0.18)', hoverBg: 'rgba(14,116,144,0.08)',
+      text: palette.text.primary, body: palette.text.secondary, muted: '#4E7180', dim: '#557788',
+      label: '#4E7180', caption: '#557788', track: 'rgba(14,116,144,0.15)', footer: '#4E7180',
+      onAccent: '#FFFFFF', inputBg: palette.background.paper,
+      noteBorder: 'rgba(14,116,144,0.40)', noteBg: 'rgba(14,116,144,0.08)',
+      dialogBg: palette.background.paper, dialogBorder: 'rgba(14,116,144,0.7)',
+      cautionText: '#6B4E00', cautionTextStrong: '#6B4E00', cautionIcon: '#8A6100', danger: '#B91C1C',
+      bar: 'rgba(14,116,144,0.10)', barText: palette.text.secondary,
+      buttonBorder: 'rgba(14,116,144,0.5)', buttonHoverBorder: '#0E7490', buttonHoverBg: 'rgba(14,116,144,0.08)',
+      buttonDisabledText: 'rgba(12,30,42,0.35)', buttonDisabledBorder: 'rgba(14,116,144,0.2)',
+    },
+  };
+};
+const withResultsPalette = (theme) => createTheme(theme, { palette: resultsPalette(theme.palette) });
+
 // ── Dark theme — Deep Ocean ────────────────────────────────────────────────
-const darkTheme = createTheme({
+const darkTheme = withResultsPalette(createTheme({
   palette: {
     mode: 'dark',
     ...sharedPalette,
@@ -217,19 +286,19 @@ const darkTheme = createTheme({
     success: { main: '#22D3EE' },
     background: {
       default: '#0D1B2E',
-      paper:   '#112038',
+      paper: '#112038',
       elevated: '#112038',
       heroGradient: 'linear-gradient(160deg, #0D1B2E 0%, #112038 55%, #0D1B2E 100%)',
-      hero:         'linear-gradient(160deg, #0D1B2E 0%, #112038 55%, #0D1B2E 100%)',
-      heroGlow:     'radial-gradient(circle, rgba(34,211,238,0.10) 0%, transparent 70%)',
-      heroGrid:     'rgba(34,211,238,0.05)',
-      heroStatsBg:  '#071020',
+      hero: 'linear-gradient(160deg, #0D1B2E 0%, #112038 55%, #0D1B2E 100%)',
+      heroGlow: 'radial-gradient(circle, rgba(34,211,238,0.10) 0%, transparent 70%)',
+      heroGrid: 'rgba(34,211,238,0.05)',
+      heroStatsBg: '#071020',
       heroStatsBorder: 'rgba(255,255,255,0.22)',
     },
     text: {
-      primary:   '#F0F9FF',
+      primary: '#F0F9FF',
       secondary: '#8BAFC4',
-      disabled:  '#4A6A80',
+      disabled: '#4A6A80',
     },
     divider: 'rgba(255,255,255,0.08)',
     // Sidebar drag handle — unchanged from its previous inline value.
@@ -238,10 +307,10 @@ const darkTheme = createTheme({
   typography: sharedTypography,
   shape: sharedShape,
   components: sharedComponents(true),
-});
+}));
 
 // ── Light theme — Deep Ocean ───────────────────────────────────────────────
-const lightTheme = createTheme({
+const lightTheme = withResultsPalette(createTheme({
   palette: {
     mode: 'light',
     ...sharedPalette,
@@ -249,19 +318,19 @@ const lightTheme = createTheme({
     success: { main: '#0891B2' },
     background: {
       default: '#E8F6FA',
-      paper:   '#FFFFFF',
+      paper: '#FFFFFF',
       elevated: '#FFFFFF',
       heroGradient: 'linear-gradient(160deg, #E8F6FA 0%, #F0FBFF 50%, #E8F6FA 100%)',
-      hero:         'linear-gradient(160deg, #E8F6FA 0%, #F0FBFF 50%, #E8F6FA 100%)',
-      heroGlow:     'radial-gradient(circle, rgba(8,145,178,0.14) 0%, transparent 70%)',
-      heroGrid:     'rgba(8,145,178,0.07)',
-      heroStatsBg:  '#0E7490',
+      hero: 'linear-gradient(160deg, #E8F6FA 0%, #F0FBFF 50%, #E8F6FA 100%)',
+      heroGlow: 'radial-gradient(circle, rgba(8,145,178,0.14) 0%, transparent 70%)',
+      heroGrid: 'rgba(8,145,178,0.07)',
+      heroStatsBg: '#0E7490',
       heroStatsBorder: 'rgba(255,255,255,0.22)',
     },
     text: {
-      primary:   '#0C1E2A',
+      primary: '#0C1E2A',
       secondary: '#2C5A6E',
-      disabled:  '#5A8A9E',
+      disabled: '#5A8A9E',
     },
     divider: 'rgba(14,116,144,0.28)',
     // Sidebar drag handle — opaque enough in light mode to clear 3:1 against the page background
@@ -271,7 +340,7 @@ const lightTheme = createTheme({
   typography: sharedTypography,
   shape: sharedShape,
   components: sharedComponents(false),
-});
+}));
 
 function App() {
   // Read saved preference on first load, default to dark
@@ -284,11 +353,11 @@ function App() {
     mode,
     toggleColorMode: () => setMode((prev) => {
       const next = prev === 'dark' ? 'light' : 'dark';
-      try { localStorage.setItem('colorMode', next); } catch {}
+      try { localStorage.setItem('colorMode', next); } catch { }
       return next;
     }),
   }), [mode]);
-  
+
   const location = useLocation();
 
   return (
@@ -300,9 +369,9 @@ function App() {
           <div className="app-root">
             <Navigation />
             <Routes>
-              <Route path="/"         element={<Home />} />
-              <Route path="/Models"   element={<Models />} />
-              <Route path="/About"  element={<About />} />
+              <Route path="/" element={<Home />} />
+              <Route path="/Models" element={<Models />} />
+              <Route path="/About" element={<About />} />
               <Route path="/login" element={<Login />} />
               <Route path="/request-access" element={<RequestAccess />} />
               <Route path="/Analysis" element={<RequireAuth><Analysis key={location.key} /></RequireAuth>} />

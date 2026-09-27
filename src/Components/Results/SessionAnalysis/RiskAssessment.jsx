@@ -1,13 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, useTheme } from '@mui/material';
+import { Box, Typography, useTheme, alpha } from '@mui/material';
 
 const MONO = { fontFamily: 'monospace' };
-// Dark-mode swatches stay saturated/pastel (they pop against navy panels).
-// Light-mode swatches are deepened so the same labels keep 4.5:1+ text contrast on white cards.
-const LOW_DARK = '#4fd1a1', MID_DARK = '#f5c451', HIGH_DARK = '#ff7a7a';
-const LOW_LIGHT = '#0D7A54', MID_LIGHT = '#8A6100', HIGH_LIGHT = '#B23434';
-const CNN_DARK = '#5cc8f5', QML_DARK = '#c07ae0';
-const CNN_LIGHT = '#1372B0', QML_LIGHT = '#7C3AAD';
+// Colours come from the theme (App.js: riskBand, modelAccent, tint, results).
 
 const WEIGHTS = [
     { key: 'cnn', label: 'CNN score', weight: 0.6 },
@@ -15,9 +10,9 @@ const WEIGHTS = [
     { key: 'density', label: 'Density', weight: 0.15 },
 ];
 
-const bandColor = (s, isDark) => (s >= 66 ? (isDark ? HIGH_DARK : HIGH_LIGHT) : s >= 33 ? (isDark ? MID_DARK : MID_LIGHT) : (isDark ? LOW_DARK : LOW_LIGHT));
+const bandColor = (s, band) => (s >= 66 ? band.high : s >= 33 ? band.mid : band.low);
 const bandName = (s) => (s >= 66 ? 'High risk' : s >= 33 ? 'Medium risk' : 'Low risk');
-const severityColor = (s, isDark) => (s === 'Malignant' ? (isDark ? HIGH_DARK : HIGH_LIGHT) : s === 'Benign' ? (isDark ? MID_DARK : MID_LIGHT) : (isDark ? LOW_DARK : LOW_LIGHT));
+const severityColor = (s, band) => (s === 'Malignant' ? band.high : s === 'Benign' ? band.mid : band.low);
 
 function Label({ children, sx }) {
     return (
@@ -46,6 +41,7 @@ function Bar({ value, max = 100, color, track, delay = 0, height = 4 }) {
 
 /** Low / Medium / High track with a marker at `score`. Hatched when score is null. */
 function BandScale({ score, tokens, height = 12, mounted }) {
+    const { riskBand, tint } = useTheme().palette;
     const na = score === null || score === undefined;
     if (na) {
         return (
@@ -55,13 +51,13 @@ function BandScale({ score, tokens, height = 12, mounted }) {
             }} />
         );
     }
-    const c = bandColor(score, tokens.isDark);
+    const c = bandColor(score, riskBand);
     return (
         <Box sx={{ position: 'relative', height }}>
             <Box sx={{ position: 'absolute', inset: 0, display: 'flex', gap: '3px' }}>
-                <Box sx={{ flex: 33, borderRadius: '3px 0 0 3px', background: 'rgba(79,209,161,0.22)' }} />
-                <Box sx={{ flex: 33, background: 'rgba(245,196,81,0.22)' }} />
-                <Box sx={{ flex: 34, borderRadius: '0 3px 3px 0', background: 'rgba(255,122,122,0.22)' }} />
+                <Box sx={{ flex: 33, borderRadius: '3px 0 0 3px', background: alpha(tint.low, 0.22) }} />
+                <Box sx={{ flex: 33, background: alpha(tint.mid, 0.22) }} />
+                <Box sx={{ flex: 34, borderRadius: '0 3px 3px 0', background: alpha(tint.high, 0.22) }} />
             </Box>
             <Box sx={{
                 position: 'absolute', top: -5, bottom: -5, width: 3, borderRadius: 1,
@@ -78,28 +74,16 @@ function BandScale({ score, tokens, height = 12, mounted }) {
 
 export default function MammoRiskResults({ currentModel, results, sessionId }) {
     const theme = useTheme();
-    const isDark = theme.palette.mode === 'dark';
     const [mounted, setMounted] = useState(false);
 
-    const t = isDark ? {
-        isDark: true,
-        shell: '#0a1728', panel: '#08131f', card: '#0c1c2e', line: '#17304d',
-        text: '#eaf4ff', body: '#c3d8ec', muted: '#5f7fa6', dim: '#8fabc9',
-        track: '#132840', footer: '#3f5d7d',
-    } : {
-        isDark: false,
-        shell: '#EDF6F9', panel: '#DCEEF3', card: '#FFFFFF',
-        line: 'rgba(14,116,144,0.30)',
-        text: '#0C1E2A', body: '#2C5A6E',
-        muted: '#4E7180', dim: '#557788',
-        track: 'rgba(14,116,144,0.15)', footer: '#4E7180',
-    };
+    const t = theme.palette.results;
+    const { riskBand, modelAccent, tint } = theme.palette;
 
-    const LOW = isDark ? LOW_DARK : LOW_LIGHT;
-    const MID = isDark ? MID_DARK : MID_LIGHT;
-    const HIGH = isDark ? HIGH_DARK : HIGH_LIGHT;
-    const CNN_C = isDark ? CNN_DARK : CNN_LIGHT;
-    const QML_C = isDark ? QML_DARK : QML_LIGHT;
+    const LOW = riskBand.low;
+    const MID = riskBand.mid;
+    const HIGH = riskBand.high;
+    const CNN_C = modelAccent.classical;
+    const QML_C = modelAccent.quantum;
 
     const cnn = results?.resultFile?.cnn;
     const qml = results?.resultFile?.qml;
@@ -242,8 +226,8 @@ export default function MammoRiskResults({ currentModel, results, sessionId }) {
     /* ── Comparison ───────────────────────────────────────── */
     if (isBoth) {
         const rows = [
-            { k: 'Highest severity', c: C.severity, q: Q.severity, cc: severityColor(C.severity, isDark), qc: severityColor(Q.severity, isDark) },
-            { k: 'Risk level', c: C.level, q: Q.level, cc: C.malignant ? t.dim : bandColor(C.score ?? 0, isDark), qc: Q.malignant ? t.dim : bandColor(Q.score ?? 0, isDark) },
+            { k: 'Highest severity', c: C.severity, q: Q.severity, cc: severityColor(C.severity, riskBand), qc: severityColor(Q.severity, riskBand) },
+            { k: 'Risk level', c: C.level, q: Q.level, cc: C.malignant ? t.dim : bandColor(C.score ?? 0, riskBand), qc: Q.malignant ? t.dim : bandColor(Q.score ?? 0, riskBand) },
             { k: 'Highest density', c: C.density, q: Q.density, cc: t.text, qc: t.text },
             { k: 'Highest BI-RADS', c: C.birads, q: Q.birads, cc: t.text, qc: t.text },
         ];
@@ -283,7 +267,7 @@ export default function MammoRiskResults({ currentModel, results, sessionId }) {
                                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
                                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 2 }}>
                                         <Label sx={{ color: c }}>{name} risk index</Label>
-                                        <Typography sx={{ ...MONO, fontSize: 22, color: m.score === null ? t.dim : bandColor(m.score, isDark) }}>
+                                        <Typography sx={{ ...MONO, fontSize: 22, color: m.score === null ? t.dim : bandColor(m.score, riskBand) }}>
                                             {m.score === null ? 'N/A' : m.score.toFixed(2)}
                                         </Typography>
                                     </Box>
@@ -292,7 +276,7 @@ export default function MammoRiskResults({ currentModel, results, sessionId }) {
                                         <Box sx={{
                                             display: 'flex', alignItems: 'flex-start', gap: 1.25,
                                             p: '13px 15px', borderRadius: 2.5,
-                                            background: 'rgba(255,122,122,0.10)', border: `1px solid ${HIGH}55`,
+                                            background: alpha(tint.high, 0.10), border: `1px solid ${HIGH}55`,
                                         }}>
                                             <Typography sx={{ ...MONO, fontSize: 13, color: HIGH }}>!</Typography>
                                             <Typography sx={{ fontSize: 13, color: t.body, lineHeight: 1.55 }}>
@@ -300,7 +284,7 @@ export default function MammoRiskResults({ currentModel, results, sessionId }) {
                                             </Typography>
                                         </Box>
                                     ) : (
-                                        <Label sx={{ color: bandColor(m.score, isDark) }}>{bandName(m.score)}</Label>
+                                        <Label sx={{ color: bandColor(m.score, riskBand) }}>{bandName(m.score)}</Label>
                                     )}
                                 </Box>
                             </React.Fragment>
@@ -316,7 +300,7 @@ export default function MammoRiskResults({ currentModel, results, sessionId }) {
 
     /* ── Single model ─────────────────────────────────────── */
     const score = A.score;
-    const c = score === null ? t.dim : bandColor(score, isDark);
+    const c = score === null ? t.dim : bandColor(score, riskBand);
 
     return (
         <Box sx={cardSx}>
@@ -331,7 +315,7 @@ export default function MammoRiskResults({ currentModel, results, sessionId }) {
                 }}>
                     <Label sx={{ color: t.muted }}>Inputs</Label>
                     {[
-                        { k: 'Highest severity', v: A.severity, c: severityColor(A.severity, isDark) },
+                        { k: 'Highest severity', v: A.severity, c: severityColor(A.severity, riskBand) },
                         { k: 'Highest density', v: A.density, c: t.text },
                         { k: 'Highest BI-RADS', v: A.birads, c: t.text },
                     ].map(({ k, v, c: vc }) => (
@@ -376,7 +360,7 @@ export default function MammoRiskResults({ currentModel, results, sessionId }) {
 
                     <Box sx={{
                         display: 'flex', alignItems: 'flex-start', gap: 1.25, p: '14px 16px', borderRadius: 2.5,
-                        background: A.malignant ? 'rgba(255,122,122,0.10)' : t.card,
+                        background: A.malignant ? alpha(tint.high, 0.10) : t.card,
                         border: `1px solid ${A.malignant ? `${HIGH}55` : t.line}`,
                     }}>
                         <Typography sx={{ ...MONO, fontSize: 13, color: A.malignant ? HIGH : c }}>!</Typography>

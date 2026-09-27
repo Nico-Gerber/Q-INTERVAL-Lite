@@ -8,11 +8,9 @@ export default function ResultShell({ sx, children }) {
   return (
     <Box sx={{
       borderRadius: 2.5, p: { xs: 2, md: 3 },
-      background: (theme) => theme.palette.mode === 'dark' ? '#060f1c' : '#DCEEF3',
-      border: (theme) => `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(14,116,144,0.35)'}`,
-      boxShadow: (theme) => theme.palette.mode === 'dark'
-        ? '0 24px 70px rgba(0,0,0,0.45)'
-        : '0 24px 70px rgba(15,23,42,0.16)',
+      background: (theme) => theme.palette.results.frame,
+      border: (theme) => `1px solid ${theme.palette.results.frameBorder}`,
+      boxShadow: (theme) => theme.palette.results.frameShadow,
       ...sx,
     }}>
       {children}

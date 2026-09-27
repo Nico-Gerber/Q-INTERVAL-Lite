@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Box, Button, Chip, Container, Typography, Paper, IconButton,
+  Box, Button, Chip, Container, Typography, Paper,
 } from '@mui/material';
 import {
   FavoriteBorder as HeartIcon,
@@ -15,7 +15,6 @@ import {
   CalendarMonth as CalendarIcon,
   Warning as WarningIcon,
   VisibilityOff as EyeOffIcon,
-  KeyboardArrowUp as ArrowUpIcon,
   KeyboardArrowDown as ArrowDownIcon,
   Biotech as BiotechIcon,
   LocalHospital as LocalHospitalIcon,
@@ -27,6 +26,7 @@ import {
 } from '@mui/icons-material';
 import { motion, animate, AnimatePresence } from 'framer-motion';
 import NeuralCanvas from '../Components/Shared/NeuralCanvas';
+import VerticalNavigator from '../Components/Shared/VerticalNavigator';
 
 const A = {
   teal:   '#22D3EE',
@@ -538,30 +538,17 @@ const scrollToId = (id) => {
   window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - NAV_H, behavior: 'smooth' });
 };
 
-const SectionArrows = ({ current, total, onUp, onDown }) => {
-  const btnSx = {
-    width: 36, height: 36,
-    border: 'none',
-    backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#071020' : '#0E7490',
-    color: (theme) => theme.palette.mode === 'dark' ? '#22D3EE' : '#FFFFFF',
-    transition: 'all 0.2s',
-    '&:hover': {
-      backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#0D1B2E' : '#0891B2',
-      transform: 'scale(1.08)',
-    },
-  };
-  const dotActiveSx = { width: 8, height: 8, borderRadius: '50%', backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#22D3EE' : '#0E7490', transition: 'all 0.2s', cursor: 'pointer' };
-  const dotInactiveSx = { width: 5, height: 5, borderRadius: '50%', backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.28)' : 'rgba(14,116,144,0.28)', transition: 'all 0.2s', cursor: 'pointer', '&:hover': { backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(34,211,238,0.6)' : 'rgba(14,116,144,0.55)' } };
-  return (
-    <Box sx={{ position: 'fixed', right: { xs: 10, md: 20 }, top: '50%', transform: 'translateY(-50%)', zIndex: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.75 }}>
-      {current > 0 ? <IconButton onClick={onUp} size="small" sx={btnSx}><ArrowUpIcon sx={{ fontSize: 18 }} /></IconButton> : <Box sx={{ width: 36, height: 36 }} />}
-      {Array.from({ length: total }).map((_, i) => (
-        <Box key={i} onClick={() => scrollToId(SECTION_IDS[i])} sx={i === current ? dotActiveSx : dotInactiveSx} />
-      ))}
-      {current < total - 1 ? <IconButton onClick={onDown} size="small" sx={btnSx}><ArrowDownIcon sx={{ fontSize: 18 }} /></IconButton> : <Box sx={{ width: 36, height: 36 }} />}
-    </Box>
-  );
-};
+// Same homepage navigator, now rendered by the shared VerticalNavigator.
+const SectionArrows = ({ current, total, onUp, onDown }) => (
+  <VerticalNavigator
+    ariaLabel="Page sections"
+    items={SECTION_IDS.slice(0, total).map((id) => ({ label: `Go to ${id} section` }))}
+    current={current}
+    onSelect={(i) => scrollToId(SECTION_IDS[i])}
+    up={current > 0 ? { label: 'Previous section', onClick: onUp } : null}
+    down={current < total - 1 ? { label: 'Next section', onClick: onDown } : null}
+  />
+);
 
 function TechCard({ accent, stepNum, icon, title, summary, delay }) {
   const [hovered, setHovered] = useState(false);

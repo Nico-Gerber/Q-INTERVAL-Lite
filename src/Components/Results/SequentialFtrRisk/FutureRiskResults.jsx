@@ -8,14 +8,8 @@ const MODELS = [
     { id: 'Both', label: 'Comparison' },
 ];
 
-// Dark-mode swatches stay saturated/pastel (they pop against navy panels).
-// Light-mode swatches are deepened so the same labels keep 4.5:1+ text contrast on white cards.
-const LOW_DARK = '#4fd1a1', MID_DARK = '#f5c451', HIGH_DARK = '#ff7a7a';
-const LOW_LIGHT = '#0D7A54', MID_LIGHT = '#8A6100', HIGH_LIGHT = '#B23434';
-const CNN_DARK = '#5cc8f5', QML_DARK = '#c07ae0';
-const CNN_LIGHT = '#1372B0', QML_LIGHT = '#7C3AAD';
-
-const getRiskColor = (s, isDark) => (s >= 66 ? (isDark ? HIGH_DARK : HIGH_LIGHT) : s >= 33 ? (isDark ? MID_DARK : MID_LIGHT) : (isDark ? LOW_DARK : LOW_LIGHT));
+// Colours come from the theme (App.js: riskBand, modelAccent, results).
+const getRiskColor = (s, band) => (s >= 66 ? band.high : s >= 33 ? band.mid : band.low);
 const riskBand = (s) => (s >= 66 ? 'High' : s >= 33 ? 'Moderate' : 'Low');
 
 function horizonsFromYearly(yearly) {
@@ -176,28 +170,17 @@ export default function FutureRiskResults({
     height = 820,
 }) {
     const theme = useTheme();
-    const isDark = theme.palette.mode === 'dark';
     const [mounted, setMounted] = useState(false);
 
-    const t = isDark ? {
-        shell: '#0a1728', panel: '#08131f', card: '#0c1c2e', line: '#17304d',
-        selLine: '#2f7fb8', selBg: '#0f2740', text: '#eaf4ff', body: '#c3d8ec',
-        muted: '#5f7fa6', dim: '#8fabc9', track: '#132840', footer: '#3f5d7d',
-    } : {
-        shell: '#EDF6F9', panel: '#DCEEF3', card: '#FFFFFF',
-        line: 'rgba(14,116,144,0.30)',
-        selLine: '#0B5A70', selBg: 'rgba(14,116,144,0.12)',
-        text: '#0C1E2A', body: '#2C5A6E',
-        muted: '#4E7180', dim: '#557788',
-        track: 'rgba(14,116,144,0.15)', footer: '#4E7180',
-    };
+    const t = theme.palette.results;
+    const { riskBand: band, modelAccent } = theme.palette;
 
-    const LOW = isDark ? LOW_DARK : LOW_LIGHT;
-    const MID = isDark ? MID_DARK : MID_LIGHT;
-    const HIGH = isDark ? HIGH_DARK : HIGH_LIGHT;
-    const CNN_C = isDark ? CNN_DARK : CNN_LIGHT;
-    const QML_C = isDark ? QML_DARK : QML_LIGHT;
-    const riskColor = (s) => getRiskColor(s, isDark);
+    const LOW = band.low;
+    const MID = band.mid;
+    const HIGH = band.high;
+    const CNN_C = modelAccent.classical;
+    const QML_C = modelAccent.quantum;
+    const riskColor = (s) => getRiskColor(s, band);
 
     const qmlData = results?.resultFile?.qml;
     const cnnData = results?.resultFile?.cnn;
@@ -314,7 +297,7 @@ export default function FutureRiskResults({
                                         px: { xs: 1.2, sm: 1.9 }, py: 0.9, borderRadius: 1.5, cursor: 'pointer',
                                         background: sel ? t.selBg : 'transparent',
                                         transition: 'background 0.15s ease',
-                                        '&:hover': { background: sel ? t.selBg : (isDark ? 'rgba(92,200,245,0.08)' : 'rgba(14,116,144,0.08)') },
+                                        '&:hover': { background: sel ? t.selBg : t.hoverBg },
                                     }}>
                                         <Typography sx={{
                                             fontSize: 13, lineHeight: 1, whiteSpace: 'nowrap',

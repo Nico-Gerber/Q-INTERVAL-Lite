@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Box, Chip, Container, Typography, Alert, Button, Drawer, TextField, Dialog, DialogTitle, DialogContent, DialogActions, Snackbar, useTheme } from '@mui/material';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Box, Chip, Container, Typography, Alert, Button, Drawer, TextField, Dialog, DialogTitle, DialogContent, DialogActions, Snackbar, useTheme, alpha } from '@mui/material';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Sidebar, Menu, MenuItem, SubMenu } from 'react-pro-sidebar';
 import exportSessionPDF from '../Components/Results/Shared/ExportSession';
@@ -9,6 +9,7 @@ import DownloadIcon from '@mui/icons-material/Download';
 
 import AnalysisStepper from '../Components/AnalysisTool/AnalysisStepper';
 import ModeSelect from '../Components/AnalysisTool/AnalysisModeSelect';
+import ResultFocusNavigator, { focusElement } from '../Components/AnalysisTool/ResultFocusNavigator';
 
 
 import ClassificationResults from '../Components/Results/SessionAnalysis/ClassificationResults';
@@ -68,7 +69,9 @@ export default function Analysis() {
 
   const { user } = useAuth();
   const theme = useTheme();
-  const isDark = theme.palette.mode === 'dark';
+  // Result-area colours (frame, session bar, status banner, export buttons) — App.js resultsPalette.
+  const rp = theme.palette.results;
+  const { reportStatus, tint } = theme.palette;
 
   const [files, setFiles] = useState([]);
   const [preview, setPreview] = useState(null);
@@ -180,10 +183,10 @@ export default function Analysis() {
   const reportVerified = verifiedViewCount === 4;
   const bannerState = verifiedViewCount === 0 ? 'pending' : reportVerified ? 'verified' : 'partial';
   const bannerColor = bannerState === 'verified'
-    ? (isDark ? '#4fd1a1' : '#0D7A54')
+    ? reportStatus.verified
     : bannerState === 'partial'
-      ? (isDark ? '#5cc8f5' : '#1372B0')
-      : (isDark ? '#f5c451' : '#8A6100');
+      ? reportStatus.partial
+      : reportStatus.pending;
   const bannerText = bannerState === 'verified'
     ? 'CLINICIAN-VERIFIED REPORT'
     : bannerState === 'partial'
@@ -291,6 +294,33 @@ export default function Analysis() {
     if (activeStep === 0) return;
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [activeStep]);
+
+  // Result components the focus navigator can bring into view.
+  const classificationRef = useRef(null);
+  const mammoRiskRef = useRef(null);
+  const futureRiskRef = useRef(null);
+  const focusTargets = useMemo(() => (analysisMode === 'future-risk'
+    ? [{ ref: futureRiskRef, label: 'Focus future risk results' }]
+    : [
+      { ref: classificationRef, label: 'Focus classification results' },
+      { ref: mammoRiskRef, label: 'Focus mammogram risk results' },
+    ]), [analysisMode]);
+
+  // Bring the main result into view once per completed analysis. `result` is
+  // only set after both models succeed (failures return to the upload step with
+  // it still null), so errors never trigger this. Keyed on the result object so
+  // later re-renders never pull the user back.
+  const autoFocusedResult = useRef(null);
+  useEffect(() => {
+    if (activeStep !== 2 || loading || !result || autoFocusedResult.current === result) return;
+    const target = focusTargets[0].ref;
+    const id = setTimeout(() => {
+      if (!target.current) return; // result component didn't render — nothing to focus
+      autoFocusedResult.current = result;
+      focusElement(target.current);
+    }, 350); // let the results' mount transition settle so the measured size is final
+    return () => clearTimeout(id);
+  }, [activeStep, loading, result, focusTargets]);
 
 
 
@@ -961,11 +991,9 @@ export default function Analysis() {
                           <Container maxWidth="xl">
                             <Box sx={{
                               borderRadius: 2.5, p: { xs: 1.25, sm: 2, md: 3 },
-                              background: (theme) => theme.palette.mode === 'dark' ? '#060f1c' : '#DCEEF3',
-                              border: (theme) => `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(14,116,144,0.35)'}`,
-                              boxShadow: (theme) => theme.palette.mode === 'dark'
-                                ? '0 24px 70px rgba(0,0,0,0.45)'
-                                : '0 24px 70px rgba(15,23,42,0.16)',
+                              background: rp.frame,
+                              border: `1px solid ${rp.frameBorder}`,
+                              boxShadow: rp.frameShadow,
                             }}>
                               <Box sx={{
                                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.25,
@@ -985,9 +1013,9 @@ export default function Analysis() {
                               <Box sx={{
                                 display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5,
                                 mb: 1.5, px: 2, py: 1.25, borderRadius: 1,
-                                background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(14,116,144,0.10)',
+                                background: rp.bar,
                               }}>
-                                <Typography sx={{ fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.06em', color: isDark ? '#F0F9FF' : '#0C1E2A', overflowWrap: 'anywhere' }}>
+                                <Typography sx={{ fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.06em', color: theme.palette.text.primary, overflowWrap: 'anywhere' }}>
                                   SESSION ID: {sessionId}
                                 </Typography>
 
@@ -1004,12 +1032,12 @@ export default function Analysis() {
                                       onClick={() => handleDownloadPdfClick(key)}
                                       sx={{
                                         fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5,
-                                        color: reportVerified ? (isDark ? '#F0F9FF' : '#0C1E2A') : (isDark ? 'rgba(240,249,255,0.4)' : 'rgba(12,30,42,0.35)'),
-                                        borderColor: reportVerified ? (isDark ? 'rgba(240,249,255,0.35)' : 'rgba(14,116,144,0.5)') : (isDark ? 'rgba(240,249,255,0.15)' : 'rgba(14,116,144,0.2)'),
+                                        color: reportVerified ? (theme.palette.text.primary) : (rp.buttonDisabledText),
+                                        borderColor: reportVerified ? (rp.buttonBorder) : (rp.buttonDisabledBorder),
                                         cursor: reportVerified ? 'pointer' : 'not-allowed',
                                         '&:hover': {
-                                          borderColor: reportVerified ? (isDark ? '#F0F9FF' : '#0E7490') : (isDark ? 'rgba(240,249,255,0.15)' : 'rgba(14,116,144,0.2)'),
-                                          backgroundColor: reportVerified ? (isDark ? 'rgba(240,249,255,0.08)' : 'rgba(14,116,144,0.08)') : 'transparent',
+                                          borderColor: reportVerified ? (rp.buttonHoverBorder) : (rp.buttonDisabledBorder),
+                                          backgroundColor: reportVerified ? (rp.buttonHoverBg) : 'transparent',
                                         },
                                       }}
                                     >
@@ -1020,7 +1048,7 @@ export default function Analysis() {
                                   {sessionFinalized ? (
                                     <Button
                                       size="small" variant="outlined" disabled
-                                      sx={{ fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5, color: isDark ? '#4fd1a1' : '#0D7A54', borderColor: isDark ? 'rgba(79,209,161,0.5)' : 'rgba(13,122,84,0.5)' }}
+                                      sx={{ fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5, color: reportStatus.verified, borderColor: alpha(reportStatus.verified, 0.5) }}
                                     >
                                       Published to Patient
                                     </Button>
@@ -1031,12 +1059,12 @@ export default function Analysis() {
                                       onClick={handleFinalizeSession}
                                       sx={{
                                         fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5,
-                                        color: reportVerified ? (isDark ? '#F0F9FF' : '#0C1E2A') : (isDark ? 'rgba(240,249,255,0.4)' : 'rgba(12,30,42,0.35)'),
-                                        borderColor: reportVerified ? (isDark ? 'rgba(240,249,255,0.35)' : 'rgba(14,116,144,0.5)') : (isDark ? 'rgba(240,249,255,0.15)' : 'rgba(14,116,144,0.2)'),
+                                        color: reportVerified ? (theme.palette.text.primary) : (rp.buttonDisabledText),
+                                        borderColor: reportVerified ? (rp.buttonBorder) : (rp.buttonDisabledBorder),
                                         cursor: reportVerified ? 'pointer' : 'not-allowed',
                                         '&:hover': {
-                                          borderColor: reportVerified ? (isDark ? '#F0F9FF' : '#0E7490') : (isDark ? 'rgba(240,249,255,0.15)' : 'rgba(14,116,144,0.2)'),
-                                          backgroundColor: reportVerified ? (isDark ? 'rgba(240,249,255,0.08)' : 'rgba(14,116,144,0.08)') : 'transparent',
+                                          borderColor: reportVerified ? (rp.buttonHoverBorder) : (rp.buttonDisabledBorder),
+                                          backgroundColor: reportVerified ? (rp.buttonHoverBg) : 'transparent',
                                         },
                                       }}
                                     >
@@ -1051,14 +1079,14 @@ export default function Analysis() {
                                 <Box sx={{
                                   display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap',
                                   mb: 1.5, px: 2, py: 1.25, borderRadius: 1,
-                                  border: '1px solid rgba(79,209,161,0.35)',
-                                  background: 'rgba(79,209,161,0.08)',
+                                  border: `1px solid ${alpha(tint.low, 0.35)}`,
+                                  background: alpha(tint.low, 0.08),
                                 }}>
-                                  <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: isDark ? '#4fd1a1' : '#0D7A54', whiteSpace: 'nowrap' }}>
+                                  <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: reportStatus.verified, whiteSpace: 'nowrap' }}>
                                     Patient link:
                                   </Typography>
                                   <Typography sx={{
-                                    fontFamily: 'monospace', fontSize: '0.78rem', color: isDark ? '#CBD8E8' : '#2C5A6E',
+                                    fontFamily: 'monospace', fontSize: '0.78rem', color: rp.barText,
                                     wordBreak: 'break-all', flex: 1, minWidth: 0,
                                   }}>
                                     {`${window.location.origin}/report/${accessToken}`}
@@ -1066,7 +1094,7 @@ export default function Analysis() {
                                   <Button
                                     size="small" variant="outlined"
                                     onClick={() => navigator.clipboard?.writeText(`${window.location.origin}/report/${accessToken}`)}
-                                    sx={{ fontSize: '0.7rem', fontWeight: 700, borderRadius: 1.5, color: isDark ? '#4fd1a1' : '#0D7A54', borderColor: isDark ? 'rgba(79,209,161,0.5)' : 'rgba(13,122,84,0.5)' }}
+                                    sx={{ fontSize: '0.7rem', fontWeight: 700, borderRadius: 1.5, color: reportStatus.verified, borderColor: alpha(reportStatus.verified, 0.5) }}
                                   >
                                     Copy
                                   </Button>
@@ -1085,28 +1113,32 @@ export default function Analysis() {
                                   Verify all 4 views before exporting — {verifiedViewCount}/4 reviewed so far
                                 </Alert>
                               </Snackbar>
-                              <ClassificationResults
-                                analyisedImage={preview} reset={handleReset} sessionId={sessionId}
-                                currentModel={modelMode} results={result} onModelSelect={setModelMode}
-                                viewData={viewData} LLMloading={VLMloading} audience={audience}
-                                setAudience={setAudience} onGenerateExplanation={handleExplainView}
-                                onOpenFullExplanation={() => setCollapsed(false)}
-                                verifications={verifications} onVerifyView={handleVerifyView} setSelectedView={setSelectedView}
-                              />
-                              <MammoRiskResults results={result} sessionId={sessionId}
-                                reset={handleReset} currentModel={modelMode} />
+                              <Box ref={classificationRef}>
+                                <ClassificationResults
+                                  analyisedImage={preview} reset={handleReset} sessionId={sessionId}
+                                  currentModel={modelMode} results={result} onModelSelect={setModelMode}
+                                  viewData={viewData} LLMloading={VLMloading} audience={audience}
+                                  setAudience={setAudience} onGenerateExplanation={handleExplainView}
+                                  onOpenFullExplanation={() => setCollapsed(false)}
+                                  verifications={verifications} onVerifyView={handleVerifyView} setSelectedView={setSelectedView}
+                                />
+                              </Box>
+                              <Box ref={mammoRiskRef}>
+                                <MammoRiskResults results={result} sessionId={sessionId}
+                                  reset={handleReset} currentModel={modelMode} />
+                              </Box>
 
                               <Box sx={{
                                 display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5,
                                 mt: 1.5, px: 2, py: 1.25, borderRadius: 1,
-                                background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(14,116,144,0.10)',
+                                background: rp.bar,
                               }}>
-                                <Typography sx={{ fontSize: '0.85rem', color: isDark ? '#CBD8E8' : '#2C5A6E' }}>
+                                <Typography sx={{ fontSize: '0.85rem', color: rp.barText }}>
                                   Done reviewing? Start a new session to analyse another set of scans.
                                 </Typography>
                                 <Button
                                   size="small" variant="outlined" onClick={handleReset}
-                                  sx={{ fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5, color: isDark ? '#F0F9FF' : '#0C1E2A', borderColor: isDark ? 'rgba(240,249,255,0.35)' : 'rgba(14,116,144,0.5)', '&:hover': { borderColor: isDark ? '#F0F9FF' : '#0E7490', backgroundColor: isDark ? 'rgba(240,249,255,0.08)' : 'rgba(14,116,144,0.08)' } }}
+                                  sx={{ fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5, color: theme.palette.text.primary, borderColor: rp.buttonBorder, '&:hover': { borderColor: rp.buttonHoverBorder, backgroundColor: rp.buttonHoverBg } }}
                                 >
                                   New Session
                                 </Button>
@@ -1124,22 +1156,20 @@ export default function Analysis() {
                           <Container maxWidth="xl">
                             <Box sx={{
                               borderRadius: 2.5, p: { xs: 1.25, sm: 2, md: 3 },
-                              background: (theme) => theme.palette.mode === 'dark' ? '#060f1c' : '#DCEEF3',
-                              border: (theme) => `1px solid ${theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(14,116,144,0.35)'}`,
-                              boxShadow: (theme) => theme.palette.mode === 'dark'
-                                ? '0 24px 70px rgba(0,0,0,0.45)'
-                                : '0 24px 70px rgba(15,23,42,0.16)',
+                              background: rp.frame,
+                              border: `1px solid ${rp.frameBorder}`,
+                              boxShadow: rp.frameShadow,
                             }}>
                               <Box sx={{
                                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.25,
                                 mb: 1.5, px: { xs: 1.5, sm: 3 }, py: 1.75, borderRadius: 1.5,
-                                border: '1px solid rgba(245,196,81,0.4)',
-                                background: 'rgba(245,196,81,0.08)',
+                                border: `1px solid ${alpha(tint.mid, 0.4)}`,
+                                background: alpha(tint.mid, 0.08),
                               }}>
-                                <Box sx={{ width: 8, height: 8, borderRadius: '50%', background: isDark ? '#f5c451' : '#8A6100', flexShrink: 0 }} />
+                                <Box sx={{ width: 8, height: 8, borderRadius: '50%', background: reportStatus.pending, flexShrink: 0 }} />
                                 <Typography sx={{
                                   fontFamily: 'monospace', fontSize: '0.95rem', fontWeight: 800, letterSpacing: '0.04em',
-                                  color: isDark ? '#f5c451' : '#8A6100', textAlign: 'center',
+                                  color: reportStatus.pending, textAlign: 'center',
                                 }}>
                                   AI-GENERATED — AWAITING CLINICAL VERIFICATION
                                 </Typography>
@@ -1148,38 +1178,40 @@ export default function Analysis() {
                               <Box sx={{
                                 display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5,
                                 mb: 1.5, px: 2, py: 1.25, borderRadius: 1,
-                                background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(14,116,144,0.10)',
+                                background: rp.bar,
                               }}>
-                                <Typography sx={{ fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.06em', color: isDark ? '#F0F9FF' : '#0C1E2A', overflowWrap: 'anywhere' }}>
+                                <Typography sx={{ fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.06em', color: theme.palette.text.primary, overflowWrap: 'anywhere' }}>
                                   SESSION ID: {sessionId}
                                 </Typography>
                                 <Button
                                   size="small" variant="outlined" startIcon={<DownloadIcon sx={{ fontSize: 16 }} />}
                                   onClick={handleDownloadPdfClick}
-                                  sx={{ fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5, color: isDark ? '#F0F9FF' : '#0C1E2A', borderColor: isDark ? 'rgba(240,249,255,0.35)' : 'rgba(14,116,144,0.5)', '&:hover': { borderColor: isDark ? '#F0F9FF' : '#0E7490', backgroundColor: isDark ? 'rgba(240,249,255,0.08)' : 'rgba(14,116,144,0.08)' } }}
+                                  sx={{ fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5, color: theme.palette.text.primary, borderColor: rp.buttonBorder, '&:hover': { borderColor: rp.buttonHoverBorder, backgroundColor: rp.buttonHoverBg } }}
                                 >
                                   Download PDF
                                 </Button>
                               </Box>
-                              <FutureRiskResults
-                                analyisedImage={preview} reset={handleReset} sessionId={sessionId}
-                                currentModel={modelMode} results={result}
-                                uploadedFiles={examFiles}
-                                onModelSelect={setModelMode}
-                                onOpenFullExplanation={() => setCollapsed(false)}
-                              />
+                              <Box ref={futureRiskRef}>
+                                <FutureRiskResults
+                                  analyisedImage={preview} reset={handleReset} sessionId={sessionId}
+                                  currentModel={modelMode} results={result}
+                                  uploadedFiles={examFiles}
+                                  onModelSelect={setModelMode}
+                                  onOpenFullExplanation={() => setCollapsed(false)}
+                                />
+                              </Box>
 
                               <Box sx={{
                                 display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5,
                                 mt: 1.5, px: 2, py: 1.25, borderRadius: 1,
-                                background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(14,116,144,0.10)',
+                                background: rp.bar,
                               }}>
-                                <Typography sx={{ fontSize: '0.85rem', color: isDark ? '#CBD8E8' : '#2C5A6E' }}>
+                                <Typography sx={{ fontSize: '0.85rem', color: rp.barText }}>
                                   Done reviewing? Start a new session to analyse another set of scans.
                                 </Typography>
                                 <Button
                                   size="small" variant="outlined" onClick={handleReset}
-                                  sx={{ fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5, color: isDark ? '#F0F9FF' : '#0C1E2A', borderColor: isDark ? 'rgba(240,249,255,0.35)' : 'rgba(14,116,144,0.5)', '&:hover': { borderColor: isDark ? '#F0F9FF' : '#0E7490', backgroundColor: isDark ? 'rgba(240,249,255,0.08)' : 'rgba(14,116,144,0.08)' } }}
+                                  sx={{ fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5, color: theme.palette.text.primary, borderColor: rp.buttonBorder, '&:hover': { borderColor: rp.buttonHoverBorder, backgroundColor: rp.buttonHoverBg } }}
                                 >
                                   New Session
                                 </Button>
@@ -1200,6 +1232,13 @@ export default function Analysis() {
       {activeStep === 2 && !loading && result &&
         (analysisMode === 'classification' || analysisMode === 'future-risk') && (
           <>
+            {/* Result focus navigator — left edge, mirroring the homepage navigator's
+                right-edge offsets, so it stays clear of the AI toggle and sidebar. */}
+            <ResultFocusNavigator
+              targets={focusTargets}
+              sx={{ right: 'auto', left: { xs: 10, md: 20 }, zIndex: 30 }}
+            />
+
             {/* Floating Toggle — "AI" by default, expands on hover to reveal full label */}
             <Box
               sx={{

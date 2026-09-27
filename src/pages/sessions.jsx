@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   Box, Container, Typography, Table, TableHead, TableRow, TableCell, TableBody, TableContainer,
   Chip, Button, CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions, IconButton,
-  Select, MenuItem, TextField, InputAdornment, Divider, useTheme,
+  Select, MenuItem, TextField, InputAdornment, Divider, useTheme, alpha,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
@@ -20,25 +20,21 @@ import ResultShell from '../Components/Shared/ResultShell';
 
 const VIEWS = ['L-CC', 'L-MLO', 'R-CC', 'R-MLO'];
 const RESULTS = ['Malignant', 'Benign', 'Normal'];
-const MC_DARK = '#FF6A4D', BC_DARK = '#E3A63C', NC_DARK = '#2FBFA8';
-const MC_LIGHT = '#C43F23', BC_LIGHT = '#8F6300', NC_LIGHT = '#0E7A6C';
-const getColor = (r, isDark) => (
-  r === 'Malignant' ? (isDark ? MC_DARK : MC_LIGHT)
-    : r === 'Benign' ? (isDark ? BC_DARK : BC_LIGHT)
-      : (isDark ? NC_DARK : NC_LIGHT)
-);
+// Colours come from the theme (App.js: verdict, results, review, reportStatus).
+const getColor = (r, verdict) => (r === 'Malignant' ? verdict.malignant : r === 'Benign' ? verdict.benign : verdict.normal);
 
 export default function Sessions() {
   const { user } = useAuth();
   const theme = useTheme();
-  const isDark = theme.palette.mode === 'dark';
-  const OVERRIDE_GLOW = isDark ? '#FFB020' : '#8A6100';
+  const t = theme.palette.results;
+  const { verdict, review, reportStatus, modelAccent, tint } = theme.palette;
+  const OVERRIDE_GLOW = review.override;
   // Dialog surface matches the "shell" used elsewhere in the results flow
   // (see ResultShell/ClassificationResults) rather than the app's default Paper.
   const DIALOG_SX = {
-    background: isDark ? '#0a1728' : '#FFFFFF',
-    border: `1px solid ${isDark ? '#17304d' : 'rgba(14,116,144,0.7)'}`,
-    color: isDark ? '#F0F9FF' : '#0C1E2A',
+    background: t.dialogBg,
+    border: `1px solid ${t.dialogBorder}`,
+    color: theme.palette.text.primary,
   };
   const [sessions, setSessions] = useState(null); // null = loading
   const [detail, setDetail] = useState(null); // { session, rows, risk } | null
@@ -225,7 +221,7 @@ export default function Sessions() {
           <ResultShell sx={{ p: { xs: 2, md: 2.5 }, pb: { xs: 3, md: 3.5 } }}>
             <Box sx={{
               display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'center',
-              pb: 2, mb: 2, borderBottom: isDark ? '1px solid #17304d' : '1px solid rgba(14,116,144,0.30)',
+              pb: 2, mb: 2, borderBottom: `1px solid ${t.line}`,
             }}>
               <TextField
                 size="small"
@@ -234,17 +230,17 @@ export default function Sessions() {
                 onChange={(e) => setSearch(e.target.value)}
                 sx={{
                   flex: 1, minWidth: 220,
-                  '& .MuiOutlinedInput-root': { color: isDark ? '#eaf4ff' : '#0C1E2A', background: isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF', fontSize: '0.82rem' },
-                  '& fieldset': { borderColor: isDark ? '#1f3a5c' : 'rgba(14,116,144,0.40)' },
-                  '&:hover fieldset': { borderColor: isDark ? '#2d4a6b !important' : 'rgba(14,116,144,0.55) !important' },
+                  '& .MuiOutlinedInput-root': { color: t.text, background: t.inputBg, fontSize: '0.82rem' },
+                  '& fieldset': { borderColor: t.lineStrong },
+                  '&:hover fieldset': { borderColor: `${t.lineHover} !important` },
                 }}
-                InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon sx={{ fontSize: 16, color: isDark ? '#5f7fa6' : '#557788' }} /></InputAdornment> }}
+                InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon sx={{ fontSize: 16, color: t.caption }} /></InputAdornment> }}
               />
               <Select
                 size="small"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                sx={{ minWidth: 150, fontSize: '0.82rem', color: isDark ? '#eaf4ff' : '#0C1E2A', background: isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF', '.MuiOutlinedInput-notchedOutline': { borderColor: isDark ? '#1f3a5c' : 'rgba(14,116,144,0.40)' } }}
+                sx={{ minWidth: 150, fontSize: '0.82rem', color: t.text, background: t.inputBg, '.MuiOutlinedInput-notchedOutline': { borderColor: t.lineStrong } }}
                 MenuProps={{ PaperProps: { sx: { fontSize: '0.82rem' } } }}
               >
                 <MenuItem value="all" sx={{ fontSize: '0.82rem' }}>All statuses</MenuItem>
@@ -256,14 +252,14 @@ export default function Sessions() {
                 size="small"
                 startIcon={sortNewestFirst ? <ArrowDownwardIcon sx={{ fontSize: 14 }} /> : <ArrowUpwardIcon sx={{ fontSize: 14 }} />}
                 onClick={() => setSortNewestFirst((v) => !v)}
-                sx={{ color: isDark ? '#8fabc9' : '#4E7180', border: isDark ? '1px solid #1f3a5c' : '1px solid rgba(14,116,144,0.40)', px: 1.5, fontSize: '0.8rem', background: isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF' }}
+                sx={{ color: t.label, border: `1px solid ${t.lineStrong}`, px: 1.5, fontSize: '0.8rem', background: t.inputBg }}
               >
                 {sortNewestFirst ? 'Newest first' : 'Oldest first'}
               </Button>
             </Box>
 
             {visibleSessions.length === 0 ? (
-              <Typography sx={{ color: isDark ? '#8fabc9' : '#4E7180', fontSize: '0.9rem', p: 2 }}>
+              <Typography sx={{ color: t.label, fontSize: '0.9rem', p: 2 }}>
                 No sessions match your search or filter.
               </Typography>
             ) : (
@@ -271,27 +267,27 @@ export default function Sessions() {
             <Table size="small" sx={{ minWidth: 640 }}>
               <TableHead>
                 <TableRow>
-                  <TableCell sx={{ py: 1.5, color: isDark ? '#8fabc9' : '#4E7180', borderBottom: isDark ? '2px solid #1f3a5c' : '2px solid rgba(14,116,144,0.40)', whiteSpace: 'nowrap' }}>Session</TableCell>
-                  <TableCell sx={{ py: 1.5, color: isDark ? '#8fabc9' : '#4E7180', borderBottom: isDark ? '2px solid #1f3a5c' : '2px solid rgba(14,116,144,0.40)', whiteSpace: 'nowrap' }}>Date</TableCell>
-                  <TableCell sx={{ py: 1.5, color: isDark ? '#8fabc9' : '#4E7180', borderBottom: isDark ? '2px solid #1f3a5c' : '2px solid rgba(14,116,144,0.40)', whiteSpace: 'nowrap' }}>Status</TableCell>
-                  <TableCell sx={{ py: 1.5, color: isDark ? '#8fabc9' : '#4E7180', borderBottom: isDark ? '2px solid #1f3a5c' : '2px solid rgba(14,116,144,0.40)', whiteSpace: 'nowrap' }}>Actions</TableCell>
+                  <TableCell sx={{ py: 1.5, color: t.label, borderBottom: `2px solid ${t.lineStrong}`, whiteSpace: 'nowrap' }}>Session</TableCell>
+                  <TableCell sx={{ py: 1.5, color: t.label, borderBottom: `2px solid ${t.lineStrong}`, whiteSpace: 'nowrap' }}>Date</TableCell>
+                  <TableCell sx={{ py: 1.5, color: t.label, borderBottom: `2px solid ${t.lineStrong}`, whiteSpace: 'nowrap' }}>Status</TableCell>
+                  <TableCell sx={{ py: 1.5, color: t.label, borderBottom: `2px solid ${t.lineStrong}`, whiteSpace: 'nowrap' }}>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {visibleSessions.map((s) => (
                   <TableRow key={s.id} hover>
-                    <TableCell sx={{ py: 2, fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 700, color: isDark ? '#eaf4ff' : '#0C1E2A', borderColor: isDark ? '#1f3a5c' : 'rgba(14,116,144,0.40)', whiteSpace: 'nowrap' }}>{s.session_code}</TableCell>
-                    <TableCell sx={{ py: 2, fontSize: '0.85rem', color: isDark ? '#c3d8ec' : '#2C5A6E', borderColor: isDark ? '#1f3a5c' : 'rgba(14,116,144,0.40)', whiteSpace: 'nowrap' }}>{new Date(s.created_at).toLocaleString()}</TableCell>
-                    <TableCell sx={{ py: 2, borderColor: isDark ? '#1f3a5c' : 'rgba(14,116,144,0.40)' }}>
+                    <TableCell sx={{ py: 2, fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 700, color: t.text, borderColor: t.lineStrong, whiteSpace: 'nowrap' }}>{s.session_code}</TableCell>
+                    <TableCell sx={{ py: 2, fontSize: '0.85rem', color: t.body, borderColor: t.lineStrong, whiteSpace: 'nowrap' }}>{new Date(s.created_at).toLocaleString()}</TableCell>
+                    <TableCell sx={{ py: 2, borderColor: t.lineStrong }}>
                       {s.verified ? (
                         <Chip
                           size="small" label="Published" variant="outlined"
-                          sx={{ fontSize: '0.7rem', fontWeight: 700, color: isDark ? '#4fd1a1' : '#0D7A54', borderColor: 'rgba(79,209,161,0.5)', background: 'rgba(79,209,161,0.1)' }}
+                          sx={{ fontSize: '0.7rem', fontWeight: 700, color: reportStatus.verified, borderColor: alpha(tint.low, 0.5), background: alpha(tint.low, 0.1) }}
                         />
                       ) : s.reviewedCount === 0 ? (
                         <Chip
                           size="small" label="Not reviewed" variant="outlined"
-                          sx={{ fontSize: '0.7rem', fontWeight: 700, color: isDark ? '#5f7fa6' : '#557788', borderColor: isDark ? '#17304d' : 'rgba(14,116,144,0.30)', background: 'transparent' }}
+                          sx={{ fontSize: '0.7rem', fontWeight: 700, color: t.caption, borderColor: t.line, background: 'transparent' }}
                         />
                       ) : (
                         <Chip
@@ -300,26 +296,26 @@ export default function Sessions() {
                         />
                       )}
                     </TableCell>
-                    <TableCell sx={{ py: 2, borderColor: isDark ? '#1f3a5c' : 'rgba(14,116,144,0.40)', whiteSpace: 'nowrap' }}>
+                    <TableCell sx={{ py: 2, borderColor: t.lineStrong, whiteSpace: 'nowrap' }}>
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <Button
                           size="small" startIcon={<VisibilityIcon sx={{ fontSize: 15 }} />} onClick={() => openDetail(s)}
-                          sx={{ color: isDark ? '#5cc8f5' : '#1372B0', minWidth: 84, justifyContent: 'flex-start' }}
+                          sx={{ color: modelAccent.classical, minWidth: 84, justifyContent: 'flex-start' }}
                         >
                           View
                         </Button>
-                        <Divider orientation="vertical" flexItem sx={{ borderColor: isDark ? '#1f3a5c' : 'rgba(14,116,144,0.40)', mx: 0.5, my: 0.5 }} />
+                        <Divider orientation="vertical" flexItem sx={{ borderColor: t.lineStrong, mx: 0.5, my: 0.5 }} />
                         {s.verified ? (
                           <Button
                             size="small" startIcon={<IosShareIcon sx={{ fontSize: 14 }} />} onClick={() => { setShareSession(s); setCopied(false); }}
-                            sx={{ color: isDark ? '#4fd1a1' : '#0D7A54', minWidth: 84, justifyContent: 'flex-start' }}
+                            sx={{ color: reportStatus.verified, minWidth: 84, justifyContent: 'flex-start' }}
                           >
                             Share
                           </Button>
                         ) : (
                           <Button
                             size="small" startIcon={<DeleteOutlineIcon sx={{ fontSize: 15 }} />} onClick={() => setPendingDelete(s)}
-                            sx={{ color: isDark ? '#8fabc9' : '#4E7180', minWidth: 84, justifyContent: 'flex-start' }}
+                            sx={{ color: t.label, minWidth: 84, justifyContent: 'flex-start' }}
                           >
                             Delete
                           </Button>
@@ -342,44 +338,44 @@ export default function Sessions() {
             <Typography sx={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '0.95rem' }}>
               {detail?.session?.session_code}
             </Typography>
-            <Typography sx={{ fontSize: '0.78rem', color: isDark ? '#8fabc9' : '#4E7180' }}>
+            <Typography sx={{ fontSize: '0.78rem', color: t.label }}>
               {detail?.session?.verified
                 ? `Published ${new Date(detail.session.verified_at).toLocaleString()}`
                 : `Not published · ${(detail?.rows ?? []).filter((r) => r.reviewed).length}/4 reviewed`}
             </Typography>
           </Box>
-          <IconButton onClick={() => setDetail(null)} size="small" sx={{ color: isDark ? '#8fabc9' : '#4E7180' }}><CloseIcon fontSize="small" /></IconButton>
+          <IconButton onClick={() => setDetail(null)} size="small" sx={{ color: t.label }}><CloseIcon fontSize="small" /></IconButton>
         </DialogTitle>
-        <DialogContent dividers sx={{ borderColor: isDark ? '#17304d' : 'rgba(14,116,144,0.30)' }}>
+        <DialogContent dividers sx={{ borderColor: t.line }}>
           {detailLoading ? (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 2 }}>
               <CircularProgress size={18} />
-              <Typography sx={{ color: isDark ? '#8fabc9' : '#4E7180', fontSize: '0.85rem' }}>Loading…</Typography>
+              <Typography sx={{ color: t.label, fontSize: '0.85rem' }}>Loading…</Typography>
             </Box>
           ) : (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
               <Box sx={{
                 display: 'flex', gap: 1.25, alignItems: 'flex-start',
-                p: 1.5, borderRadius: 1.5, border: '1px solid rgba(251,191,36,0.4)', background: 'rgba(251,191,36,0.08)',
+                p: 1.5, borderRadius: 1.5, border: `1px solid ${alpha(tint.caution, 0.4)}`, background: alpha(tint.caution, 0.08),
               }}>
-                <InfoOutlinedIcon sx={{ fontSize: 18, color: isDark ? '#FBBF24' : '#8A6100', flexShrink: 0, mt: 0.15 }} />
-                <Typography sx={{ fontSize: '0.76rem', color: isDark ? '#FDE68A' : '#6B4E00', lineHeight: 1.5 }}>
+                <InfoOutlinedIcon sx={{ fontSize: 18, color: t.cautionIcon, flexShrink: 0, mt: 0.15 }} />
+                <Typography sx={{ fontSize: '0.76rem', color: t.cautionText, lineHeight: 1.5 }}>
                   Mammogram images aren't retained after analysis, so they're not shown here either — review is
                   based on the recorded AI output and confidence only.
                 </Typography>
               </Box>
 
               <Box>
-                <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color: isDark ? '#8fabc9' : '#4E7180', letterSpacing: '0.08em', mb: 1.5 }}>
+                <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color: t.label, letterSpacing: '0.08em', mb: 1.5 }}>
                   PER-VIEW RESULTS
                 </Typography>
                 <Table size="small">
                   <TableHead>
                     <TableRow>
-                      <TableCell sx={{ py: 1.5, color: isDark ? '#8fabc9' : '#4E7180', borderColor: isDark ? '#17304d' : 'rgba(14,116,144,0.30)' }}>View</TableCell>
-                      <TableCell sx={{ py: 1.5, color: isDark ? '#8fabc9' : '#4E7180', borderColor: isDark ? '#17304d' : 'rgba(14,116,144,0.30)' }}>Classical AI</TableCell>
-                      <TableCell sx={{ py: 1.5, color: isDark ? '#8fabc9' : '#4E7180', borderColor: isDark ? '#17304d' : 'rgba(14,116,144,0.30)' }}>Quantum AI</TableCell>
-                      <TableCell sx={{ py: 1.5, color: isDark ? '#8fabc9' : '#4E7180', borderColor: isDark ? '#17304d' : 'rgba(14,116,144,0.30)' }}>Verified</TableCell>
+                      <TableCell sx={{ py: 1.5, color: t.label, borderColor: t.line }}>View</TableCell>
+                      <TableCell sx={{ py: 1.5, color: t.label, borderColor: t.line }}>Classical AI</TableCell>
+                      <TableCell sx={{ py: 1.5, color: t.label, borderColor: t.line }}>Quantum AI</TableCell>
+                      <TableCell sx={{ py: 1.5, color: t.label, borderColor: t.line }}>Verified</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -391,10 +387,10 @@ export default function Sessions() {
                           boxShadow: `inset 3px 0 0 0 ${OVERRIDE_GLOW}`,
                         } : undefined}
                       >
-                        <TableCell sx={{ py: 2, fontWeight: 600, color: isDark ? '#eaf4ff' : '#0C1E2A', borderColor: isDark ? '#17304d' : 'rgba(14,116,144,0.30)' }}>{r.view}</TableCell>
-                        <TableCell sx={{ py: 2, color: getColor(r.classical?.ai_result, isDark), borderColor: isDark ? '#17304d' : 'rgba(14,116,144,0.30)' }}>{r.classical?.ai_result ?? '—'}</TableCell>
-                        <TableCell sx={{ py: 2, color: getColor(r.quantum?.ai_result, isDark), borderColor: isDark ? '#17304d' : 'rgba(14,116,144,0.30)' }}>{r.quantum?.ai_result ?? '—'}</TableCell>
-                        <TableCell sx={{ py: 1, borderColor: isDark ? '#17304d' : 'rgba(14,116,144,0.30)' }}>
+                        <TableCell sx={{ py: 2, fontWeight: 600, color: t.text, borderColor: t.line }}>{r.view}</TableCell>
+                        <TableCell sx={{ py: 2, color: getColor(r.classical?.ai_result, verdict), borderColor: t.line }}>{r.classical?.ai_result ?? '—'}</TableCell>
+                        <TableCell sx={{ py: 2, color: getColor(r.quantum?.ai_result, verdict), borderColor: t.line }}>{r.quantum?.ai_result ?? '—'}</TableCell>
+                        <TableCell sx={{ py: 1, borderColor: t.line }}>
                           {r.reviewed ? (
                             <Select
                               size="small"
@@ -402,17 +398,17 @@ export default function Sessions() {
                               displayEmpty
                               onChange={(e) => requestChange(r.view, e.target.value)}
                               sx={{
-                                minWidth: 130, fontSize: '0.85rem', color: getColor(r.verified, isDark),
-                                '.MuiOutlinedInput-notchedOutline': { borderColor: isDark ? '#17304d' : 'rgba(14,116,144,0.30)' },
+                                minWidth: 130, fontSize: '0.85rem', color: getColor(r.verified, verdict),
+                                '.MuiOutlinedInput-notchedOutline': { borderColor: t.line },
                               }}
                             >
                               <MenuItem value="" disabled>Not reviewed</MenuItem>
                               {RESULTS.map((res) => (
-                                <MenuItem key={res} value={res} sx={{ color: getColor(res, isDark) }}>{res}</MenuItem>
+                                <MenuItem key={res} value={res} sx={{ color: getColor(res, verdict) }}>{res}</MenuItem>
                               ))}
                             </Select>
                           ) : (
-                            <Box title="Never reviewed with the mammogram image visible — can't be edited here." sx={{ display: 'flex', alignItems: 'center', gap: 0.75, color: isDark ? '#5f7fa6' : '#557788', cursor: 'help' }}>
+                            <Box title="Never reviewed with the mammogram image visible — can't be edited here." sx={{ display: 'flex', alignItems: 'center', gap: 0.75, color: t.caption, cursor: 'help' }}>
                               <LockOutlinedIcon sx={{ fontSize: 15 }} />
                               <Typography sx={{ fontSize: '0.8rem' }}>Never reviewed</Typography>
                             </Box>
@@ -427,17 +423,17 @@ export default function Sessions() {
                   p: 1.5, borderRadius: 1.5, border: `1px solid ${OVERRIDE_GLOW}66`, background: `${OVERRIDE_GLOW}14`,
                 }}>
                   <Box sx={{ width: 10, height: 10, borderRadius: '50%', background: OVERRIDE_GLOW, flexShrink: 0, mt: 0.35 }} />
-                  <Typography sx={{ fontSize: '0.85rem', color: isDark ? '#FFD98A' : '#6B4E00', lineHeight: 1.6 }}>
+                  <Typography sx={{ fontSize: '0.85rem', color: t.cautionTextStrong, lineHeight: 1.6 }}>
                     Highlighted rows are where the verified result differs from the Classical AI reading.
                   </Typography>
                 </Box>
                 {(detail?.rows ?? []).some((r) => !r.reviewed) && (
                   <Box sx={{
                     display: 'flex', gap: 1.25, alignItems: 'flex-start', mt: 1.25,
-                    p: 1.5, borderRadius: 1.5, border: isDark ? '1px solid #2d4a6b' : '1px solid rgba(14,116,144,0.40)', background: isDark ? 'rgba(95,127,166,0.12)' : 'rgba(14,116,144,0.08)',
+                    p: 1.5, borderRadius: 1.5, border: `1px solid ${t.noteBorder}`, background: t.noteBg,
                   }}>
-                    <LockOutlinedIcon sx={{ fontSize: 18, color: isDark ? '#8fabc9' : '#4E7180', flexShrink: 0, mt: 0.15 }} />
-                    <Typography sx={{ fontSize: '0.85rem', color: isDark ? '#c3d8ec' : '#2C5A6E', lineHeight: 1.6 }}>
+                    <LockOutlinedIcon sx={{ fontSize: 18, color: t.label, flexShrink: 0, mt: 0.15 }} />
+                    <Typography sx={{ fontSize: '0.85rem', color: t.body, lineHeight: 1.6 }}>
                       Locked views were never reviewed while the mammogram image was on screen — open a new
                       session to review them properly rather than setting a result blind.
                     </Typography>
@@ -446,11 +442,11 @@ export default function Sessions() {
               </Box>
 
               <Box>
-                <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color: isDark ? '#8fabc9' : '#4E7180', letterSpacing: '0.08em', mb: 1 }}>
+                <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color: t.label, letterSpacing: '0.08em', mb: 1 }}>
                   RISK ASSESSMENT
                 </Typography>
                 {(detail?.risk ?? []).map((r, i) => (
-                  <Typography key={i} sx={{ fontSize: '0.85rem', color: isDark ? '#c3d8ec' : '#2C5A6E' }}>
+                  <Typography key={i} sx={{ fontSize: '0.85rem', color: t.body }}>
                     {r.model}: {r.risk_level ?? '—'} · Density {r.highest_density ?? '—'} · BI-RADS {r.highest_birads ?? '—'}
                   </Typography>
                 ))}
@@ -463,7 +459,7 @@ export default function Sessions() {
             <Button
               size="small" startIcon={<DeleteOutlineIcon sx={{ fontSize: 16 }} />}
               onClick={() => setPendingDelete(detail.session)}
-              sx={{ color: isDark ? '#F87171' : '#B91C1C', mr: 'auto' }}
+              sx={{ color: t.danger, mr: 'auto' }}
             >
               Delete Session
             </Button>
@@ -476,16 +472,16 @@ export default function Sessions() {
       <Dialog open={!!pendingDelete} onClose={() => setPendingDelete(null)} maxWidth="xs" fullWidth PaperProps={{ sx: DIALOG_SX }}>
         <DialogTitle sx={{ fontSize: '1rem', fontWeight: 700 }}>Delete this session?</DialogTitle>
         <DialogContent>
-          <Typography sx={{ fontSize: '0.9rem', color: isDark ? '#c3d8ec' : '#2C5A6E', lineHeight: 1.6 }}>
+          <Typography sx={{ fontSize: '0.9rem', color: t.body, lineHeight: 1.6 }}>
             <Box component="span" sx={{ fontFamily: 'monospace', fontWeight: 700 }}>{pendingDelete?.session_code}</Box>
             {' '}and all of its AI results and risk assessments will be permanently deleted. This can't be undone.
           </Typography>
-          <Typography sx={{ fontSize: '0.8rem', color: isDark ? '#8fabc9' : '#4E7180', mt: 1.5 }}>
+          <Typography sx={{ fontSize: '0.8rem', color: t.label, mt: 1.5 }}>
             This session was never published, so no patient could ever have seen it.
           </Typography>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2.5 }}>
-          <Button onClick={() => setPendingDelete(null)} sx={{ color: isDark ? '#8fabc9' : '#4E7180' }}>Cancel</Button>
+          <Button onClick={() => setPendingDelete(null)} sx={{ color: t.label }}>Cancel</Button>
           <Button onClick={handleDeleteSession} variant="contained" disabled={deleting} color="error" sx={{ fontWeight: 700 }}>
             {deleting ? 'Deleting…' : 'Delete Permanently'}
           </Button>
@@ -495,15 +491,15 @@ export default function Sessions() {
       <Dialog open={!!shareSession} onClose={() => setShareSession(null)} maxWidth="xs" fullWidth PaperProps={{ sx: DIALOG_SX }}>
         <DialogTitle sx={{ fontSize: '1rem', fontWeight: 700 }}>Patient link</DialogTitle>
         <DialogContent>
-          <Typography sx={{ fontSize: '0.85rem', color: isDark ? '#8fabc9' : '#4E7180', mb: 1.5 }}>
+          <Typography sx={{ fontSize: '0.85rem', color: t.label, mb: 1.5 }}>
             This link has been live since <Box component="span" sx={{ fontFamily: 'monospace' }}>{shareSession?.session_code}</Box> was published — it never expires.
           </Typography>
           <Box sx={{
             display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap',
-            px: 2, py: 1.25, borderRadius: 1, border: '1px solid rgba(79,209,161,0.35)', background: 'rgba(79,209,161,0.08)',
+            px: 2, py: 1.25, borderRadius: 1, border: `1px solid ${alpha(tint.low, 0.35)}`, background: alpha(tint.low, 0.08),
           }}>
             <Typography sx={{
-              fontFamily: 'monospace', fontSize: '0.78rem', color: isDark ? '#c3d8ec' : '#2C5A6E',
+              fontFamily: 'monospace', fontSize: '0.78rem', color: t.body,
               wordBreak: 'break-all', flex: 1, minWidth: 0,
             }}>
               {shareSession ? `${window.location.origin}/report/${shareSession.access_token}` : ''}
@@ -511,7 +507,7 @@ export default function Sessions() {
           </Box>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2.5 }}>
-          <Button onClick={() => setShareSession(null)} sx={{ color: isDark ? '#8fabc9' : '#4E7180' }}>Close</Button>
+          <Button onClick={() => setShareSession(null)} sx={{ color: t.label }}>Close</Button>
           <Button
             variant="contained"
             onClick={() => {
@@ -530,19 +526,19 @@ export default function Sessions() {
       <Dialog open={!!pendingChange} onClose={() => setPendingChange(null)} maxWidth="xs" fullWidth PaperProps={{ sx: DIALOG_SX }}>
         <DialogTitle sx={{ fontSize: '1rem', fontWeight: 700 }}>Change verified result?</DialogTitle>
         <DialogContent>
-          <Typography sx={{ fontSize: '0.9rem', color: isDark ? '#c3d8ec' : '#2C5A6E', lineHeight: 1.6 }}>
-            {pendingChange?.view}: <Box component="span" sx={{ color: getColor(pendingChange?.from, isDark), fontWeight: 700 }}>{pendingChange?.from}</Box>
+          <Typography sx={{ fontSize: '0.9rem', color: t.body, lineHeight: 1.6 }}>
+            {pendingChange?.view}: <Box component="span" sx={{ color: getColor(pendingChange?.from, verdict), fontWeight: 700 }}>{pendingChange?.from}</Box>
             {' → '}
-            <Box component="span" sx={{ color: getColor(pendingChange?.to, isDark), fontWeight: 700 }}>{pendingChange?.to}</Box>
+            <Box component="span" sx={{ color: getColor(pendingChange?.to, verdict), fontWeight: 700 }}>{pendingChange?.to}</Box>
           </Typography>
-          <Typography sx={{ fontSize: '0.8rem', color: isDark ? '#8fabc9' : '#4E7180', mt: 1.5 }}>
+          <Typography sx={{ fontSize: '0.8rem', color: t.label, mt: 1.5 }}>
             {detail?.session?.verified
               ? 'This session is already published — the patient-facing link updates immediately.'
               : 'This session has not been published yet.'}
           </Typography>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2.5 }}>
-          <Button onClick={() => setPendingChange(null)} sx={{ color: isDark ? '#8fabc9' : '#4E7180' }}>Cancel</Button>
+          <Button onClick={() => setPendingChange(null)} sx={{ color: t.label }}>Cancel</Button>
           <Button onClick={confirmChange} variant="contained" sx={{ fontWeight: 700 }}>Confirm Change</Button>
         </DialogActions>
       </Dialog>
