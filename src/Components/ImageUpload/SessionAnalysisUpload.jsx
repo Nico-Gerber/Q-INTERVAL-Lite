@@ -12,7 +12,7 @@ import {
 import { useDropzone } from 'react-dropzone';
 import ValidationMessage, { AnalysisFailureMessage } from '../Shared/ValidationMessage';
 import { validateSessionAnalysis } from '../AnalysisTool/analysisValidation';
-import { ACCEPTED_FILE_TYPES, MAX_FILE_BYTES, UNREADABLE_IMAGE_MSG, rejectionMessage, isImageReadable, batchProblemMessage, smartDropCapacity } from './uploadChecks';
+import { ACCEPTED_FILE_TYPES, MAX_FILE_BYTES, rejectionMessage, prepareImage, batchProblemMessage, smartDropCapacity } from './uploadChecks';
 
 const fadeUp = {
   hidden:  { opacity: 0, y: 12 },
@@ -86,8 +86,9 @@ const ViewSlot = ({ viewKey, label, fullLabel, description, item, onDrop, onRemo
     setErr(null);
     if (rej.length) { setErr(rejectionMessage(rej[0])); return; }
     if (!acc.length) return;
-    if (!(await isImageReadable(acc[0]))) { setErr(UNREADABLE_IMAGE_MSG); return; }
-    onDrop(viewKey, acc[0]);
+    const prepared = await prepareImage(acc[0]);
+    if (prepared.error) { setErr(prepared.error); return; }
+    onDrop(viewKey, prepared.file);
   }, [viewKey, onDrop]);
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop: handleDrop, accept: ACCEPTED_FILE_TYPES, maxFiles: 1, maxSize: MAX_FILE_BYTES, multiple: false });
   // Upload-time rejection, or a backend report that the placed image is unusable.
@@ -222,11 +223,11 @@ export default function MultiViewUpload({ views, setViews, setActiveStep, handle
 
   const handleSmartDrop = useCallback(async (acc, rej) => {
     setSmartError(null);
-    const readable = await Promise.all(acc.map(isImageReadable));
+    const prepared = await Promise.all(acc.map(prepareImage));
     const { views: curViews, proofMap: curProof, pending: curPending } = latest.current;
-    const usable   = acc.filter((_, i) => readable[i]);
+    const usable   = prepared.filter((r) => r.file).map((r) => r.file);
     const capacity = smartDropCapacity(Object.values(curViews).filter(Boolean).length, curPending.length);
-    setSmartError(batchProblemMessage(rej, acc.filter((_, i) => !readable[i]), usable.slice(capacity)));
+    setSmartError(batchProblemMessage(rej, acc.filter((_, i) => prepared[i].error && !prepared[i].unsupported), usable.slice(capacity), acc.filter((_, i) => prepared[i].unsupported)));
     const nv = { ...curViews }, np = { ...curProof }, npe = [...curPending];
     usable.slice(0, capacity).forEach((f) => {
       const det = detectView(f.name), preview = URL.createObjectURL(f), id = crypto.randomUUID();

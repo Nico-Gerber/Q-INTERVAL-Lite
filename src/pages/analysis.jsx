@@ -67,7 +67,9 @@ const genSessionId = () => {
 
 export default function Analysis() {
 
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  // Only clinicians and admins may verify classification results (also enforced in the database).
+  const canVerify = profile?.role === 'clinician' || profile?.role === 'admin';
   const theme = useTheme();
   // Result-area colours (frame, session bar, status banner, export buttons) — App.js resultsPalette.
   const rp = theme.palette.results;
@@ -154,6 +156,7 @@ export default function Analysis() {
   const [verifications, setVerifications] = useState(emptyVerifications());
 
   const handleVerifyView = (viewId, update) => {
+    if (!canVerify) return;
     setVerifications((prev) => ({ ...prev, [viewId]: { ...prev[viewId], ...update } }));
 
     if (!dbSessionId) return;
@@ -388,7 +391,7 @@ export default function Analysis() {
   // are individually verified AND the clinician deliberately publishes, so a
   // patient link is never live without a clinician actively choosing to share it.
   const handleFinalizeSession = async () => {
-    if (!supabase || !dbSessionId || !reportVerified) return;
+    if (!canVerify || !supabase || !dbSessionId || !reportVerified) return;
     setFinalizing(true);
     try {
       const { error } = await supabase
@@ -1021,6 +1024,7 @@ export default function Analysis() {
 
                                 {/* Clickable rather than disabled so an unverified click can
                                     still explain itself via the toast below. */}
+                                {canVerify && (
                                 <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                                   {[
                                     { key: 'clinician', label: 'Clinician Copy' },
@@ -1072,6 +1076,7 @@ export default function Analysis() {
                                     </Button>
                                   )}
                                 </Box>
+                                )}
                               </Box>
 
                               {/* Patient link — only ever shown after the clinician deliberately publishes. */}
@@ -1120,7 +1125,7 @@ export default function Analysis() {
                                   viewData={viewData} LLMloading={VLMloading} audience={audience}
                                   setAudience={setAudience} onGenerateExplanation={handleExplainView}
                                   onOpenFullExplanation={() => setCollapsed(false)}
-                                  verifications={verifications} onVerifyView={handleVerifyView} setSelectedView={setSelectedView}
+                                  verifications={verifications} onVerifyView={canVerify ? handleVerifyView : undefined} setSelectedView={setSelectedView}
                                 />
                               </Box>
                               <Box ref={mammoRiskRef}>

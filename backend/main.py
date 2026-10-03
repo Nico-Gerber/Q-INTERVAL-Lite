@@ -9,6 +9,9 @@ from routers.quantum_session_analysis.router import router as quantum_session_ro
 from routers.future_risk_classical.router import router as classical_future_risk_router
 from routers.future_risk_qml.router import router as quantum_future_risk_router
 
+# Admin user management
+from routers.admin.router import router as admin_router
+
 # Shared LLM explanation endpoints
 from routers.shared.Explain import (
     router as explain_router,
@@ -35,6 +38,9 @@ app.include_router(quantum_session_router)
 # Future Risk Analysis
 app.include_router(classical_future_risk_router)
 app.include_router(quantum_future_risk_router)
+
+# Admin user management
+app.include_router(admin_router)
 
 # LLM explanations
 app.include_router(explain_router)

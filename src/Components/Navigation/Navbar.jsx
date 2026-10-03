@@ -12,6 +12,7 @@ import {
   LogoutRounded as LogoutIcon,
   HistoryRounded as HistoryIcon,
   SpaceDashboardRounded as DashboardIcon,
+  AdminPanelSettingsRounded as AdminIcon,
 } from '@mui/icons-material';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ColorModeContext } from '../../App';
@@ -30,6 +31,23 @@ const NAV_ICON_SX = {
   transition: 'all 0.2s',
   '&:hover': { backgroundColor: 'rgba(255,255,255,0.12)', borderColor: 'rgba(255,255,255,0.4)', color: '#FFFFFF' },
 };
+
+// Highlight for the icon whose page is currently open (same gradient the dashboard icon used to always have).
+const NAV_ICON_ACTIVE_SX = (theme) => ({
+  ...NAV_ICON_SX,
+  color: '#FFFFFF',
+  border: '1px solid transparent',
+  background: theme.palette.mode === 'dark'
+    ? 'linear-gradient(135deg, #22D3EE, #0891B2)'
+    : 'linear-gradient(135deg, #0891B2, #0E7490)',
+  boxShadow: theme.palette.mode === 'dark' ? '0 0 20px rgba(34,211,238,0.22)' : '0 0 20px rgba(8,145,178,0.28)',
+  '&:hover': {
+    background: theme.palette.mode === 'dark'
+      ? 'linear-gradient(135deg, #67E8F9, #22D3EE)'
+      : 'linear-gradient(135deg, #22D3EE, #0891B2)',
+    boxShadow: theme.palette.mode === 'dark' ? '0 0 28px rgba(34,211,238,0.32)' : '0 0 28px rgba(8,145,178,0.4)',
+  },
+});
 
 const NAV_ITEMS = [
   { label: 'Home',     path: '/' },
@@ -53,8 +71,11 @@ const Navigation = () => {
   const isMobile  = useMediaQuery(theme.breakpoints.down('md'));
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { mode, toggleColorMode } = React.useContext(ColorModeContext);
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
+  const isAdmin = profile?.role === 'admin' && profile?.status === 'approved';
   const isDark = mode === 'dark';
+  const isActive = (path) => location.pathname.toLowerCase().startsWith(path.toLowerCase());
+  const iconSx = (path) => (isActive(path) ? NAV_ICON_ACTIVE_SX : NAV_ICON_SX);
 
   const handleSignOut = async () => {
     await signOut();
@@ -140,22 +161,7 @@ const Navigation = () => {
                     component={Link}
                     to="/Analysis"
                     size="small"
-                    sx={(theme) => ({
-                      width: 36, height: 36,
-                      borderRadius: '999px',
-                      color: '#FFFFFF',
-                      background: theme.palette.mode === 'dark'
-                        ? 'linear-gradient(135deg, #22D3EE, #0891B2)'
-                        : 'linear-gradient(135deg, #0891B2, #0E7490)',
-                      boxShadow: theme.palette.mode === 'dark' ? '0 0 20px rgba(34,211,238,0.22)' : '0 0 20px rgba(8,145,178,0.28)',
-                      transition: 'all 0.2s',
-                      '&:hover': {
-                        background: theme.palette.mode === 'dark'
-                          ? 'linear-gradient(135deg, #67E8F9, #22D3EE)'
-                          : 'linear-gradient(135deg, #22D3EE, #0891B2)',
-                        boxShadow: theme.palette.mode === 'dark' ? '0 0 28px rgba(34,211,238,0.32)' : '0 0 28px rgba(8,145,178,0.4)',
-                      },
-                    })}
+                    sx={iconSx('/Analysis')}
                   >
                     <DashboardIcon sx={{ fontSize: 17 }} />
                   </IconButton>
@@ -172,9 +178,16 @@ const Navigation = () => {
                 </Button>
               )}
 
+              {isAdmin && (
+                <Tooltip title="User Management" arrow>
+                  <IconButton component={Link} to="/Admin" size="small" sx={iconSx('/Admin')}>
+                    <AdminIcon sx={{ fontSize: 17 }} />
+                  </IconButton>
+                </Tooltip>
+              )}
               {user && (
                 <Tooltip title="My Sessions" arrow>
-                  <IconButton component={Link} to="/Sessions" size="small" sx={NAV_ICON_SX}>
+                  <IconButton component={Link} to="/Sessions" size="small" sx={iconSx('/Sessions')}>
                     <HistoryIcon sx={{ fontSize: 17 }} />
                   </IconButton>
                 </Tooltip>
@@ -249,6 +262,15 @@ const Navigation = () => {
           <Button component={Link} to="/Analysis" variant="contained" fullWidth onClick={() => setDrawerOpen(false)} sx={{ py: 1.2, fontSize: '0.9rem', fontWeight: 700, color: '#FFFFFF' }}>
             Launch Analysis Dashboard →
           </Button>
+          {isAdmin && (
+            <Button
+              component={Link} to="/Admin" fullWidth onClick={() => setDrawerOpen(false)}
+              startIcon={<AdminIcon sx={{ fontSize: 16 }} />}
+              sx={{ fontSize: '0.85rem', fontWeight: 600, color: 'rgba(255,255,255,0.75)', '&:hover': { color: '#FFFFFF' } }}
+            >
+              User Management
+            </Button>
+          )}
           {user && (
             <Button
               component={Link} to="/Sessions" fullWidth onClick={() => setDrawerOpen(false)}

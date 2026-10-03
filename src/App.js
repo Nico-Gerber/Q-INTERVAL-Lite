@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, createContext, useContext } from 'react';
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { ThemeProvider, createTheme, CssBaseline, Box, CircularProgress } from '@mui/material';
+import { Routes, Route, useLocation } from 'react-router-dom';
+import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import './App.css';
 
 import Navigation from './Components/Navigation/Navbar';
@@ -13,24 +13,10 @@ import Report from './pages/report';
 import Sessions from './pages/sessions';
 import Login from './pages/login';
 import RequestAccess from './pages/requestAccess';
-import { AuthProvider, useAuth } from './supabase/AuthContext';
-
-function RequireAuth({ children }) {
-  const { user, loading } = useAuth();
-  const location = useLocation();
-
-  if (loading) {
-    return (
-      <Box sx={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <CircularProgress size={28} />
-      </Box>
-    );
-  }
-  if (!user) {
-    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
-  }
-  return children;
-}
+import AccessStatus from './pages/accessStatus';
+import Admin from './pages/admin';
+import { AuthProvider } from './supabase/AuthContext';
+import { RequireApprovedUser, RequireAdmin } from './supabase/RouteGuards';
 
 export const ColorModeContext = createContext({ toggleColorMode: () => { }, mode: 'dark' });
 export const useColorMode = () => useContext(ColorModeContext);
@@ -374,8 +360,11 @@ function App() {
               <Route path="/About" element={<About />} />
               <Route path="/login" element={<Login />} />
               <Route path="/request-access" element={<RequestAccess />} />
-              <Route path="/Analysis" element={<RequireAuth><Analysis key={location.key} /></RequireAuth>} />
-              <Route path="/Sessions" element={<RequireAuth><Sessions /></RequireAuth>} />
+              <Route path="/awaiting-approval" element={<AccessStatus variant="pending" />} />
+              <Route path="/access-rejected" element={<AccessStatus variant="rejected" />} />
+              <Route path="/Analysis" element={<RequireApprovedUser><Analysis key={location.key} /></RequireApprovedUser>} />
+              <Route path="/Sessions" element={<RequireApprovedUser><Sessions /></RequireApprovedUser>} />
+              <Route path="/Admin" element={<RequireAdmin><Admin /></RequireAdmin>} />
               <Route path="/report/:token" element={<Report />} />
             </Routes>
             <Footer />

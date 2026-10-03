@@ -24,7 +24,9 @@ const RESULTS = ['Malignant', 'Benign', 'Normal'];
 const getColor = (r, verdict) => (r === 'Malignant' ? verdict.malignant : r === 'Benign' ? verdict.benign : verdict.normal);
 
 export default function Sessions() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  // Only clinicians and admins may change verified results (also enforced in the database).
+  const canVerify = profile?.role === 'clinician' || profile?.role === 'admin';
   const theme = useTheme();
   const t = theme.palette.results;
   const { verdict, review, reportStatus, modelAccent, tint } = theme.palette;
@@ -120,13 +122,14 @@ export default function Sessions() {
   };
 
   const requestChange = (view, newResult) => {
+    if (!canVerify) return;
     const row = detail.rows.find((r) => r.view === view);
     if (newResult === row?.verified) return;
     setPendingChange({ view, from: row?.verified ?? 'Not reviewed', to: newResult });
   };
 
   const confirmChange = async () => {
-    if (!supabase || !detail?.session || !pendingChange) return;
+    if (!canVerify || !supabase || !detail?.session || !pendingChange) return;
     const { view, to } = pendingChange;
     const row = detail.rows.find((r) => r.view === view);
     const status = to === row?.classical?.ai_result ? 'approved' : 'overridden';
@@ -391,7 +394,9 @@ export default function Sessions() {
                         <TableCell sx={{ py: 2, color: getColor(r.classical?.ai_result, verdict), borderColor: t.line }}>{r.classical?.ai_result ?? '—'}</TableCell>
                         <TableCell sx={{ py: 2, color: getColor(r.quantum?.ai_result, verdict), borderColor: t.line }}>{r.quantum?.ai_result ?? '—'}</TableCell>
                         <TableCell sx={{ py: 1, borderColor: t.line }}>
-                          {r.reviewed ? (
+                          {r.reviewed && !canVerify ? (
+                            <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: getColor(r.verified, verdict) }}>{r.verified ?? '—'}</Typography>
+                          ) : r.reviewed ? (
                             <Select
                               size="small"
                               value={r.verified ?? ''}

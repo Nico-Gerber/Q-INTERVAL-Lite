@@ -81,7 +81,7 @@ export default function Login() {
         </Typography>
 
         <Typography sx={{ color: 'text.secondary', mb: 4, fontSize: '0.95rem' }}>
-          Clinician sign in — accounts are provisioned by an administrator, there is no self-registration.
+          Sign in to your account. New accounts must be approved by an administrator before access is granted.
         </Typography>
 
         <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -100,7 +100,7 @@ export default function Login() {
         </Box>
 
         <Typography sx={{ color: 'text.secondary', mt: 3, fontSize: '0.85rem' }}>
-          Don't have an account? <Box component={Link} to="/request-access" sx={{ color: 'primary.main', fontWeight: 600, textDecoration: 'none' }}>Request access</Box>
+          Don't have an account? <Box component={Link} to="/request-access" sx={{ color: 'primary.main', fontWeight: 600, textDecoration: 'none' }}>Create an account</Box>
         </Typography>
       </Container>
     </Box>

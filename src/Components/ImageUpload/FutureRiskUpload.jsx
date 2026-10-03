@@ -18,7 +18,7 @@ import {
 import { useDropzone } from 'react-dropzone';
 import ValidationMessage, { AnalysisFailureMessage } from '../Shared/ValidationMessage';
 import { VIEW_KEYS, MIN_SESSIONS, AGE_MIN, AGE_MAX, MIN_EXAM_DATE, validateFutureRisk } from '../AnalysisTool/analysisValidation';
-import { ACCEPTED_FILE_TYPES, MAX_FILE_BYTES, UNREADABLE_IMAGE_MSG, rejectionMessage, isImageReadable, batchProblemMessage, smartDropCapacity } from './uploadChecks';
+import { ACCEPTED_FILE_TYPES, MAX_FILE_BYTES, rejectionMessage, prepareImage, batchProblemMessage, smartDropCapacity } from './uploadChecks';
 
 const MAX_SESSIONS = 5;
 const SLOT_H = 88;
@@ -106,8 +106,9 @@ const ViewSlot = ({ viewKey, label, fullLabel, description, item, onDrop, onRemo
     setErr(null);
     if (rej.length) { setErr(rejectionMessage(rej[0])); return; }
     if (!acc.length) return;
-    if (!(await isImageReadable(acc[0]))) { setErr(UNREADABLE_IMAGE_MSG); return; }
-    onDrop(viewKey, acc[0]);
+    const prepared = await prepareImage(acc[0]);
+    if (prepared.error) { setErr(prepared.error); return; }
+    onDrop(viewKey, prepared.file);
   }, [viewKey, onDrop]);
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop: handleDrop, accept: ACCEPTED_FILE_TYPES, maxFiles: 1, maxSize: MAX_FILE_BYTES, multiple: false });
   // Upload-time rejection, or a backend report that the placed image is unusable.
@@ -281,16 +282,16 @@ export default function FutureRiskUpload({ sessions, setSessions, setActiveStep,
   const handleSmartDrop = useCallback(async (accepted, rejected) => {
     const targetId = latest.current.sessions[latest.current.activeIdx]?.id;
     if (!targetId) return;
-    const readable = await Promise.all(accepted.map(isImageReadable));
+    const prepared = await Promise.all(accepted.map(prepareImage));
 
     const cur = latest.current;
     const sess = cur.sessions.find(s => s.id === targetId);
     if (!sess) return;
     const id_ = sess.id;
 
-    const usable = accepted.filter((_, i) => readable[i]);
+    const usable = prepared.filter(r => r.file).map(r => r.file);
     const capacity = smartDropCapacity(Object.values(sess.views).filter(Boolean).length, (cur.pendings[id_] ?? []).length);
-    setSmartErrs(p => ({ ...p, [id_]: batchProblemMessage(rejected, accepted.filter((_, i) => !readable[i]), usable.slice(capacity)) }));
+    setSmartErrs(p => ({ ...p, [id_]: batchProblemMessage(rejected, accepted.filter((_, i) => prepared[i].error && !prepared[i].unsupported), usable.slice(capacity), accepted.filter((_, i) => prepared[i].unsupported)) }));
 
     const nv = { ...sess.views };
     const np = { ...(cur.proofMaps[id_] ?? {}) };

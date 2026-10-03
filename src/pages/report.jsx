@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Box, Container, Typography, Chip, Button, CircularProgress } from '@mui/material';
+import { Box, Container, Typography, Chip, Button, CircularProgress, useTheme, alpha } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { Document, Page, View, Text, StyleSheet, pdf } from '@react-pdf/renderer';
@@ -113,6 +113,9 @@ async function downloadPatientPdf(report) {
 }
 
 export default function Report() {
+  const theme = useTheme();
+  const t = theme.palette.results;
+  const verdictColor = (r) => (r === 'Malignant' ? theme.palette.verdict.malignant : r === 'Benign' ? theme.palette.verdict.benign : theme.palette.verdict.normal);
   const { token } = useParams();
   const [state, setState] = useState('loading'); // loading | not-found | ready
   const [report, setReport] = useState(null);
@@ -193,20 +196,20 @@ export default function Report() {
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
               <Box sx={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5,
-                px: 2, py: 1.25, borderRadius: 1.5, background: 'rgba(255,255,255,0.04)',
+                px: 2, py: 1.25, borderRadius: 1.5, background: t.bar,
               }}>
                 <Box>
-                  <Typography sx={{ fontFamily: 'monospace', fontSize: '0.85rem', fontWeight: 700, letterSpacing: '0.04em', color: '#eaf4ff' }}>
+                  <Typography sx={{ fontFamily: 'monospace', fontSize: '0.85rem', fontWeight: 700, letterSpacing: '0.04em', color: t.text }}>
                     SESSION {report.session_code}
                   </Typography>
-                  <Typography sx={{ fontSize: '0.78rem', color: '#8fabc9', mt: 0.25 }}>
+                  <Typography sx={{ fontSize: '0.78rem', color: t.dim, mt: 0.25 }}>
                     Verified {report.verified_at ? new Date(report.verified_at).toLocaleDateString() : '—'}
                   </Typography>
                 </Box>
                 <Button
                   size="small" variant="outlined" startIcon={<DownloadIcon sx={{ fontSize: 16 }} />}
                   onClick={() => downloadPatientPdf(report)}
-                  sx={{ fontSize: '0.75rem', fontWeight: 700, color: '#eaf4ff', borderColor: 'rgba(240,249,255,0.3)' }}
+                  sx={{ fontSize: '0.75rem', fontWeight: 700, color: t.text, borderColor: t.buttonBorder, '&:hover': { borderColor: t.buttonHoverBorder, backgroundColor: t.buttonHoverBg } }}
                 >
                   Download PDF
                 </Button>
@@ -215,12 +218,12 @@ export default function Report() {
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
                 {(report.views ?? []).map((v) => (
                   <Box key={v.view} sx={{
-                    p: 2, borderRadius: 2, border: '1px solid #17304d', background: 'rgba(255,255,255,0.04)',
+                    p: 2, borderRadius: 2, border: `1px solid ${t.line}`, background: t.card,
                   }}>
-                    <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: '#8fabc9', letterSpacing: '0.08em' }}>
+                    <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: t.label, letterSpacing: '0.08em' }}>
                       {v.view}
                     </Typography>
-                    <Typography sx={{ fontSize: '1.1rem', fontWeight: 700, color: getColor(v.result), mt: 0.5 }}>
+                    <Typography sx={{ fontSize: '1.1rem', fontWeight: 700, color: verdictColor(v.result), mt: 0.5 }}>
                       {v.result ?? '—'}
                     </Typography>
                   </Box>
@@ -229,27 +232,27 @@ export default function Report() {
 
               <Box sx={{
                 display: 'flex', gap: 1.25, alignItems: 'flex-start',
-                p: 2, borderRadius: 2, border: '1px solid rgba(251,191,36,0.4)', background: 'rgba(251,191,36,0.1)',
+                p: 2, borderRadius: 2, border: `1px solid ${alpha(theme.palette.tint.caution, 0.4)}`, background: alpha(theme.palette.tint.caution, 0.1),
               }}>
-                <InfoOutlinedIcon sx={{ fontSize: 20, color: '#FBBF24', flexShrink: 0, mt: 0.2 }} />
-                <Typography sx={{ fontSize: '0.8rem', color: '#FDE68A', lineHeight: 1.6, fontWeight: 500 }}>
+                <InfoOutlinedIcon sx={{ fontSize: 20, color: t.cautionIcon, flexShrink: 0, mt: 0.2 }} />
+                <Typography sx={{ fontSize: '0.8rem', color: t.cautionText, lineHeight: 1.6, fontWeight: 500 }}>
                   Mammogram images aren't shown here — in this prototype's current state, uploaded images aren't
                   retained or stored after analysis, for security and privacy reasons.
                 </Typography>
               </Box>
 
               {report.risk && (
-                <Box sx={{ p: 2, borderRadius: 2, border: '1px solid #17304d', background: 'rgba(255,255,255,0.04)' }}>
-                  <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: '#8fabc9', letterSpacing: '0.08em', mb: 1 }}>
+                <Box sx={{ p: 2, borderRadius: 2, border: `1px solid ${t.line}`, background: t.card }}>
+                  <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: t.label, letterSpacing: '0.08em', mb: 1 }}>
                     RISK SUMMARY
                   </Typography>
-                  <Typography sx={{ fontSize: '0.95rem', color: '#c3d8ec' }}>Risk level: {report.risk.risk_level ?? '—'}</Typography>
-                  <Typography sx={{ fontSize: '0.95rem', color: '#c3d8ec' }}>Breast density: {report.risk.highest_density ?? '—'}</Typography>
-                  <Typography sx={{ fontSize: '0.95rem', color: '#c3d8ec' }}>BI-RADS: {report.risk.highest_birads ?? '—'}</Typography>
+                  <Typography sx={{ fontSize: '0.95rem', color: t.body }}>Risk level: {report.risk.risk_level ?? '—'}</Typography>
+                  <Typography sx={{ fontSize: '0.95rem', color: t.body }}>Breast density: {report.risk.highest_density ?? '—'}</Typography>
+                  <Typography sx={{ fontSize: '0.95rem', color: t.body }}>BI-RADS: {report.risk.highest_birads ?? '—'}</Typography>
                 </Box>
               )}
 
-              <Typography sx={{ fontSize: '0.8rem', color: '#8fabc9' }}>
+              <Typography sx={{ fontSize: '0.8rem', color: t.dim }}>
                 These results have been reviewed and confirmed by a clinician. Please discuss them with your
                 healthcare provider.
               </Typography>
