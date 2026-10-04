@@ -15,8 +15,9 @@ import Login from './pages/login';
 import RequestAccess from './pages/requestAccess';
 import AccessStatus from './pages/accessStatus';
 import Admin from './pages/admin';
+import Patients from './pages/patients';
 import { AuthProvider } from './supabase/AuthContext';
-import { RequireApprovedUser, RequireAdmin } from './supabase/RouteGuards';
+import { RequireApprovedUser, RequireAdmin, RequireRole } from './supabase/RouteGuards';
 
 export const ColorModeContext = createContext({ toggleColorMode: () => { }, mode: 'dark' });
 export const useColorMode = () => useContext(ColorModeContext);
@@ -363,7 +364,8 @@ function App() {
               <Route path="/awaiting-approval" element={<AccessStatus variant="pending" />} />
               <Route path="/access-rejected" element={<AccessStatus variant="rejected" />} />
               <Route path="/Analysis" element={<RequireApprovedUser><Analysis key={location.key} /></RequireApprovedUser>} />
-              <Route path="/Sessions" element={<RequireApprovedUser><Sessions /></RequireApprovedUser>} />
+              <Route path="/Sessions" element={<RequireRole roles={['patient', 'admin']} fallback="/Patients"><Sessions /></RequireRole>} />
+              <Route path="/Patients" element={<RequireRole roles={['clinician']}><Patients /></RequireRole>} />
               <Route path="/Admin" element={<RequireAdmin><Admin /></RequireAdmin>} />
               <Route path="/report/:token" element={<Report />} />
             </Routes>

@@ -13,6 +13,7 @@ import {
   HistoryRounded as HistoryIcon,
   SpaceDashboardRounded as DashboardIcon,
   AdminPanelSettingsRounded as AdminIcon,
+  GroupsRounded as PatientsIcon,
 } from '@mui/icons-material';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ColorModeContext } from '../../App';
@@ -73,6 +74,7 @@ const Navigation = () => {
   const { mode, toggleColorMode } = React.useContext(ColorModeContext);
   const { user, profile, signOut } = useAuth();
   const isAdmin = profile?.role === 'admin' && profile?.status === 'approved';
+  const isClinician = profile?.role === 'clinician' && profile?.status === 'approved';
   const isDark = mode === 'dark';
   const isActive = (path) => location.pathname.toLowerCase().startsWith(path.toLowerCase());
   const iconSx = (path) => (isActive(path) ? NAV_ICON_ACTIVE_SX : NAV_ICON_SX);
@@ -185,7 +187,14 @@ const Navigation = () => {
                   </IconButton>
                 </Tooltip>
               )}
-              {user && (
+              {isClinician && (
+                <Tooltip title="My Patients" arrow>
+                  <IconButton component={Link} to="/Patients" size="small" sx={iconSx('/Patients')}>
+                    <PatientsIcon sx={{ fontSize: 17 }} />
+                  </IconButton>
+                </Tooltip>
+              )}
+              {user && !isClinician && (
                 <Tooltip title="My Sessions" arrow>
                   <IconButton component={Link} to="/Sessions" size="small" sx={iconSx('/Sessions')}>
                     <HistoryIcon sx={{ fontSize: 17 }} />
@@ -271,7 +280,16 @@ const Navigation = () => {
               User Management
             </Button>
           )}
-          {user && (
+          {isClinician && (
+            <Button
+              component={Link} to="/Patients" fullWidth onClick={() => setDrawerOpen(false)}
+              startIcon={<PatientsIcon sx={{ fontSize: 16 }} />}
+              sx={{ fontSize: '0.85rem', fontWeight: 600, color: 'rgba(255,255,255,0.75)', '&:hover': { color: '#FFFFFF' } }}
+            >
+              My Patients
+            </Button>
+          )}
+          {user && !isClinician && (
             <Button
               component={Link} to="/Sessions" fullWidth onClick={() => setDrawerOpen(false)}
               startIcon={<HistoryIcon sx={{ fontSize: 16 }} />}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Box, Chip, Container, Typography, Alert, Button, Drawer, TextField, Dialog, DialogTitle, DialogContent, DialogActions, Snackbar, useTheme, alpha } from '@mui/material';
+import { Box, Chip, CircularProgress, Container, MenuItem as MuiMenuItem, Typography, Alert, Button, Drawer, TextField, Dialog, DialogTitle, DialogContent, DialogActions, Snackbar, useTheme, alpha } from '@mui/material';
+import { useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Sidebar, Menu, MenuItem, SubMenu } from 'react-pro-sidebar';
 import exportSessionPDF from '../Components/Results/Shared/ExportSession';
@@ -28,6 +29,8 @@ import { ThreeDot } from 'react-loading-indicators';
 
 import { supabase } from '../supabase/supabase';
 import { useAuth } from '../supabase/AuthContext';
+import { useAssignedPatients } from '../supabase/useAssignedPatients';
+import { buildSnapshot, saveSessionImages, loadSessionResult, saveExplanations } from '../supabase/sessionArtifacts';
 
 const API_BASE = 'http://localhost:8000';
 
@@ -70,6 +73,9 @@ export default function Analysis() {
   const { user, profile } = useAuth();
   // Only clinicians and admins may verify classification results (also enforced in the database).
   const canVerify = profile?.role === 'clinician' || profile?.role === 'admin';
+  // Clinicians can link a new analysis to one of their assigned patients (optional).
+  const { patients: assignedPatients } = useAssignedPatients();
+  const [selectedPatientId, setSelectedPatientId] = useState('');
   const theme = useTheme();
   // Result-area colours (frame, session bar, status banner, export buttons) — App.js resultsPalette.
   const rp = theme.palette.results;
@@ -328,12 +334,53 @@ export default function Analysis() {
 
 
 
-  const persistClassificationSession = async ({ sessionCode, cnnData, qmlData }) => {
+  // Who owns a new session: patients via patient_id, clinicians/admins via clinician_id (+ optional chosen patient).
+  const sessionOwnerFields = () => ({
+    clinician_id: profile?.role === 'patient' ? null : (user?.id ?? null),
+    patient_id: profile?.role === 'patient' ? (user?.id ?? null) : (selectedPatientId || null),
+  });
+
+  const persistFutureRiskSession = async ({ sessionCode, cnnData, qmlData, datedSessions }) => {
+    if (!supabase) return;
+    try {
+      const exams = datedSessions.map((s, i) => ({ examId: `exam_${i + 1}`, examDate: s.scanDate, views: s.views }));
+      const { data: sessionRow, error: sessionError } = await supabase
+        .from('sessions')
+        .insert({
+          session_code: sessionCode,
+          analysis_mode: 'future-risk',
+          ...sessionOwnerFields(),
+          result_snapshot: buildSnapshot(cnnData, qmlData, {
+            patient_age: patientAge ? Number(patientAge) : null,
+            exams: exams.map((e) => ({ exam_id: e.examId, exam_date: e.examDate })),
+          }),
+        })
+        .select()
+        .single();
+      if (sessionError) throw sessionError;
+      setDbSessionId(sessionRow.id);
+
+      await saveSessionImages({
+        sessionId: sessionRow.id,
+        exams: exams.map((e) => ({ examId: e.examId, views: e.views })),
+        cnnData, qmlData,
+      });
+    } catch (err) {
+      console.error('Failed to persist future-risk session to Supabase:', err);
+    }
+  };
+
+  const persistClassificationSession = async ({ sessionCode, cnnData, qmlData, uploadedViews }) => {
     if (!supabase) return;
     try {
       const { data: sessionRow, error: sessionError } = await supabase
         .from('sessions')
-        .insert({ session_code: sessionCode, analysis_mode: 'classification', clinician_id: user?.id ?? null })
+        .insert({
+          session_code: sessionCode,
+          analysis_mode: 'classification',
+          ...sessionOwnerFields(),
+          result_snapshot: buildSnapshot(cnnData, qmlData),
+        })
         .select()
         .single();
       if (sessionError) throw sessionError;
@@ -382,6 +429,9 @@ export default function Analysis() {
         const { error: riskError } = await supabase.from('risk_assessments').insert(riskRows);
         if (riskError) throw riskError;
       }
+
+      // Originals + model images go to private storage so the session can be restored later.
+      await saveSessionImages({ sessionId: sessionRow.id, views: uploadedViews, cnnData, qmlData });
     } catch (err) {
       console.error('Failed to persist session to Supabase:', err);
     }
@@ -435,7 +485,9 @@ export default function Analysis() {
       );
 
       setActiveStep(2);
-      setSessionId(genSessionId());
+      const futureSessionCode = genSessionId();
+      setSessionId(futureSessionCode);
+      setDbSessionId(null);
 
 
       const buildFutureRiskFormData = () => {
@@ -491,6 +543,13 @@ export default function Analysis() {
           },
         });
 
+        persistFutureRiskSession({
+          sessionCode: futureSessionCode,
+          cnnData: cnnApi,
+          qmlData: qmlApi,
+          datedSessions,
+        });
+
       } catch (err) {
         console.error(err);
         const failure = describeAnalysisFailure(err, { subject: 'Future risk analysis', kept: 'inputs' });
@@ -540,6 +599,7 @@ export default function Analysis() {
           sessionCode: newSessionCode,
           cnnData: cnnData,
           qmlData: qmlData,
+          uploadedViews: views,
         });
 
       } catch (err) {
@@ -700,6 +760,57 @@ export default function Analysis() {
     }
   };
 
+  // ── Restore a stored session (?session=<uuid>) without rerunning the models ──
+  const [searchParams] = useSearchParams();
+  const restoreId = searchParams.get('session');
+  const [restoring, setRestoring] = useState(!!restoreId);
+  const [restoreError, setRestoreError] = useState(null);
+
+  useEffect(() => {
+    if (!restoreId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { session, result: restored, meta, verifications: restoredVerifications } = await loadSessionResult(restoreId);
+        if (cancelled) return;
+        const mode = session.analysis_mode === 'future-risk' ? 'future-risk' : 'classification';
+        setAnalysisMode(mode);
+        if (mode === 'future-risk') {
+          // The results screen only needs the exam dates and age; the images stay in storage.
+          setSessions((meta?.exams ?? []).map((e) => ({ ...emptySession(), scanDate: e.exam_date })));
+          setPatientAge(meta?.patient_age != null ? String(meta.patient_age) : '');
+        }
+        setResult(restored);
+        setSessionId(session.session_code);
+        setDbSessionId(session.id);
+        setAccessToken(session.access_token);
+        setSessionFinalized(!!session.verified);
+        setVerifications(restoredVerifications);
+        if (session.explanations?.viewData) setViewData(session.explanations.viewData);
+        if (session.explanations?.summary) setSummary(session.explanations.summary);
+        setActiveStep(2);
+      } catch (err) {
+        console.error('Failed to restore session:', err);
+        if (!cancelled) setRestoreError(err.message || 'Could not load this session.');
+      } finally {
+        if (!cancelled) setRestoring(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [restoreId]);
+
+  // Keep generated explanations with the stored session so they're restored too.
+  useEffect(() => {
+    if (!dbSessionId || !supabase) return;
+    if (!summary && !Object.values(viewData).some((v) => v.generated)) return;
+    const t = setTimeout(() => {
+      saveExplanations(dbSessionId, { summary, viewData, audience }).then(({ error }) => {
+        if (error) console.error('Failed to save explanations:', error);
+      });
+    }, 500);
+    return () => clearTimeout(t);
+  }, [dbSessionId, summary, viewData, audience]);
+
   const viewKey = selectedView.replace('_', '-');
 
   const currentViewData = viewData[selectedView];
@@ -799,6 +910,24 @@ export default function Analysis() {
     { scanDate: '2025-01-01' },
     { scanDate: '2026-01-01' },
   ]).map((s, i) => ({ scanDate: s.scanDate, file: { name: `exam_${i + 1}` } }));
+
+  if (restoring || restoreError) {
+    return (
+      <Box sx={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center', justifyContent: 'center', px: 2 }}>
+        {restoreError ? (
+          <>
+            <Alert severity="error">{restoreError}</Alert>
+            <Button variant="contained" href="/Analysis">Start a new analysis</Button>
+          </>
+        ) : (
+          <>
+            <CircularProgress size={28} />
+            <Typography color="text.secondary">Loading saved session…</Typography>
+          </>
+        )}
+      </Box>
+    );
+  }
 
   return (
 
@@ -947,6 +1076,19 @@ export default function Analysis() {
               {activeStep === 1 && (
                 analysisMode === 'classification' ? (
                   <Container maxWidth="md" sx={{ mt: { xs: 3, md: 4.5 } }}>
+                    {profile?.role === 'clinician' && (
+                      <TextField
+                        select fullWidth size="small" label="Patient (optional)"
+                        value={selectedPatientId} onChange={(e) => setSelectedPatientId(e.target.value)}
+                        helperText={assignedPatients.length
+                          ? 'Link this analysis to one of your assigned patients so it appears in their history.'
+                          : 'No patients are assigned to you, so this analysis will not be linked to a patient.'}
+                        sx={{ mb: 2 }}
+                      >
+                        <MuiMenuItem value="">No patient (scratch analysis)</MuiMenuItem>
+                        {assignedPatients.map((p) => <MuiMenuItem key={p.id} value={p.id}>{p.full_name || 'Unnamed patient'}</MuiMenuItem>)}
+                      </TextField>
+                    )}
                     <MultiViewUpload
                       views={views} setViews={setViews}
                       setActiveStep={setActiveStep}

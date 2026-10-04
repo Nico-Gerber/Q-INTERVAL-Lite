@@ -12,7 +12,7 @@ const MC = '#FF6A4D', BC = '#E3A63C', NC = '#2FBFA8';
 const getColor = (r) => (r === 'Malignant' ? MC : r === 'Benign' ? BC : NC);
 
 // ── Patient copy PDF, built straight from this page's own (already
-// simplified) data — no images, since none are retained past the session
+// simplified) data — no images, as they stay private to the clinic
 // (see the disclaimer below). ──
 const BRAND_DARK = '#0D1B2E';
 const BRAND_CYAN = '#0891B2';
@@ -86,8 +86,8 @@ function PatientReportDoc({ report }) {
 
                     <Text style={pdfStyles.disclaimer}>
                         These results have been reviewed and confirmed by a clinician. Please discuss them with your
-                        healthcare provider. Mammogram images aren't included — in this prototype's current state,
-                        uploaded images aren't retained or stored after analysis, for security and privacy reasons.
+                        healthcare provider. Mammogram images aren't included in this
+                        shared copy, for security and privacy reasons.
                     </Text>
                 </View>
 
@@ -236,8 +236,7 @@ export default function Report() {
               }}>
                 <InfoOutlinedIcon sx={{ fontSize: 20, color: t.cautionIcon, flexShrink: 0, mt: 0.2 }} />
                 <Typography sx={{ fontSize: '0.8rem', color: t.cautionText, lineHeight: 1.6, fontWeight: 500 }}>
-                  Mammogram images aren't shown here — in this prototype's current state, uploaded images aren't
-                  retained or stored after analysis, for security and privacy reasons.
+                  Mammogram images aren't shown on this shared page, for security and privacy reasons.
                 </Typography>
               </Box>
 

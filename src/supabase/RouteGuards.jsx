@@ -56,3 +56,13 @@ export function RequireAdmin({ children }) {
     </RequireApprovedUser>
   );
 }
+
+// Approved AND role in `roles`; anyone else is sent to `fallback`.
+export function RequireRole({ roles, fallback = '/Analysis', children }) {
+  const { profile } = useAuth();
+  return (
+    <RequireApprovedUser>
+      {roles.includes(profile?.role) ? children : <Navigate to={fallback} replace />}
+    </RequireApprovedUser>
+  );
+}

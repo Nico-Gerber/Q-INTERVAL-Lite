@@ -13,8 +13,11 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import IosShareIcon from '@mui/icons-material/IosShare';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { supabase } from '../supabase/supabase';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../supabase/AuthContext';
+import { deleteSessionImages } from '../supabase/sessionArtifacts';
 import NeuralCanvas from '../Components/Shared/NeuralCanvas';
 import ResultShell from '../Components/Shared/ResultShell';
 
@@ -25,6 +28,7 @@ const getColor = (r, verdict) => (r === 'Malignant' ? verdict.malignant : r === 
 
 export default function Sessions() {
   const { user, profile } = useAuth();
+  const navigate = useNavigate();
   // Only clinicians and admins may change verified results (also enforced in the database).
   const canVerify = profile?.role === 'clinician' || profile?.role === 'admin';
   const theme = useTheme();
@@ -39,6 +43,7 @@ export default function Sessions() {
     color: theme.palette.text.primary,
   };
   const [sessions, setSessions] = useState(null); // null = loading
+  const [futureSessions, setFutureSessions] = useState(null); // future-risk analyses, null = loading
   const [detail, setDetail] = useState(null); // { session, rows, risk } | null
   const [detailLoading, setDetailLoading] = useState(false);
   const [pendingChange, setPendingChange] = useState(null); // { view, from, to } | null
@@ -94,6 +99,19 @@ export default function Sessions() {
         });
 
         setSessions(list.map((s) => ({ ...s, reviewedCount: reviewedCounts[s.id] ?? 0 })));
+      });
+  }, []);
+
+  useEffect(() => {
+    if (!supabase) { setFutureSessions([]); return; }
+    supabase
+      .from('sessions')
+      .select('id, session_code, created_at')
+      .eq('analysis_mode', 'future-risk')
+      .order('created_at', { ascending: false })
+      .then(({ data, error }) => {
+        if (error) console.error('Failed to load future-risk sessions:', error);
+        setFutureSessions(data ?? []);
       });
   }, []);
 
@@ -157,10 +175,14 @@ export default function Sessions() {
   const handleDeleteSession = async () => {
     if (!supabase || !pendingDelete || pendingDelete.verified) return;
     setDeleting(true);
+    // Remove the stored images first so no orphaned files are left behind.
+    try { await deleteSessionImages(pendingDelete.id); }
+    catch (err) { console.error('Failed to delete session images:', err); setDeleting(false); return; }
     const { error } = await supabase.from('sessions').delete().eq('id', pendingDelete.id);
     setDeleting(false);
     if (error) { console.error('Failed to delete session:', error); return; }
     setSessions((prev) => (prev ?? []).filter((s) => s.id !== pendingDelete.id));
+    setFutureSessions((prev) => (prev ?? []).filter((s) => s.id !== pendingDelete.id));
     if (detail?.session?.id === pendingDelete.id) setDetail(null);
     setPendingDelete(null);
   };
@@ -308,6 +330,13 @@ export default function Sessions() {
                           View
                         </Button>
                         <Divider orientation="vertical" flexItem sx={{ borderColor: t.lineStrong, mx: 0.5, my: 0.5 }} />
+                        <Button
+                          size="small" startIcon={<OpenInNewIcon sx={{ fontSize: 15 }} />} onClick={() => navigate(`/Analysis?session=${s.id}`)}
+                          sx={{ color: modelAccent.quantum, minWidth: 84, justifyContent: 'flex-start' }}
+                        >
+                          Open
+                        </Button>
+                        <Divider orientation="vertical" flexItem sx={{ borderColor: t.lineStrong, mx: 0.5, my: 0.5 }} />
                         {s.verified ? (
                           <Button
                             size="small" startIcon={<IosShareIcon sx={{ fontSize: 14 }} />} onClick={() => { setShareSession(s); setCopied(false); }}
@@ -332,6 +361,47 @@ export default function Sessions() {
             </TableContainer>
             )}
           </ResultShell>
+        )}
+
+        {futureSessions?.length > 0 && (
+          <Box sx={{ mt: 5 }}>
+            <Typography variant="h6" sx={{ mb: 1.5 }}>Future Risk analyses</Typography>
+            <ResultShell sx={{ p: { xs: 2, md: 2.5 } }}>
+              <TableContainer sx={{ overflowX: 'auto' }}>
+                <Table size="small" sx={{ minWidth: 480 }}>
+                  <TableHead>
+                    <TableRow>
+                      {['Session', 'Date', 'Actions'].map((h) => (
+                        <TableCell key={h} sx={{ py: 1.5, color: t.label, borderBottom: `2px solid ${t.lineStrong}`, whiteSpace: 'nowrap' }}>{h}</TableCell>
+                      ))}
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {futureSessions.map((s) => (
+                      <TableRow key={s.id} hover>
+                        <TableCell sx={{ py: 2, fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 700, color: t.text, borderColor: t.lineStrong, whiteSpace: 'nowrap' }}>{s.session_code}</TableCell>
+                        <TableCell sx={{ py: 2, fontSize: '0.85rem', color: t.body, borderColor: t.lineStrong, whiteSpace: 'nowrap' }}>{new Date(s.created_at).toLocaleString()}</TableCell>
+                        <TableCell sx={{ py: 2, borderColor: t.lineStrong, whiteSpace: 'nowrap' }}>
+                          <Button
+                            size="small" startIcon={<OpenInNewIcon sx={{ fontSize: 15 }} />} onClick={() => navigate(`/Analysis?session=${s.id}`)}
+                            sx={{ color: modelAccent.quantum, minWidth: 84, justifyContent: 'flex-start' }}
+                          >
+                            Open
+                          </Button>
+                          <Button
+                            size="small" startIcon={<DeleteOutlineIcon sx={{ fontSize: 15 }} />} onClick={() => setPendingDelete({ ...s, verified: false })}
+                            sx={{ color: t.label, minWidth: 84, justifyContent: 'flex-start' }}
+                          >
+                            Delete
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </ResultShell>
+          </Box>
         )}
       </Container>
 
@@ -363,8 +433,8 @@ export default function Sessions() {
               }}>
                 <InfoOutlinedIcon sx={{ fontSize: 18, color: t.cautionIcon, flexShrink: 0, mt: 0.15 }} />
                 <Typography sx={{ fontSize: '0.76rem', color: t.cautionText, lineHeight: 1.5 }}>
-                  Mammogram images aren't retained after analysis, so they're not shown here either — review is
-                  based on the recorded AI output and confidence only.
+                  Mammogram images aren't shown in this summary — use Open to review the full stored results and
+                  images.
                 </Typography>
               </Box>
 
