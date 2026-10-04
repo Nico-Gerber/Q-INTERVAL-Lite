@@ -31,3 +31,6 @@ export const approveUser = (id, role) => adminFetch(`/users/${id}/approve`, { me
 export const rejectUser = (id) => adminFetch(`/users/${id}/reject`, { method: 'POST' });
 export const changeUserRole = (id, role) => adminFetch(`/users/${id}/role`, { method: 'PATCH', body: JSON.stringify({ role }) });
 export const deleteUser = (id) => adminFetch(`/users/${id}`, { method: 'DELETE' });
+export const listAssignments = () => adminFetch('/assignments');
+export const assignPatients = (clinicianId, patientIds) => adminFetch(`/clinicians/${clinicianId}/patients`, { method: 'POST', body: JSON.stringify({ patient_ids: patientIds }) });
+export const unassignPatient = (clinicianId, patientId) => adminFetch(`/clinicians/${clinicianId}/patients/${patientId}`, { method: 'DELETE' });

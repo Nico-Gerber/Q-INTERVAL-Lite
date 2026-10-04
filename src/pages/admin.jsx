@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Box, Container, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Button, Chip, Select, MenuItem, FormControl, InputLabel, Dialog, DialogTitle, DialogContent,
+  Button, Chip, Autocomplete, TextField, Select, MenuItem, FormControl, InputLabel, Dialog, DialogTitle, DialogContent,
   DialogContentText, DialogActions, Snackbar, Alert, CircularProgress, Stack,
 } from '@mui/material';
-import { listUsers, approveUser, rejectUser, changeUserRole, deleteUser } from '../supabase/adminApi';
+import { listUsers, approveUser, rejectUser, changeUserRole, deleteUser, listAssignments, assignPatients, unassignPatient } from '../supabase/adminApi';
 
 const ROLE_LABELS = { clinician: 'Clinician', patient: 'Patient', admin: 'Admin' };
 const STATUS_LABELS = { pending: 'Pending', approved: 'Approved', rejected: 'Rejected' };
@@ -53,6 +53,9 @@ function UserTable({ users, empty, columns, renderActions }) {
 
 export default function Admin() {
   const [users, setUsers] = useState([]);
+  const [assignments, setAssignments] = useState([]);
+  const [assignTarget, setAssignTarget] = useState(null); // clinician | null
+  const [assignSelection, setAssignSelection] = useState([]);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
@@ -65,8 +68,9 @@ export default function Admin() {
 
   const load = useCallback(async () => {
     try {
-      const data = await listUsers();
+      const [data, assigned] = await Promise.all([listUsers(), listAssignments()]);
       setUsers(data.users);
+      setAssignments(assigned.assignments);
       setCurrentUserId(data.current_user_id);
       setLoadError(null);
     } catch (err) {
@@ -80,6 +84,10 @@ export default function Admin() {
 
   const pending = useMemo(() => users.filter((u) => u.status === 'pending'), [users]);
   const approved = useMemo(() => users.filter((u) => u.status === 'approved'), [users]);
+  const clinicians = useMemo(() => approved.filter((u) => u.role === 'clinician'), [approved]);
+  const patients = useMemo(() => approved.filter((u) => u.role === 'patient'), [approved]);
+  const userById = useMemo(() => Object.fromEntries(users.map((u) => [u.id, u])), [users]);
+  const patientsOf = (clinicianId) => assignments.filter((a) => a.clinician_id === clinicianId).map((a) => userById[a.patient_id]).filter(Boolean);
   const rejected = useMemo(() => users.filter((u) => u.status === 'rejected'), [users]);
 
   // Runs an admin action, reports the outcome, then reloads from the server.
@@ -108,6 +116,20 @@ export default function Admin() {
     setRejectTarget(null);
     await run(id, () => rejectUser(id), `${full_name || 'User'} rejected.`);
   };
+
+  const openAssign = (clinician) => { setAssignSelection([]); setAssignTarget(clinician); };
+
+  const confirmAssign = async () => {
+    const clinician = assignTarget;
+    const ids = assignSelection.map((p) => p.id);
+    setAssignTarget(null);
+    await run(clinician.id, () => assignPatients(clinician.id, ids),
+      `${ids.length} patient${ids.length === 1 ? '' : 's'} assigned to ${clinician.full_name || clinician.email}.`);
+  };
+
+  const removeAssignment = (clinician, patient) =>
+    run(clinician.id, () => unassignPatient(clinician.id, patient.id),
+      `${patient.full_name || patient.email} unassigned from ${clinician.full_name || clinician.email}.`);
 
   const confirmDelete = async () => {
     const { id, full_name, email } = deleteTarget;
@@ -200,6 +222,34 @@ export default function Admin() {
             />
           </Section>
 
+          <Section title="Clinician Assignments" count={clinicians.length}>
+            <UserTable
+              users={clinicians}
+              empty="No approved clinicians yet. Approve a user as a Clinician to assign patients."
+              columns={[
+                nameCol, emailCol,
+                {
+                  key: 'patients', label: 'Assigned patients',
+                  sx: { minWidth: 220 },
+                  render: (u) => {
+                    const assigned = patientsOf(u.id);
+                    return assigned.length ? (
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+                        {assigned.map((p) => (
+                          <Chip key={p.id} size="small" label={p.full_name || p.email}
+                            disabled={busyId === u.id} onDelete={() => removeAssignment(u, p)} />
+                        ))}
+                      </Box>
+                    ) : <Typography variant="body2" color="text.secondary">No patients assigned</Typography>;
+                  },
+                },
+              ]}
+              renderActions={(u) => (
+                <Button size="small" variant="outlined" disabled={busyId === u.id} onClick={() => openAssign(u)}>Assign patients</Button>
+              )}
+            />
+          </Section>
+
           {rejected.length > 0 && (
             <Section title="Rejected Users" count={rejected.length}>
               <UserTable
@@ -216,6 +266,29 @@ export default function Admin() {
           )}
         </>
       )}
+
+      <Dialog open={!!assignTarget} onClose={() => setAssignTarget(null)} fullWidth maxWidth="sm">
+        <DialogTitle>Assign patients</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: 2 }}>
+            Choose patients for {assignTarget?.full_name || assignTarget?.email}. They will only be able to access patients assigned to them.
+          </DialogContentText>
+          <Autocomplete
+            multiple
+            options={patients.filter((p) => !patientsOf(assignTarget?.id).some((a) => a.id === p.id))}
+            getOptionLabel={(p) => (p.full_name ? `${p.full_name} (${p.email})` : p.email || '')}
+            isOptionEqualToValue={(a, b) => a.id === b.id}
+            value={assignSelection}
+            onChange={(_, v) => setAssignSelection(v)}
+            noOptionsText="No unassigned approved patients"
+            renderInput={(params) => <TextField {...params} label="Patients" size="small" />}
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setAssignTarget(null)}>Cancel</Button>
+          <Button variant="contained" disabled={!assignSelection.length} onClick={confirmAssign}>Assign</Button>
+        </DialogActions>
+      </Dialog>
 
       <Dialog open={!!approveTarget} onClose={() => setApproveTarget(null)} fullWidth maxWidth="xs">
         <DialogTitle>Approve user</DialogTitle>

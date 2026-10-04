@@ -7,12 +7,12 @@ lives in backend/.env (never in the React app).
 import os
 from datetime import datetime, timezone
 from uuid import UUID
-from typing import Literal, Optional
+from typing import List, Literal, Optional
 
 import httpx
 from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 load_dotenv()
 
@@ -27,6 +27,10 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 
 class RoleBody(BaseModel):
     role: Role
+
+
+class AssignBody(BaseModel):
+    patient_ids: List[UUID] = Field(min_length=1, max_length=100)
 
 
 def _service_headers() -> dict:
@@ -195,3 +199,58 @@ async def delete_user(user_id: UUID, admin_id: str = Depends(require_admin)):
         if res.status_code >= 400:
             raise HTTPException(500, "Could not delete the user.")
     return {"deleted": user_id}
+
+
+@router.get("/assignments")
+async def list_assignments(admin_id: str = Depends(require_admin)):
+    async with httpx.AsyncClient(timeout=15) as client:
+        res = await client.get(
+            f"{SUPABASE_URL}/rest/v1/clinician_patients",
+            params={"select": "clinician_id,patient_id,assigned_at"},
+            headers=_service_headers(),
+        )
+    if res.status_code != 200:
+        raise HTTPException(502, "Could not load assignments.")
+    return {"assignments": res.json()}
+
+
+@router.post("/clinicians/{clinician_id}/patients")
+async def assign_patients(clinician_id: UUID, body: AssignBody, admin_id: str = Depends(require_admin)):
+    clinician_id = str(clinician_id)
+    patient_ids = sorted({str(p) for p in body.patient_ids})
+    async with httpx.AsyncClient(timeout=15) as client:
+        clinician = await _get_profile(client, clinician_id)
+        if clinician["role"] != "clinician" or clinician["status"] != "approved":
+            raise HTTPException(400, "The selected user is not an approved clinician.")
+
+        res = await client.get(
+            f"{SUPABASE_URL}/rest/v1/profiles",
+            params={"id": f"in.({','.join(patient_ids)})", "select": "id,role,status"},
+            headers=_service_headers(),
+        )
+        found = res.json() if res.status_code == 200 else []
+        valid = {p["id"] for p in found if p["role"] == "patient" and p["status"] == "approved"}
+        if valid != set(patient_ids):
+            raise HTTPException(400, "Every selected user must be an approved patient.")
+
+        res = await client.post(
+            f"{SUPABASE_URL}/rest/v1/clinician_patients",
+            json=[{"clinician_id": clinician_id, "patient_id": pid, "assigned_by": admin_id} for pid in patient_ids],
+            headers={**_service_headers(), "Prefer": "resolution=ignore-duplicates,return=minimal"},
+        )
+        if res.status_code >= 400:
+            raise HTTPException(500, "Could not assign patients.")
+    return {"assigned": patient_ids}
+
+
+@router.delete("/clinicians/{clinician_id}/patients/{patient_id}")
+async def unassign_patient(clinician_id: UUID, patient_id: UUID, admin_id: str = Depends(require_admin)):
+    async with httpx.AsyncClient(timeout=15) as client:
+        res = await client.delete(
+            f"{SUPABASE_URL}/rest/v1/clinician_patients",
+            params={"clinician_id": f"eq.{clinician_id}", "patient_id": f"eq.{patient_id}"},
+            headers=_service_headers(),
+        )
+    if res.status_code >= 400:
+        raise HTTPException(500, "Could not remove the assignment.")
+    return {"removed": True}
