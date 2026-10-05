@@ -29,6 +29,7 @@ import { ThreeDot } from 'react-loading-indicators';
 
 import { supabase } from '../supabase/supabase';
 import { useAuth } from '../supabase/AuthContext';
+import { TRAINING_TERMS_VERSION } from '../Components/ImageUpload/TrainingConsent';
 import { useAssignedPatients } from '../supabase/useAssignedPatients';
 import { buildSnapshot, saveSessionImages, loadSessionResult, saveExplanations } from '../supabase/sessionArtifacts';
 
@@ -76,6 +77,8 @@ export default function Analysis() {
   // Clinicians can link a new analysis to one of their assigned patients (optional).
   const { patients: assignedPatients } = useAssignedPatients();
   const [selectedPatientId, setSelectedPatientId] = useState('');
+  // Opt-in to using this classification session for model improvement (off by default).
+  const [trainingConsent, setTrainingConsent] = useState(false);
   const theme = useTheme();
   // Result-area colours (frame, session bar, status banner, export buttons) — App.js resultsPalette.
   const rp = theme.palette.results;
@@ -380,6 +383,9 @@ export default function Analysis() {
           analysis_mode: 'classification',
           ...sessionOwnerFields(),
           result_snapshot: buildSnapshot(cnnData, qmlData),
+          training_consent: trainingConsent,
+          training_consent_at: trainingConsent ? new Date().toISOString() : null,
+          training_consent_version: trainingConsent ? TRAINING_TERMS_VERSION : null,
         })
         .select()
         .single();
@@ -634,6 +640,7 @@ export default function Analysis() {
     setCollapsed(true)
     setSessions([emptySession(), emptySession()]);
     setVerifications(emptyVerifications());
+    setTrainingConsent(false);
 
   };
 
@@ -1094,6 +1101,8 @@ export default function Analysis() {
                       setActiveStep={setActiveStep}
                       handleAnalyse={handleAnalyse}
                       analysisError={analysisError}
+                      trainingConsent={trainingConsent}
+                      setTrainingConsent={setTrainingConsent}
                     />
 
                   </Container>

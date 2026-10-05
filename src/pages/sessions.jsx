@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   Box, Container, Typography, Table, TableHead, TableRow, TableCell, TableBody, TableContainer,
   Chip, Button, CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions, IconButton,
-  Select, MenuItem, TextField, InputAdornment, Divider, useTheme, alpha,
+  Select, MenuItem, TextField, InputAdornment, Divider, Switch, FormControlLabel, useTheme, alpha,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
@@ -18,6 +18,7 @@ import { supabase } from '../supabase/supabase';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../supabase/AuthContext';
 import { deleteSessionImages } from '../supabase/sessionArtifacts';
+import { TRAINING_TERMS_VERSION } from '../Components/ImageUpload/TrainingConsent';
 import NeuralCanvas from '../Components/Shared/NeuralCanvas';
 import ResultShell from '../Components/Shared/ResultShell';
 
@@ -51,6 +52,7 @@ export default function Sessions() {
   const [deleting, setDeleting] = useState(false);
   const [shareSession, setShareSession] = useState(null); // session | null
   const [copied, setCopied] = useState(false);
+  const [consentSaving, setConsentSaving] = useState(false);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all'); // all | published | in-progress | not-reviewed
   const [sortNewestFirst, setSortNewestFirst] = useState(true);
@@ -73,7 +75,7 @@ export default function Sessions() {
     if (!supabase) { setSessions([]); return; }
     supabase
       .from('sessions')
-      .select('id, session_code, analysis_mode, verified, verified_at, created_at, access_token')
+      .select('id, session_code, analysis_mode, verified, verified_at, created_at, access_token, training_consent')
       .eq('analysis_mode', 'classification')
       .order('created_at', { ascending: false })
       .then(async ({ data, error }) => {
@@ -137,6 +139,20 @@ export default function Sessions() {
     });
     setDetail({ session, rows, risk: riskRows ?? [] });
     setDetailLoading(false);
+  };
+
+  // Grant/withdraw permission to use this session's images + verified results for model improvement.
+  const toggleTrainingConsent = async (checked) => {
+    if (!supabase || !detail?.session) return;
+    const id = detail.session.id;
+    setConsentSaving(true);
+    const { error } = await supabase.rpc('set_training_consent', {
+      p_session_id: id, p_consent: checked, p_version: checked ? TRAINING_TERMS_VERSION : null,
+    });
+    setConsentSaving(false);
+    if (error) { console.error('Failed to update training consent:', error); return; }
+    setDetail((prev) => prev && { ...prev, session: { ...prev.session, training_consent: checked } });
+    setSessions((prev) => (prev ?? []).map((x) => (x.id === id ? { ...x, training_consent: checked } : x)));
   };
 
   const requestChange = (view, newResult) => {
@@ -344,14 +360,14 @@ export default function Sessions() {
                           >
                             Share
                           </Button>
-                        ) : (
+                        ) : canVerify ? (
                           <Button
                             size="small" startIcon={<DeleteOutlineIcon sx={{ fontSize: 15 }} />} onClick={() => setPendingDelete(s)}
                             sx={{ color: t.label, minWidth: 84, justifyContent: 'flex-start' }}
                           >
                             Delete
                           </Button>
-                        )}
+                        ) : null}
                       </Box>
                     </TableCell>
                   </TableRow>
@@ -388,12 +404,14 @@ export default function Sessions() {
                           >
                             Open
                           </Button>
+                          {canVerify && (
                           <Button
                             size="small" startIcon={<DeleteOutlineIcon sx={{ fontSize: 15 }} />} onClick={() => setPendingDelete({ ...s, verified: false })}
                             sx={{ color: t.label, minWidth: 84, justifyContent: 'flex-start' }}
                           >
                             Delete
                           </Button>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -528,8 +546,25 @@ export default function Sessions() {
               </Box>
             </Box>
           )}
+          {detail?.session && !detailLoading && (
+            <Box sx={{ mt: 2, pt: 2, borderTop: `1px solid ${t.line}` }}>
+              <FormControlLabel
+                sx={{ alignItems: 'flex-start', m: 0 }}
+                control={<Switch size="small" checked={!!detail.session.training_consent} disabled={consentSaving} onChange={(e) => toggleTrainingConsent(e.target.checked)} />}
+                label={
+                  <Box sx={{ ml: 0.5 }}>
+                    <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: t.text }}>Use for model improvement</Typography>
+                    <Typography sx={{ fontSize: '0.78rem', color: t.label, lineHeight: 1.5 }}>
+                      Allows this session's images and clinician-verified results to be used to improve the classification
+                      models. You can withdraw at any time.
+                    </Typography>
+                  </Box>
+                }
+              />
+            </Box>
+          )}
         </DialogContent>
-        {detail?.session && !detail.session.verified && (
+        {canVerify && detail?.session && !detail.session.verified && (
           <DialogActions sx={{ px: 3, py: 1.5 }}>
             <Button
               size="small" startIcon={<DeleteOutlineIcon sx={{ fontSize: 16 }} />}

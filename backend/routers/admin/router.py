@@ -185,15 +185,64 @@ async def change_role(user_id: UUID, body: RoleBody, admin_id: str = Depends(req
         })
 
 
+BUCKET = "session-images"
+
+
+async def _delete_user_data(client: httpx.AsyncClient, user_id: str):
+    """Delete a user's own session data (and stored images) before their account goes.
+
+    Patients: every session where they are the patient.
+    Clinicians/admins: their scratch sessions (no patient). Sessions linked to patients are kept for
+    the patient's history; they are just detached from the deleted clinician.
+    """
+    res = await client.get(
+        f"{SUPABASE_URL}/rest/v1/sessions",
+        params={"select": "id", "or": f"(patient_id.eq.{user_id},and(clinician_id.eq.{user_id},patient_id.is.null))"},
+        headers=_service_headers(),
+    )
+    if res.status_code != 200:
+        raise HTTPException(502, "Could not look up the user's sessions.")
+    session_ids = [r["id"] for r in res.json()]
+
+    for i in range(0, len(session_ids), 50):
+        batch = session_ids[i:i + 50]
+        in_list = f"in.({','.join(batch)})"
+        imgs = await client.get(
+            f"{SUPABASE_URL}/rest/v1/session_images",
+            params={"select": "storage_path", "session_id": in_list},
+            headers=_service_headers(),
+        )
+        paths = [r["storage_path"] for r in imgs.json()] if imgs.status_code == 200 else []
+        for j in range(0, len(paths), 100):
+            rm = await client.request(
+                "DELETE", f"{SUPABASE_URL}/storage/v1/object/{BUCKET}",
+                json={"prefixes": paths[j:j + 100]}, headers=_service_headers(),
+            )
+            if rm.status_code >= 400:
+                raise HTTPException(500, "Could not delete the user's stored images.")
+        d = await client.delete(f"{SUPABASE_URL}/rest/v1/sessions", params={"id": in_list}, headers=_service_headers())
+        if d.status_code >= 400:
+            raise HTTPException(500, "Could not delete the user's sessions.")
+
+    # Detach remaining sessions from a deleted clinician so the account delete isn't blocked by a foreign key.
+    await client.patch(
+        f"{SUPABASE_URL}/rest/v1/sessions",
+        params={"clinician_id": f"eq.{user_id}"},
+        json={"clinician_id": None},
+        headers=_service_headers(),
+    )
+
+
 @router.delete("/users/{user_id}")
 async def delete_user(user_id: UUID, admin_id: str = Depends(require_admin)):
     user_id = str(user_id)
     if user_id == admin_id:
         raise HTTPException(400, "You cannot delete your own account.")
-    async with httpx.AsyncClient(timeout=15) as client:
+    async with httpx.AsyncClient(timeout=60) as client:
         target = await _get_profile(client, user_id)
         if target["role"] == "admin":
             raise HTTPException(400, "Admin accounts cannot be deleted here.")
+        await _delete_user_data(client, user_id)
         # Deleting the auth user cascades to public.profiles (on delete cascade).
         res = await client.delete(f"{SUPABASE_URL}/auth/v1/admin/users/{user_id}", headers=_service_headers())
         if res.status_code >= 400:

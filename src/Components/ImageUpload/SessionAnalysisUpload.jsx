@@ -10,6 +10,7 @@ import {
   GridView as GridViewIcon,
 } from '@mui/icons-material';
 import { useDropzone } from 'react-dropzone';
+import TrainingConsent from './TrainingConsent';
 import ValidationMessage, { AnalysisFailureMessage } from '../Shared/ValidationMessage';
 import { validateSessionAnalysis } from '../AnalysisTool/analysisValidation';
 import { ACCEPTED_FILE_TYPES, MAX_FILE_BYTES, rejectionMessage, prepareImage, batchProblemMessage, smartDropCapacity } from './uploadChecks';
@@ -201,7 +202,7 @@ const TABS = [
   { val: 'smart',  Icon: AutoAwesomeIcon, label: 'Smart',  blurb: 'Drop all four at once — sorted by filename.' },
 ];
 
-export default function MultiViewUpload({ views, setViews, setActiveStep, handleAnalyse, analysisError }) {
+export default function MultiViewUpload({ views, setViews, setActiveStep, handleAnalyse, analysisError, trainingConsent = false, setTrainingConsent }) {
   const [uploadMode, setUploadMode] = useState('manual');
   const [proofMap, setProofMap]     = useState({});
   const [pending, setPending]       = useState([]);
@@ -479,6 +480,8 @@ export default function MultiViewUpload({ views, setViews, setActiveStep, handle
           {showSummary && <ValidationMessage key="summary" id="session-validation-summary" severity="warning" dense={false}>{validation.summary}</ValidationMessage>}
         </AnimatePresence>
       </Box>
+
+      {setTrainingConsent && <TrainingConsent checked={trainingConsent} onChange={setTrainingConsent} />}
 
       {/* ── Navigation ── */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3, delay: 0.12 }}>

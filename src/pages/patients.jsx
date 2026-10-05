@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box, Container, Typography, Accordion, AccordionSummary, AccordionDetails, Chip, Button,
-  Table, TableBody, TableCell, TableHead, TableRow, TableContainer, CircularProgress, Alert, useTheme,
+  Table, TableBody, TableCell, TableHead, TableRow, TableContainer, CircularProgress, Alert, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, useTheme,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import { deleteSessionImages } from '../supabase/sessionArtifacts';
 import { supabase } from '../supabase/supabase';
 import { useAssignedPatients } from '../supabase/useAssignedPatients';
 
@@ -20,6 +22,9 @@ export default function Patients() {
   const [sessionsByPatient, setSessionsByPatient] = useState({});
   const [sessionsLoading, setSessionsLoading] = useState(true);
   const [sessionsError, setSessionsError] = useState(null);
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
 
   useEffect(() => {
     if (loading) return;
@@ -52,6 +57,25 @@ export default function Patients() {
   }, [patients, loading]);
 
   const isFuture = (s) => s.analysis_mode === 'future-risk';
+  // Published sessions can't be deleted here (their patient link may already be in use).
+  const confirmDelete = async () => {
+    const s = pendingDelete;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await deleteSessionImages(s.id);            // remove stored images first
+      const { error: delError } = await supabase.from('sessions').delete().eq('id', s.id);
+      if (delError) throw delError;
+      setSessionsByPatient((prev) => ({ ...prev, [s.patient_id]: (prev[s.patient_id] ?? []).filter((x) => x.id !== s.id) }));
+      setPendingDelete(null);
+    } catch (err) {
+      console.error('Failed to delete session:', err);
+      setDeleteError('Could not delete this session. Please try again.');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const statusOf = (s) => (isFuture(s)
     ? { label: 'Future risk', color: reportStatus.partial }
     : s.verified
@@ -116,6 +140,11 @@ export default function Patients() {
                                   <Button size="small" startIcon={<OpenInNewIcon sx={{ fontSize: 15 }} />} onClick={() => navigate(`/Analysis?session=${s.id}`)}>
                                     Open
                                   </Button>
+                                  {!s.verified && (
+                                    <Button size="small" color="error" startIcon={<DeleteOutlineIcon sx={{ fontSize: 15 }} />} onClick={() => { setDeleteError(null); setPendingDelete(s); }}>
+                                      Delete
+                                    </Button>
+                                  )}
                                 </TableCell>
                               </TableRow>
                             );
@@ -132,6 +161,21 @@ export default function Patients() {
           })
         )}
       </Container>
+
+      <Dialog open={!!pendingDelete} onClose={() => !deleting && setPendingDelete(null)} fullWidth maxWidth="xs">
+        <DialogTitle>Delete session?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            This permanently deletes session {pendingDelete?.session_code}, including its stored images and results,
+            and removes it from any model-improvement data. This cannot be undone.
+          </DialogContentText>
+          {deleteError && <Alert severity="error" sx={{ mt: 2 }}>{deleteError}</Alert>}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setPendingDelete(null)} disabled={deleting}>Cancel</Button>
+          <Button variant="contained" color="error" onClick={confirmDelete} disabled={deleting}>{deleting ? 'Deleting…' : 'Delete'}</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
