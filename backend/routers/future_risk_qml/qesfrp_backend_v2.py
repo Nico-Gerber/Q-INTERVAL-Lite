@@ -37,6 +37,7 @@ Single file. The only thing beside it is the weights:
 
 import io
 import json
+import logging
 import os
 import pickle
 import warnings
@@ -441,8 +442,9 @@ def startup_event():
     _model.load_state_dict(artifacts["model_state"])
     _model.eval()
 
-    print("QeSFRP v0.2 ready: %d qubits, %d blocks, horizons %s"
-          % (artifacts["n_qubits"], artifacts["n_blocks"], artifacts["horizons"]))
+    logging.getLogger(__name__).info(
+        "QeSFRP v0.2 ready: %d qubits, %d blocks, horizons %s",
+        artifacts["n_qubits"], artifacts["n_blocks"], artifacts["horizons"])
 
 
 # ============================================================

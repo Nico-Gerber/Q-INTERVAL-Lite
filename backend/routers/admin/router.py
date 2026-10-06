@@ -4,20 +4,16 @@ Every route verifies the caller's Supabase JWT and confirms the caller is an
 approved admin *server-side*. Writes use the service-role key, which only ever
 lives in backend/.env (never in the React app).
 """
-import os
 from datetime import datetime, timezone
 from uuid import UUID
 from typing import List, Literal, Optional
 
 import httpx
-from dotenv import load_dotenv
-from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
-load_dotenv()
-
-SUPABASE_URL = (os.getenv("SUPABASE_URL") or "").rstrip("/")
-SERVICE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+from config import SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY as SERVICE_KEY
+from guards import require_admin
 
 ASSIGNABLE_ROLES = ("clinician", "patient")  # admins are never created via the API
 Role = Literal["clinician", "patient"]
@@ -39,39 +35,6 @@ def _service_headers() -> dict:
         "Authorization": f"Bearer {SERVICE_KEY}",
         "Content-Type": "application/json",
     }
-
-
-def _require_config():
-    if not SUPABASE_URL or not SERVICE_KEY:
-        raise HTTPException(503, "Admin API is not configured.")
-
-
-async def require_admin(authorization: Optional[str] = Header(default=None)) -> str:
-    """Validate the caller's JWT with Supabase Auth, then check profile role/status in the DB."""
-    _require_config()
-    if not authorization or not authorization.lower().startswith("bearer "):
-        raise HTTPException(401, "Missing bearer token.")
-    token = authorization[7:].strip()
-
-    async with httpx.AsyncClient(timeout=10) as client:
-        # Supabase Auth validates signature + expiry for us.
-        auth_res = await client.get(
-            f"{SUPABASE_URL}/auth/v1/user",
-            headers={"apikey": SERVICE_KEY, "Authorization": f"Bearer {token}"},
-        )
-        if auth_res.status_code != 200:
-            raise HTTPException(401, "Invalid or expired session.")
-        caller_id = auth_res.json().get("id")
-
-        prof_res = await client.get(
-            f"{SUPABASE_URL}/rest/v1/profiles",
-            params={"id": f"eq.{caller_id}", "select": "role,status"},
-            headers=_service_headers(),
-        )
-    rows = prof_res.json() if prof_res.status_code == 200 else []
-    if not rows or rows[0]["role"] != "admin" or rows[0]["status"] != "approved":
-        raise HTTPException(403, "Administrator access required.")
-    return caller_id
 
 
 async def _get_profile(client: httpx.AsyncClient, user_id: str) -> dict:

@@ -1,44 +1,66 @@
-import httpx
-import os
-import base64
+import logging
 
-from pathlib import Path
+import httpx
+
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Optional
-from dotenv import load_dotenv
 
-load_dotenv()
+import config
 
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+logger = logging.getLogger(__name__)
 
+OPENROUTER_API_KEY = config.OPENROUTER_API_KEY
+OPENROUTER_URL = config.OPENROUTER_URL
+TEXT_MODEL = config.OPENROUTER_TEXT_MODEL
+VLM = config.OPENROUTER_VLM_MODEL
 
-
-
-OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-
-VLM = "dots-studio/dots-3-note-preview:free"
-
-
-DEBUG_VLM_DIR = Path("debug_vlm")
-DEBUG_VLM_DIR.mkdir(exist_ok=True)
+DISCLAIMER = (
+    "This explanation is AI-generated and intended solely to interpret model outputs. "
+    "It must not be used as a substitute for professional clinical assessment."
+)
 
 
-def save_debug_b64_image(b64_string: str, filename: str):
-    if not b64_string:
-        print(f"DEBUG: no image data for {filename}")
-        return
+def _openrouter_headers() -> dict:
+    return {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json",
+        "X-OpenRouter-Title": "Q-Interval-Lite",
+    }
 
-    if "," in b64_string:
-        b64_string = b64_string.split(",", 1)[1]
 
-    path = DEBUG_VLM_DIR / filename
+class ExplanationUnavailable(Exception):
+    """The LLM provider is unreachable or returned an error (details are logged, never sent to clients)."""
 
-    with open(path, "wb") as f:
-        f.write(base64.b64decode(b64_string))
 
-    print("DEBUG saved:", path.resolve())
+async def generate_text(prompt: str) -> str:
+    """Text explanation via OpenRouter (replaces the local Ollama model)."""
+    if not OPENROUTER_API_KEY:
+        raise ExplanationUnavailable("OPENROUTER_API_KEY is not configured")
+    try:
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            response = await client.post(
+                OPENROUTER_URL,
+                headers=_openrouter_headers(),
+                json={
+                    "model": TEXT_MODEL,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "temperature": 0.3,
+                    "reasoning": {"enabled": False},   # answer directly, no hidden chain-of-thought
+                },
+            )
+    except httpx.HTTPError as exc:
+        raise ExplanationUnavailable(f"{type(exc).__name__}") from exc
+    if not response.is_success:
+        raise ExplanationUnavailable(f"OpenRouter returned HTTP {response.status_code}")
+    content = (response.json().get("choices") or [{}])[0].get("message", {}).get("content")
+    return content.strip() if isinstance(content, str) else ""
+
+
+def unavailable_response(exc: Exception) -> JSONResponse:
+    logger.warning("Explanation request failed: %s", exc)
+    return JSONResponse(status_code=503, content={"error": "The explanation service is unavailable. Please try again."})
 
 
 def as_data_uri(image_b64: str) -> str:
@@ -57,8 +79,6 @@ VIEW_NAMES = {
 
 router = APIRouter(prefix="/explain", tags=["explain"])
 
-MODEL_URL = "http://localhost:11434/api/generate"
-MODEL = "qwen3.5:4b"
 
 
 # ── Request shape ──────────────────────────────────────────────────────────────
@@ -196,26 +216,14 @@ async def explain(data: ExplainRequest):
     prompt = build_prompt(data)
 
     try:
-        async with httpx.AsyncClient(timeout=120.0) as client:
-            response = await client.post(MODEL_URL, json={
-                "model": MODEL,
-                "prompt": prompt,
-                "stream": False,
-                "think": False, 
-            })
-        result = response.json()
-        explanation = result.get("response", "").strip()
-
-    except Exception as e:
-        return JSONResponse(
-            status_code=503,
-            content={"error": f"Model unavailable: {str(e)}", "type": type(e).__name__}
-        )
+        explanation = await generate_text(prompt)
+    except ExplanationUnavailable as exc:
+        return unavailable_response(exc)
 
     return JSONResponse(content={
         "explanation": explanation,
         "audience": data.audience,
-        "disclaimer": "This explanation is AI-generated and intended solely to interpret model outputs. It must not be used as a substitute for professional clinical assessment.",
+        "disclaimer": DISCLAIMER,
     })
 
 
@@ -317,26 +325,14 @@ async def explain_future_risk(data: FutureRiskExplainRequest):
     prompt = build_future_risk_prompt(data)
 
     try:
-        async with httpx.AsyncClient(timeout=120.0) as client:
-            response = await client.post(MODEL_URL, json={
-                "model": MODEL,
-                "prompt": prompt,
-                "stream": False,
-                "think": False,
-            })
-        result = response.json()
-        explanation = result.get("response", "").strip()
-
-    except Exception as e:
-        return JSONResponse(
-            status_code=503,
-            content={"error": f"Model unavailable: {str(e)}", "type": type(e).__name__}
-        )
+        explanation = await generate_text(prompt)
+    except ExplanationUnavailable as exc:
+        return unavailable_response(exc)
 
     return JSONResponse(content={
         "explanation": explanation,
         "audience": data.audience,
-        "disclaimer": "This explanation is AI-generated and intended solely to interpret model outputs. It must not be used as a substitute for professional clinical assessment.",
+        "disclaimer": DISCLAIMER,
     })
 
 
@@ -425,33 +421,8 @@ async def explainview(data: VLMCompareRequest):
     prompt = build_view_prompt(data)
 
     if not OPENROUTER_API_KEY:
-        return JSONResponse(
-            status_code=500,
-            content={
-                "error": "OPENROUTER_API_KEY is not configured"
-            }
-        )
-
-    print("\n===== OPENROUTER VLM DEBUG =====")
-    print("View:", data.view)
-    print("Classical:", data.classical_verdict)
-    print("Quantum:", data.quantum_verdict)
-
-    # Keep your debug image saving for now
-    save_debug_b64_image(
-        data.base_image,
-        f"{data.view}_01_original.png"
-    )
-
-    save_debug_b64_image(
-        data.classical_heatmap,
-        f"{data.view}_02_classical.png"
-    )
-
-    save_debug_b64_image(
-        data.quantum_heatmap,
-        f"{data.view}_03_quantum.png"
-    )
+        logger.error("OPENROUTER_API_KEY is not configured")
+        return JSONResponse(status_code=503, content={"error": "The explanation service is unavailable. Please try again."})
 
     payload = {
         "model": VLM,
@@ -500,87 +471,20 @@ async def explainview(data: VLMCompareRequest):
     }
 
     try:
-        async with httpx.AsyncClient(
-            timeout=320.0
-        ) as client:
-
-            response = await client.post(
-                OPENROUTER_URL,
-
-                headers={
-                    "Authorization":
-                        f"Bearer {OPENROUTER_API_KEY}",
-
-                    "Content-Type":
-                        "application/json",
-
-                    # Optional
-                    "X-OpenRouter-Title":
-                        "Q-Interval-Lite"
-                },
-
-                json=payload
-            )
-
-        # Very useful while testing
+        async with httpx.AsyncClient(timeout=320.0) as client:
+            response = await client.post(OPENROUTER_URL, headers=_openrouter_headers(), json=payload)
         if not response.is_success:
-            print(
-                "OpenRouter error:",
-                response.status_code,
-                response.text
-            )
-
-            return JSONResponse(
-                status_code=response.status_code,
-                content={
-                    "error":
-                        f"OpenRouter request failed: "
-                        f"{response.text}"
-                }
-            )
-
+            raise ExplanationUnavailable(f"OpenRouter returned HTTP {response.status_code}")
         result = response.json()
-
-        print("FULL OPENROUTER RESPONSE:")
-        print(result)
-
-        content = (
-            result
-            .get("choices", [{}])[0]
-            .get("message", {})
-            .get("content")
-        )
-
+        content = (result.get("choices") or [{}])[0].get("message", {}).get("content")
         explanation = content.strip() if isinstance(content, str) else ""
-
-        print(
-            "OpenRouter model used:",
-            result.get("model")
-        )
-
-        print(
-            "VLM explanation:",
-            explanation
-        )
-
-    except Exception as e:
-        return JSONResponse(
-            status_code=503,
-            content={
-                "error":
-                    f"OpenRouter unavailable: {str(e)}",
-
-                "type":
-                    type(e).__name__
-            }
-        )
+    except (httpx.HTTPError, ExplanationUnavailable) as exc:
+        return unavailable_response(exc)
 
     return JSONResponse(
         content={
             "explanation": explanation,
             "audience": data.audience,
-
-            # Helpful during testing.
             "model": result.get("model")
         }
     )

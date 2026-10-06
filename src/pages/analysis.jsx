@@ -28,12 +28,12 @@ import AssistantIcon from '@mui/icons-material/Assistant';
 import { ThreeDot } from 'react-loading-indicators';
 
 import { supabase } from '../supabase/supabase';
+import { ENDPOINTS, apiFetch } from '../config/api';
 import { useAuth } from '../supabase/AuthContext';
 import { TRAINING_TERMS_VERSION } from '../Components/ImageUpload/TrainingConsent';
 import { useAssignedPatients } from '../supabase/useAssignedPatients';
 import { buildSnapshot, saveSessionImages, loadSessionResult, saveExplanations } from '../supabase/sessionArtifacts';
 
-const API_BASE = 'http://localhost:8000';
 
 // Shared fade+slide up variant for step transitions
 const stepVariants = {
@@ -143,15 +143,9 @@ export default function Analysis() {
   const [selectedView, setSelectedView] = useState('L-CC')
 
 
-  useEffect(() => {
-    console.log(result);
-  }, [result]);
 
 
 
-  useEffect(() => {
-    console.log("selectedView changed:", selectedView);
-  }, [selectedView]);
 
 
   // Per-view clinician verification for the classification results.
@@ -538,8 +532,8 @@ export default function Analysis() {
 
       try {
         const [cnnApi, qmlApi] = await Promise.all([
-          postAnalysis(`${API_BASE}/future-risk`, buildFutureRiskFormData()),
-          postAnalysis(`${API_BASE}/qml-future-risk-view-aware/`, buildFutureRiskFormData()),
+          postAnalysis(ENDPOINTS.futureRiskClassical, buildFutureRiskFormData()),
+          postAnalysis(ENDPOINTS.futureRiskQuantum, buildFutureRiskFormData()),
         ]);
 
         setResult({
@@ -590,8 +584,8 @@ export default function Analysis() {
 
       try {
         const [qmlData, cnnData] = await Promise.all([
-          postAnalysis(`${API_BASE}/quantum-session-analysis/predict-four-views`, formData),
-          postAnalysis(`${API_BASE}/session-analysis/predict-four-views`, formData),
+          postAnalysis(ENDPOINTS.sessionAnalysisQuantum, formData),
+          postAnalysis(ENDPOINTS.sessionAnalysisClassical, formData),
         ]);
 
         setResult({
@@ -651,7 +645,7 @@ export default function Analysis() {
     setSummary("")
 
     try {
-      const llmRes = await fetch(`${API_BASE}/explain/`, {
+      const llmRes = await apiFetch(ENDPOINTS.explain, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },  // ← must set this manually
         body: JSON.stringify({
@@ -740,7 +734,7 @@ export default function Analysis() {
             : r.filename,
           percent: r.image_contribution_percent,
         }));
-      const llmRes = await fetch(`${API_BASE}/explain-future-risk/`, {
+      const llmRes = await apiFetch(ENDPOINTS.explainFutureRisk, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -830,7 +824,7 @@ export default function Analysis() {
       const view = result.resultFile.cnn.views[selectedView];
       const qmlView = result.resultFile.qml.views[selectedView];
 
-      const vlmResponse = await fetch(`${API_BASE}/explain/explain_view/`, {
+      const vlmResponse = await apiFetch(ENDPOINTS.explainView, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

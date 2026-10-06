@@ -1,5 +1,10 @@
-from fastapi import FastAPI
+import logging
+
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+import config
+from guards import limit_analysis, require_approved_user
 
 # Session Analysis
 from routers.classical_session_analysis.router import router as classical_session_router
@@ -18,35 +23,43 @@ from routers.shared.Explain import (
     future_risk_router as explain_future_risk_router,
 )
 
+logging.basicConfig(level=config.LOG_LEVEL, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+logging.getLogger("httpx").setLevel(logging.WARNING)   # request URLs include user ids
+config.validate_for_production()
+
 app = FastAPI(
     title="Q-Interval Lite API",
     version="0.1.0",
+    # Interactive API docs are for development only.
+    docs_url=None if config.IS_PRODUCTION else "/docs",
+    redoc_url=None,
+    openapi_url=None if config.IS_PRODUCTION else "/openapi.json",
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=config.ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
-# Session Analysis
-app.include_router(classical_session_router)
-app.include_router(quantum_session_router)
+# Model inference: approved users only, and one analysis at a time (memory).
+inference = [Depends(require_approved_user), Depends(limit_analysis)]
+app.include_router(classical_session_router, dependencies=inference)
+app.include_router(quantum_session_router, dependencies=inference)
+app.include_router(classical_future_risk_router, dependencies=inference)
+app.include_router(quantum_future_risk_router, dependencies=inference)
 
-# Future Risk Analysis
-app.include_router(classical_future_risk_router)
-app.include_router(quantum_future_risk_router)
+# LLM explanations: approved users only.
+app.include_router(explain_router, dependencies=[Depends(require_approved_user)])
+app.include_router(explain_future_risk_router, dependencies=[Depends(require_approved_user)])
 
-# Admin user management
+# Admin user management (each route additionally requires an approved admin)
 app.include_router(admin_router)
-
-# LLM explanations
-app.include_router(explain_router)
-app.include_router(explain_future_risk_router)
 
 
 @app.get("/health")
 def health():
+    """Public liveness check for Railway. Reveals nothing about the system."""
     return {"status": "ok"}

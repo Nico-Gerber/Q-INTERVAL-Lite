@@ -500,23 +500,6 @@ def _predict(
         .astype(float)
     )
 
-    print("\n================ MODEL DEBUG ================")
-    print("SESSIONS:", int(sequence_mask.sum()))
-    print("MASK:", sequence_mask)
-
-    print("TEMPORAL:")
-    print(temporal)
-
-    print("LOGITS:")
-    print(prediction["logits"].detach().cpu().numpy())
-
-    print("HAZARDS:")
-    print(prediction["hazards"].detach().cpu().numpy())
-
-    print("CUMULATIVE:")
-    print(prediction["cumulative_risk"].detach().cpu().numpy())
-
-    print("=============================================\n")
 
     if risks.shape != (5,) or not np.isfinite(risks).all():
         raise RuntimeError("V2C produced invalid cumulative risks.")

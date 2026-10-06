@@ -1,19 +1,18 @@
 import { supabase } from './supabase';
+import { apiFetch } from '../config/api';
 
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:8000';
 
 // Calls the backend admin API with the caller's Supabase JWT. The backend re-verifies
 // the token and the caller's admin status; nothing here is trusted.
 async function adminFetch(path, options = {}) {
   const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-  if (!token) throw new Error('Your session has expired. Please sign in again.');
+  if (!data.session?.access_token) throw new Error('Your session has expired. Please sign in again.');
 
   let res;
   try {
-    res = await fetch(`${API_BASE}/admin${path}`, {
+    res = await apiFetch(`/admin${path}`, {
       ...options,
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...options.headers },
+      headers: { 'Content-Type': 'application/json', ...options.headers },
     });
   } catch {
     throw new Error('Could not reach the server. Please try again.');

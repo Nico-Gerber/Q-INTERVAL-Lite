@@ -1,3 +1,4 @@
+import { apiFetch } from '../../config/api';
 // Normalises failures from the analysis endpoints so the UI can tell input problems
 // (4xx / unreadable image) apart from service problems (network / 5xx) without
 // showing raw backend exception text.
@@ -11,10 +12,10 @@ export class AnalysisRequestError extends Error {
   }
 }
 
-export async function postAnalysis(url, body) {
+export async function postAnalysis(path, body) {
   let res;
   try {
-    res = await fetch(url, { method: 'POST', body });
+    res = await apiFetch(path, { method: 'POST', body });
   } catch {
     throw new AnalysisRequestError(0, null);
   }
@@ -53,6 +54,9 @@ export function describeAnalysisFailure(err, { subject, kept }) {
   }
   if (UNREADABLE_RE.test(detail)) {
     return { kind: 'input', slotMessage: UNREADABLE_IMAGE_MSG, viewKey, examNumber, message: `${where} could not be read. Please upload a valid mammogram image.` };
+  }
+  if (status === 401 || status === 403) {
+    return { kind: 'service', message: `${subject} could not be completed because your session has expired or your account is not permitted to run it. Please sign in again and retry. Your ${kept} have been kept.` };
   }
   if (status >= 400 && status < 500) {
     const message = isSafeDetail(detail)
