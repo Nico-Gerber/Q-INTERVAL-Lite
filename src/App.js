@@ -19,7 +19,7 @@ import Patients from './pages/patients';
 import { AuthProvider } from './supabase/AuthContext';
 import { RequireApprovedUser, RequireAdmin, RequireRole } from './supabase/RouteGuards';
 
-export const ColorModeContext = createContext({ toggleColorMode: () => { }, mode: 'dark' });
+export const ColorModeContext = createContext({ toggleColorMode: () => { }, mode: 'light' });
 export const useColorMode = () => useContext(ColorModeContext);
 
 function ScrollToTop() {
@@ -330,10 +330,10 @@ const lightTheme = withResultsPalette(createTheme({
 }));
 
 function App() {
-  // Read saved preference on first load, default to dark
+  // Read saved preference on first load, default to light
   const [mode, setMode] = useState(() => {
-    try { return localStorage.getItem('colorMode') || 'dark'; }
-    catch { return 'dark'; }
+    try { return localStorage.getItem('colorMode') || 'light'; }
+    catch { return 'light'; }
   });
 
   const colorMode = useMemo(() => ({
