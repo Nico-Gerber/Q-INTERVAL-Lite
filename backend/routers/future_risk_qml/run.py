@@ -1,8 +1,7 @@
-import io
 import os
 import pickle
-import tempfile
 import warnings
+from io import BytesIO
 from pathlib import Path
 
 import numpy as np
@@ -27,8 +26,23 @@ except ImportError:
     HAVE_SCIPY = False
 
 
-ARTIFACTS_PATH = Path(os.environ.get(
-    "QESFRP_ARTIFACTS", Path(__file__).resolve().parent / "models" / "qesfrp.pkl"))
+_HERE = Path(__file__).resolve().parent
+
+
+def _find_artifact():
+    env = os.environ.get("QESFRP_ARTIFACTS")
+    if env:
+        return Path(env)
+    for name in ("QeSFRP_V0.4.pkl", "qesfrp.pkl"):
+        p = _HERE / "models" / name
+        if p.exists():
+            return p
+    found = sorted((_HERE / "models").glob("QeSFRP_*.pkl"),
+                   key=lambda p: p.stat().st_mtime)
+    return found[-1] if found else _HERE / "models" / "QeSFRP_V0.4.pkl"
+
+
+ARTIFACTS_PATH = _find_artifact()
 
 VIEW_KEYS = ["L-CC", "R-CC", "L-MLO", "R-MLO"]
 RISK_BANDS = [(3.0, "Low Risk"), (8.0, "Medium Risk"), (float("inf"), "High Risk")]
@@ -40,14 +54,17 @@ MIN_DROP_FOR_PERCENT = 1.0
 _loaded = False
 _artifacts = {}
 _backbone = {}
-_model = None
+_encoder = None
+_heads = []
+_extra_mu = None
+_extra_sd = None
 
 
 # ============================================================
-# IMAGE MEASUREMENTS
+# IMAGE MEASUREMENTS  (identical to 02_extract_features.py)
 # ============================================================
 
-WORK_SIZE = 500          # matches the Sprint 5 pipeline's 500x500 output
+WORK_SIZE = 500
 LBP_POINTS = 8
 LBP_RADIUS = 1
 DENSITY_PERCENTILES = [60, 70, 80, 90]
@@ -80,11 +97,9 @@ N_FEATURES = len(FEATURE_NAMES)
 
 
 def breast_mask(arr):
-    """Otsu-ish split of tissue from background. Mammogram backgrounds are
-    near-black and occupy a large, roughly unimodal low-intensity peak."""
     thr = max(0.05, float(np.percentile(arr, 20)))
     m = arr > thr
-    if m.sum() < 0.05 * m.size:          # threshold collapsed, fall back
+    if m.sum() < 0.05 * m.size:
         m = arr > arr.mean() * 0.25
     if m.sum() < 0.01 * m.size:
         m = np.ones_like(arr, dtype=bool)
@@ -116,32 +131,27 @@ def shannon_entropy(v, bins=32, rng=(0.0, 1.0)):
     return float(-(p * np.log2(p)).sum())
 
 
-def extract_image_features(path, laterality):
-    """Image path -> 1-D float vector of length N_FEATURES.
-
-    This is the function to replace when moving to a CNN embedding.
-    """
-    img = Image.open(path).convert("L")
+def load_array(image_bytes):
+    """Bytes -> 500x500 float array in [0,1], exactly as training read PNGs."""
+    img = Image.open(BytesIO(image_bytes)).convert("L")
     img = img.resize((WORK_SIZE, WORK_SIZE), Image.BILINEAR)
-    arr = np.asarray(img).astype(np.float32) / 255.0
+    return np.asarray(img).astype(np.float32) / 255.0
 
-    # Orient every breast the same way so L/R comparisons mean something.
+
+def descriptors_from_array(arr, laterality):
+    """500x500 array -> the 61 Sprint 5 descriptors."""
     if str(laterality).upper().startswith("L"):
         arr = np.fliplr(arr)
-
     mask = breast_mask(arr)
     tissue = arr[mask]
-
     feats = []
 
-    # --- intensity inside the breast ------------------------------------
     st = safe_stats(tissue)
     pct = np.percentile(tissue, [10, 25, 50, 75, 90]) if tissue.size else np.zeros(5)
     feats += [float(mask.mean()), st["mean"], st["std"], st["skew"], st["kurt"]]
     feats += [float(x) for x in pct]
     feats += [float(pct[3] - pct[1]), shannon_entropy(tissue)]
 
-    # --- density proxies -------------------------------------------------
     dense_mask_ref = None
     for p in DENSITY_PERCENTILES:
         if tissue.size:
@@ -155,7 +165,6 @@ def extract_image_features(path, laterality):
             dense_mask_ref = dm
         feats += [frac, dmean]
 
-    # shape of the dense region and its contrast against the rest
     if dense_mask_ref is not None and dense_mask_ref.any() and HAVE_SCIPY:
         edge = np.abs(sobel(dense_mask_ref.astype(np.float32)))
         compact = float(edge.sum()) / max(float(dense_mask_ref.sum()), 1.0)
@@ -166,7 +175,6 @@ def extract_image_features(path, laterality):
         compact, contrast = 0.0, 0.0
     feats += [compact, contrast]
 
-    # --- GLCM texture ----------------------------------------------------
     if HAVE_SKIMAGE:
         q = (arr * 31).astype(np.uint8)
         q[~mask] = 0
@@ -183,7 +191,6 @@ def extract_image_features(path, laterality):
     else:
         feats += [0.0] * 12
 
-    # --- LBP -------------------------------------------------------------
     if HAVE_SKIMAGE:
         try:
             lbp = local_binary_pattern(arr, LBP_POINTS, LBP_RADIUS, method="uniform")
@@ -199,7 +206,6 @@ def extract_image_features(path, laterality):
     else:
         feats += [0.0] * (LBP_POINTS + 4)
 
-    # --- gradients --------------------------------------------------------
     if HAVE_SCIPY:
         for s in (1, 3):
             sm = gaussian_filter(arr, sigma=s)
@@ -214,7 +220,6 @@ def extract_image_features(path, laterality):
     else:
         feats += [0.0] * 8
 
-    # --- multiscale band energies ----------------------------------------
     if HAVE_SCIPY:
         blurs = [arr] + [gaussian_filter(arr, sigma=s) for s in (2, 4, 8)]
         bands = [blurs[i] - blurs[i + 1] for i in range(3)] + [blurs[-1]]
@@ -232,34 +237,149 @@ def extract_image_features(path, laterality):
 
     out = np.asarray(feats, dtype=np.float32)
     if out.shape[0] != N_FEATURES:
-        raise RuntimeError("feature length %d != expected %d"
-                           % (out.shape[0], N_FEATURES))
+        raise RuntimeError("feature length %d != expected %d" % (out.shape[0], N_FEATURES))
     return np.nan_to_num(out, nan=0.0, posinf=0.0, neginf=0.0)
+
+
+# ============================================================
+# SPRINT 6 FEATURES  (identical to s6_10 / s6_11 / s6_20)
+# ============================================================
+
+GRID_LEVELS = 32
+
+
+def grid_features_array(arr, laterality, grid=4, min_tissue=0.25):
+    """Same as s6_10_extract_grid.grid_features_array."""
+    if str(laterality).upper().startswith("L"):
+        arr = np.fliplr(arr)
+    mask = breast_mask(arr)
+    n = grid * grid
+    gm, gs, gc, gh, gf = (np.full(n, np.nan, np.float32) for _ in range(5))
+    rows = np.where(mask.mean(axis=1) > 0.01)[0]
+    cols = np.where(mask.mean(axis=0) > 0.01)[0]
+    if len(rows) >= grid and len(cols) >= grid:
+        r_edges = np.linspace(rows[0], rows[-1] + 1, grid + 1).astype(int)
+        c_edges = np.linspace(cols[0], cols[-1] + 1, grid + 1).astype(int)
+        q = np.clip(arr * (GRID_LEVELS - 1), 0, GRID_LEVELS - 1).astype(np.uint8)
+        for i in range(grid):
+            for j in range(grid):
+                c = i * grid + j
+                sl = (slice(r_edges[i], r_edges[i + 1]),
+                      slice(c_edges[j], c_edges[j + 1]))
+                cm = mask[sl]
+                if cm.size == 0:
+                    continue
+                frac = float(cm.mean())
+                gf[c] = frac
+                if frac < min_tissue:
+                    continue
+                v = arr[sl][cm]
+                gm[c] = float(v.mean())
+                gs[c] = float(v.std())
+                if HAVE_SKIMAGE and min(cm.shape) >= 3:
+                    qq = q[sl].copy()
+                    qq[~cm] = 0
+                    try:
+                        g = graycomatrix(qq, distances=[1],
+                                         angles=[0, np.pi / 4, np.pi / 2, 3 * np.pi / 4],
+                                         levels=GRID_LEVELS, symmetric=True, normed=True)
+                        gc[c] = float(np.nanmean(graycoprops(g, "contrast")))
+                        gh[c] = float(np.nanmean(graycoprops(g, "homogeneity")))
+                    except Exception:
+                        pass
+    tissue = arr[mask]
+    v_std = float(tissue.std()) if tissue.size else np.nan
+    return {"gm": gm, "gs": gs, "gc": gc, "gh": gh, "v": v_std}
+
+
+def grid_exam_features(views):
+    """views: {('L','CC'): grid dict, ...} -> hotspot, gridtex, texvar dicts.
+    Same arithmetic as s6_11_grid_to_exam.exam_rows."""
+    hs = {}
+    for vp in ("CC", "MLO"):
+        L, R = views.get(("L", vp)), views.get(("R", vp))
+        for p, name in (("gm", "den"), ("gs", "tex")):
+            col = "hs_%s_%s" % (name, vp.lower())
+            if L is None or R is None:
+                hs[col] = np.nan
+                continue
+            d = np.abs(np.asarray(L[p], float) - np.asarray(R[p], float))
+            hs[col] = float(np.nanmax(d)) if np.isfinite(d).any() else np.nan
+    allv = list(views.values())
+    if allv:
+        gc = np.concatenate([np.asarray(v["gc"], float) for v in allv])
+        gh = np.concatenate([np.asarray(v["gh"], float) for v in allv])
+        het = [np.nanstd(np.asarray(v["gm"], float)) for v in allv
+               if np.isfinite(np.asarray(v["gm"], float)).sum() >= 2]
+        gt = {"gt_contrast_mean": float(np.nanmean(gc)) if np.isfinite(gc).any() else np.nan,
+              "gt_contrast_p90": float(np.nanpercentile(gc, 90)) if np.isfinite(gc).any() else np.nan,
+              "gt_homog_mean": float(np.nanmean(gh)) if np.isfinite(gh).any() else np.nan,
+              "gt_heterogeneity": float(np.mean(het)) if het else np.nan}
+        gs = np.concatenate([np.asarray(v["gs"], float) for v in allv])
+        tv = {"tv_img_mean": float(np.nanmean([v["v"] for v in allv])),
+              "tv_cell_mean": float(np.nanmean(gs)) if np.isfinite(gs).any() else np.nan}
+    else:
+        gt = dict.fromkeys(["gt_contrast_mean", "gt_contrast_p90",
+                            "gt_homog_mean", "gt_heterogeneity"], np.nan)
+        tv = dict.fromkeys(["tv_img_mean", "tv_cell_mean"], np.nan)
+    return {"hotspot": hs, "gridtex": gt, "texvar": tv}
+
+
+def curve_value(age, curve_ages, curve_vals):
+    return np.interp(np.asarray(age, float), curve_ages, curve_vals)
+
+
+def _slope(t, v):
+    t, v = np.asarray(t, float), np.asarray(v, float)
+    ok = np.isfinite(t) & np.isfinite(v)
+    if ok.sum() < 2 or np.ptp(t[ok]) <= 0:
+        return np.nan
+    return float(np.polyfit(t[ok], v[ok], 1)[0])
+
+
+def trend_features(t_years, dens_l, dens_r, ages, curve_ages, curve_vals,
+                   min_span=0.5):
+    """Same as s6_20_density_trend.trend_features."""
+    t = np.asarray(t_years, float)
+    dl, dr = np.asarray(dens_l, float), np.asarray(dens_r, float)
+    ag = np.asarray(ages, float)
+    cur = [x for x in (dl[-1], dr[-1]) if np.isfinite(x)]
+    out = {"dens_cur_mean": float(np.mean(cur)) if cur else np.nan,
+           "dens_cur_absdiff": float(abs(dl[-1] - dr[-1]))
+           if np.isfinite(dl[-1]) and np.isfinite(dr[-1]) else np.nan}
+    devs = []
+    for d in (dl, dr):
+        ok = np.isfinite(t) & np.isfinite(d) & np.isfinite(ag)
+        if ok.sum() < 2 or np.ptp(t[ok]) < min_span:
+            devs.append(np.nan)
+            continue
+        obs = _slope(t[ok], d[ok])
+        exp = _slope(t[ok], curve_value(ag[ok], curve_ages, curve_vals))
+        devs.append(obs - exp if np.isfinite(obs) and np.isfinite(exp) else np.nan)
+    fin = [x for x in devs if np.isfinite(x)]
+    out["dtr_dev_max"] = float(max(fin)) if fin else np.nan
+    out["dtr_dev_mean"] = float(np.mean(fin)) if fin else np.nan
+    out["dtr_dev_absdiff"] = (float(abs(devs[0] - devs[1]))
+                              if all(np.isfinite(devs)) else np.nan)
+    return out
+
 
 # ============================================================
 # QUANTUM CIRCUIT AND RISK HEAD
 # ============================================================
 
 class QuantumEncoder(nn.Module):
-    """Data re-uploading circuit whose readout is the reusable representation.
-
-    Returns 2*n_qubits values: single-qubit <Z> and neighbouring <ZZ>. The
-    correlators matter -- with <Z> alone the readout stays close to linear in
-    the encoded angles and there is little for a downstream head to use.
-    """
+    """Data re-uploading circuit; readout = 12 <Z> + 12 neighbouring <ZZ>."""
 
     def __init__(self, n_qubits=12, n_blocks=5, seed=42,
                  device="default.qubit", diff_method="backprop"):
         super().__init__()
         self.n_qubits, self.n_blocks = n_qubits, n_blocks
         self.batched = (diff_method == "backprop")
-
         g = torch.Generator().manual_seed(seed)
         self.enc_scale = nn.Parameter(torch.ones(n_blocks, n_qubits))
         self.enc_shift = nn.Parameter(torch.zeros(n_blocks, n_qubits))
-        self.theta = nn.Parameter(0.1 * torch.randn(n_blocks, n_qubits, 3,
-                                                    generator=g))
-
+        self.theta = nn.Parameter(0.1 * torch.randn(n_blocks, n_qubits, 3, generator=g))
         dev = qml.device(device, wires=n_qubits)
 
         @qml.qnode(dev, interface="torch", diff_method=diff_method)
@@ -292,37 +412,27 @@ class QuantumEncoder(nn.Module):
                 for i in range(x.shape[0])]
         return torch.stack(rows, dim=0)
 
-class SequentialRiskModel(nn.Module):
-    """Frozen quantum encoder per exam, then a temporal head."""
 
-    def __init__(self, encoder, readout_dim, n_horizons=5, freeze=True,
-                 use_timing=False, n_asym=6):
+class RiskHead(nn.Module):
+    """Same as 07_train_sequential_backbone.RiskHead."""
+
+    def __init__(self, readout_dim, n_horizons=5, n_asym=6, n_extra=0,
+                 use_timing=False, hidden=32):
         super().__init__()
-        self.encoder = encoder
         self.use_timing = use_timing
-        if freeze:
-            for p in self.encoder.parameters():
-                p.requires_grad = False
-        # current readout, recency-weighted readout, delta, asymmetry trend,
-        # and optionally the timing scalars
-        d = readout_dim * 3 + n_asym + (3 if use_timing else 0)
-        self.head = nn.Sequential(
-            nn.Linear(d, 32), nn.ReLU(), nn.Linear(32, n_horizons))
-        nn.init.zeros_(self.head[-1].bias)
+        self.n_extra = n_extra
+        d = readout_dim * 3 + n_asym + n_extra + (3 if use_timing else 0)
+        self.net = nn.Sequential(nn.Linear(d, hidden), nn.ReLU(),
+                                 nn.Linear(hidden, n_horizons))
 
-    def encode_exams(self, x_flat):
-        return self.encoder(x_flat)
-
-    def forward(self, cur, rec, dlt, scal, asym):
+    def forward(self, cur, rec, dlt, scal, asym, extra=None):
         parts = [cur, rec, dlt, asym]
         if self.use_timing:
             parts.insert(3, scal)
-        return self.head(torch.cat(parts, dim=-1))
+        if self.n_extra:
+            parts.append(extra)
+        return self.net(torch.cat(parts, dim=-1))
 
-
-def cumulative_risk(logits):
-    h = torch.sigmoid(logits)
-    return 1.0 - torch.cumprod(1.0 - h + 1e-8, dim=1)
 
 def cumulative_risk(hazard_logits):
     """h_t -> F_t = 1 - prod(1 - h_j). Monotone non-decreasing by construction."""
@@ -335,16 +445,15 @@ def cumulative_risk(hazard_logits):
 # ============================================================
 
 def initialise():
-    """Load the artifact and rebuild the circuit it describes. Runs once."""
-    global _loaded, _artifacts, _backbone, _model
+    """Load the artifact and rebuild the circuit and heads. Runs once."""
+    global _loaded, _artifacts, _backbone, _encoder, _heads, _extra_mu, _extra_sd
 
     if _loaded:
         return
-
     if not ARTIFACTS_PATH.exists():
         raise FileNotFoundError(
             "model artifact not found: %s\n"
-            "Copy artifacts.pkl there, or set QESFRP_ARTIFACTS." % ARTIFACTS_PATH)
+            "Put QeSFRP_V0.4.pkl in models/, or set QESFRP_ARTIFACTS." % ARTIFACTS_PATH)
 
     with open(ARTIFACTS_PATH, "rb") as fh:
         _artifacts = pickle.load(fh)
@@ -360,13 +469,33 @@ def initialise():
                          device=_backbone.get("device", "default.qubit"),
                          diff_method=_backbone.get("diff_method", "backprop"))
     enc.load_state_dict(_backbone["encoder_state"])
+    enc.eval()
+    _encoder = enc
 
-    m = SequentialRiskModel(enc, _backbone["readout_dim"],
-                            len(_artifacts["horizons"]), freeze=True,
-                            use_timing=False, n_asym=6)
-    m.load_state_dict(_artifacts["model_state"])
-    m.eval()
-    _model = m
+    cfg = _artifacts.get("head_config") or {
+        "readout_dim": _backbone["readout_dim"], "n_horizons": len(_artifacts["horizons"]),
+        "n_asym": 6, "n_extra": 0, "hidden": 32,
+        "use_timing": not _artifacts.get("drop_timing", True)}
+    states = _artifacts.get("heads")
+    if not states:
+        # V0.2 / V0.3 layout: model_state with encoder.* and head.* keys
+        ms = _artifacts["model_state"]
+        states = [{"net." + k[len("head."):]: v for k, v in ms.items()
+                   if k.startswith("head.")}]
+    _heads = []
+    for st in states:
+        h = RiskHead(cfg["readout_dim"], cfg["n_horizons"], cfg["n_asym"],
+                     cfg["n_extra"], cfg["use_timing"], cfg.get("hidden", 32))
+        h.load_state_dict(st)
+        h.eval()
+        _heads.append(h)
+
+    en = _artifacts.get("extra_norm") or {}
+    _extra_mu = np.asarray(en.get("mean", []), np.float32)
+    _extra_sd = np.asarray(en.get("std", []), np.float32)
+    if len(_extra_mu) != cfg["n_extra"]:
+        raise RuntimeError("artifact extra_norm has %d entries, head expects %d"
+                           % (len(_extra_mu), cfg["n_extra"]))
     _loaded = True
 
 
@@ -374,8 +503,13 @@ def health():
     return {
         "status": "ok" if _loaded else "model_not_loaded",
         "model_loaded": _loaded,
+        "artifact": ARTIFACTS_PATH.name,
+        "version": _artifacts.get("version", "0.3 or earlier"),
+        "feature_set": _artifacts.get("feature_set", "baseline"),
         "n_qubits": _backbone.get("n_qubits"),
         "n_blocks": _backbone.get("n_blocks"),
+        "heads": len(_heads),
+        "extra_inputs": len(_extra_mu) if _extra_mu is not None else 0,
         "horizons": _artifacts.get("horizons"),
         "calibrated": bool(_artifacts.get("calibrators")),
         "feature_source": "radiomic descriptors (%d per image)" % N_FEATURES,
@@ -402,63 +536,8 @@ def _risk_level(r5):
     return "High Risk"
 
 
-def _descriptor(image_bytes, laterality):
-    """One image's 61 measurements. Writes to a temp file so the extractor
-    sees exactly what it saw during training."""
-    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as fh:
-        fh.write(image_bytes)
-        tmp = fh.name
-    try:
-        return extract_image_features(tmp, laterality)
-    finally:
-        try:
-            os.remove(tmp)
-        except OSError:
-            pass
-
-
-def _exam_vector(exam, disable_asym=False):
-    """Four views -> one exam vector, or None if too few views are usable.
-
-    Both sides are needed for an asymmetry comparison. A missing view is
-    filled with the mean of the views that are present, which keeps the layout
-    intact; fewer than two usable views means the exam is skipped rather than
-    silently imputed from nothing.
-    """
-    views = exam.get("views") or {}
-    got = {}
-    for vk in VIEW_KEYS:
-        raw = views.get(vk)
-        if not raw:
-            continue
-        lat = "L" if vk.startswith("L") else "R"
-        try:
-            got[vk] = _descriptor(raw, lat)
-        except Exception:
-            continue
-
-    if len(got) < 2:
-        return None, None
-
-    fill = np.mean(np.vstack(list(got.values())), axis=0)
-    v = {vk: got.get(vk, fill) for vk in VIEW_KEYS}
-
-    cc_asym = np.abs(v["L-CC"] - v["R-CC"])
-    mlo_asym = np.abs(v["L-MLO"] - v["R-MLO"])
-    info = {
-        "asymmetry_score": float(np.mean(cc_asym) + np.mean(mlo_asym)),
-        "views_present": len(got),
-    }
-    if disable_asym:
-        cc_asym = np.zeros_like(cc_asym)
-        mlo_asym = np.zeros_like(mlo_asym)
-
-    vec = np.concatenate([
-        np.mean(np.vstack([v[k] for k in VIEW_KEYS]), axis=0),
-        0.5 * (v["L-CC"] + v["R-CC"]),
-        0.5 * (v["L-MLO"] + v["R-MLO"]),
-        cc_asym, mlo_asym]).astype(np.float32)
-    return vec, info
+def _kinds():
+    return {e["kind"] for e in _artifacts.get("extra_spec") or []}
 
 
 def _encode(vec):
@@ -470,33 +549,133 @@ def _encode(vec):
     x = x[:, _backbone["selected_feature_idx"]]
     x = np.clip(_backbone["angle_scaler"].transform(x), -3, 3) * (np.pi / 3)
     with torch.no_grad():
-        return _model.encoder(torch.tensor(x, dtype=torch.float32))[0].numpy()
+        return _encoder(torch.tensor(x, dtype=torch.float32))[0].numpy()
 
 
-def _predict(built, disable_asym=False):
-    """Built exams -> yearly risk percentages, before the age multiplier."""
+def _build_exam(exam):
+    """One exam -> dict with exam vector, readout and Sprint 6 inputs, or None
+    when fewer than two views are readable (no left-right comparison)."""
+    views = exam.get("views") or {}
+    kinds = _kinds()
+    need_grid = bool(kinds & {"hotspot", "gridtex", "texvar"})
+    grid_cfg = (_artifacts.get("deploy") or {}).get("grid", {"grid": 4, "min_tissue": 0.25})
+    got, grids = {}, {}
+    for vk in VIEW_KEYS:
+        raw = views.get(vk)
+        if not raw:
+            continue
+        lat = "L" if vk.startswith("L") else "R"
+        try:
+            arr = load_array(raw)
+            got[vk] = descriptors_from_array(arr, lat)
+            if need_grid:
+                grids[(lat, vk.split("-")[1])] = grid_features_array(
+                    arr, lat, grid_cfg["grid"], grid_cfg["min_tissue"])
+        except Exception:
+            continue
+    if len(got) < 2:
+        return None
+
+    fill = np.mean(np.vstack(list(got.values())), axis=0)
+    v = {vk: got.get(vk, fill) for vk in VIEW_KEYS}
+    cc_asym = np.abs(v["L-CC"] - v["R-CC"])
+    mlo_asym = np.abs(v["L-MLO"] - v["R-MLO"])
+    vec = np.concatenate([
+        np.mean(np.vstack([v[k] for k in VIEW_KEYS]), axis=0),
+        0.5 * (v["L-CC"] + v["R-CC"]), 0.5 * (v["L-MLO"] + v["R-MLO"]),
+        cc_asym, mlo_asym]).astype(np.float32)
+
+    out = {"vec": vec, "z": _encode(vec),
+           "asym_cc": float(cc_asym.mean()), "asym_mlo": float(mlo_asym.mean()),
+           "views_present": len(got)}
+
+    if "density_trend" in kinds:
+        dm = _artifacts["deploy"]["density"]
+        cls = np.asarray(dm["classes"], float)
+        dens = {}
+        for side in ("L", "R"):
+            X = [got[k] for k in VIEW_KEYS if k.startswith(side) and k in got]
+            if X:
+                p = dm["model"].predict_proba(np.vstack(X))
+                dens[side] = float(((p * cls).sum(1)).mean())
+            else:
+                dens[side] = np.nan
+        out["dens_L"], out["dens_R"] = dens["L"], dens["R"]
+    if need_grid:
+        out["grid"] = grid_exam_features(grids)
+    return out
+
+
+def _exam_table(built, i, age_latest, latest):
+    """Exam-level extra tables for built[i], using only exams up to i."""
+    tables = {}
+    kinds = _kinds()
+    if "density_trend" in kinds:
+        dm = _artifacts["deploy"]["density"]
+        hmax = int(dm["params"].get("max_history", 5))
+        w = built[max(0, i - hmax + 1):i + 1]
+        t = np.array([(b["date"] - pd.Timestamp("2000-01-01")).days / 365.25 for b in w])
+        ages = (np.array([age_latest - (latest - b["date"]).days / 365.25 for b in w])
+                if age_latest is not None else np.full(len(w), np.nan))
+        tables["density_trend"] = trend_features(
+            t, [b["dens_L"] for b in w], [b["dens_R"] for b in w], ages,
+            np.asarray(dm["curve_ages"], float), np.asarray(dm["curve_vals"], float),
+            float(dm["params"].get("min_span", 0.5)))
+    if "grid" in built[i]:
+        tables.update(built[i]["grid"])
+    return tables
+
+
+def _extra_vector(built, age_latest):
+    """Standardised extra inputs for the LAST exam of `built`, mirroring
+    07_train_sequential_backbone.extra_raw + standardisation."""
+    spec = _artifacts.get("extra_spec") or []
+    if not spec:
+        return np.zeros(0, np.float32)
+    latest = built[-1]["date"]
+    n = len(built)
+    cur_tab = _exam_table(built, n - 1, age_latest, latest)
+    vals = []
+    for e in spec:
+        cols = e["columns"]
+        src = cur_tab.get(e["kind"], {})
+        cur = np.array([src.get(c, np.nan) for c in cols], np.float32)
+        vals.append(cur)
+        if e["mode"] == "cur_delta":
+            first = None
+            for j in range(n - 1):
+                tj = _exam_table(built, j, age_latest, latest).get(e["kind"], {})
+                v = np.array([tj.get(c, np.nan) for c in cols], np.float32)
+                if np.isfinite(v).all():
+                    first = v
+                    break
+            vals.append(cur - first if first is not None
+                        else np.full(len(cols), np.nan, np.float32))
+        vals.append(np.array([float(not np.isfinite(cur).all())], np.float32))
+    raw = np.concatenate(vals)
+    z = np.clip((raw - _extra_mu) / _extra_sd, -5, 5)
+    return np.nan_to_num(z, nan=0.0).astype(np.float32)
+
+
+def _predict(built, age_latest):
+    """Built exams (date-sorted) -> raw yearly risk %, before calibration."""
     lam = float(_artifacts.get("recency_lambda", 0.5))
-    built = built[-5:]
-
-    raw = np.vstack([b["vec"] for b in built])
-    Z = np.vstack([_encode(r) for r in raw])
-    dates = [b["date"] for b in built]
-    latest = max(dates)
-    yb = np.array([(latest - d).days / 365.25 for d in dates], dtype=np.float32)
+    built = built[-int(_artifacts.get("max_history", 5)):]
+    Z = np.vstack([b["z"] for b in built])
+    latest = built[-1]["date"]
+    yb = np.array([(latest - b["date"]).days / 365.25 for b in built], dtype=np.float32)
     w = np.exp(-lam * yb)
     w = w / w.sum()
-
     cur = Z[-1]
     rec = (Z * w[:, None]).sum(0)
     dlt = (cur - Z[0]) if len(built) > 1 else np.zeros_like(cur)
 
-    # Asymmetry trend is read from the raw exam vectors, not the readouts: the
-    # encoder was fitted for density and has no reason to preserve a
-    # left-minus-right signal.
-    F = raw.shape[1] // 5
-    a_tot = (np.abs(raw[:, 3 * F:4 * F]).mean(1)
-             + np.abs(raw[:, 4 * F:5 * F]).mean(1))
-    a_mu, a_sd = float(a_tot.mean()), float(a_tot.std() + 1e-8)
+    a_tot = np.array([b["asym_cc"] + b["asym_mlo"] for b in built], np.float32)
+    norm = _artifacts.get("asym_norm")
+    if norm:                       # v0.4: population statistics from training
+        a_mu, a_sd = float(norm["mean"]), float(norm["std"])
+    else:                          # v0.3 behaviour, kept for old artifacts
+        a_mu, a_sd = float(a_tot.mean()), float(a_tot.std() + 1e-8)
     cur_a = float(a_tot[-1])
     if len(built) > 1:
         first = float(a_tot[0])
@@ -505,33 +684,28 @@ def _predict(built, disable_asym=False):
         step = float(a_tot[-1] - a_tot[-2])
     else:
         rel = slope = step = 0.0
-    cc_l = float(np.abs(raw[-1, 3 * F:4 * F]).mean())
-    ml_l = float(np.abs(raw[-1, 4 * F:5 * F]).mean())
     asym = np.nan_to_num(np.array([
         (cur_a - a_mu) / a_sd, np.clip(rel, -3, 3),
         np.clip(slope / a_sd, -3, 3), np.clip(step / a_sd, -3, 3),
-        1.0 if rel > RISE else 0.0, (cc_l - ml_l) / a_sd], dtype=np.float32),
+        1.0 if rel > RISE else 0.0,
+        (built[-1]["asym_cc"] - built[-1]["asym_mlo"]) / a_sd], dtype=np.float32),
         nan=0.0, posinf=0.0, neginf=0.0)
+    scal = np.array([len(built), float(yb[0]), float(yb.mean())], dtype=np.float32)
+    extra = _extra_vector(built, age_latest)
 
-    scal = np.array([len(built), float(yb[0]), float(yb.mean())],
-                    dtype=np.float32)
     t = lambda a: torch.tensor(a, dtype=torch.float32).unsqueeze(0)
     with torch.no_grad():
-        logits = _model(t(cur), t(rec), t(dlt), t(scal), t(asym))
-        risk = cumulative_risk(logits).numpy()[0]
-
-    return {"%d_year" % h: float(r) * 100.0
-            for h, r in zip(_artifacts["horizons"], risk)}, w
+        curves = [cumulative_risk(h(t(cur), t(rec), t(dlt), t(scal), t(asym),
+                                    t(extra) if len(extra) else None)).numpy()[0]
+                  for h in _heads]
+    risk = np.mean(curves, axis=0)
+    return {"%d_year" % hz: float(r) * 100.0
+            for hz, r in zip(_artifacts["horizons"], risk)}
 
 
 def _calibrate(d):
-    """Map raw output onto observed event rates.
-
-    Training weights the hazard loss so the model attends to a ~1% event rate.
-    That helps ranking and inflates every probability by roughly that factor,
-    so raw output can read like 40% one-year risk. Isotonic regression is
-    monotone, so this corrects the scale without changing the ordering.
-    """
+    """Isotonic, fitted on out-of-fold predictions; monotone, so the ordering
+    of patients is unchanged and only the scale is corrected."""
     cal = _artifacts.get("calibrators")
     if not cal:
         return dict(d)
@@ -559,47 +733,58 @@ def _finalise(risk, age):
     return out
 
 
+def _build_all(model_input):
+    exams_in = model_input.get("exams") or []
+    if not exams_in:
+        raise ValueError("at least one exam is required")
+    built, skipped = [], []
+    for i, ex in enumerate(exams_in):
+        eid = ex.get("exam_id") or ("exam_%d" % (i + 1))
+        date = ex.get("exam_date")
+        b = _build_exam(ex)
+        if b is None:
+            skipped.append({"exam_id": eid, "exam_date": date,
+                            "contribution_percent": None})
+            continue
+        b.update({"exam_id": eid, "exam_date": date, "date": pd.to_datetime(date)})
+        built.append(b)
+    if not built:
+        raise ValueError("no exam had at least two readable views")
+    built.sort(key=lambda b: b["date"])
+    return built, skipped
+
+
+def predict_raw(model_input):
+    """Uncalibrated risk % with no age multiplier. For the parity test only."""
+    initialise()
+    built, _ = _build_all(model_input)
+    age = model_input.get("patient_age")
+    return _predict(built, float(age) if age is not None else None)
+
+
 # ------------------------------------------------------------- entrypoint
 
 def run_inference(model_input):
     initialise()
-
-    exams_in = model_input.get("exams") or []
-    if not exams_in:
-        raise ValueError("at least one exam is required")
-
     age = model_input.get("patient_age")
     age = float(age) if age is not None else None
+    built, skipped = _build_all(model_input)
 
-    built, skipped = [], []
-    for i, ex in enumerate(exams_in):
-        vec, info = _exam_vector(ex)
-        eid = ex.get("exam_id") or ("exam_%d" % (i + 1))
-        date = ex.get("exam_date")
-        if vec is None:
-            skipped.append({"exam_id": eid, "exam_date": date,
-                            "contribution_percent": None})
-            continue
-        built.append({"exam_id": eid, "exam_date": date, "vec": vec,
-                      "date": pd.to_datetime(date), "info": info,
-                      "raw": ex})
-
-    if not built:
-        raise ValueError("no exam had at least two readable views")
-
-    built.sort(key=lambda b: b["date"])
-    risk_raw, _ = _predict(built)
-    yearly = _finalise(risk_raw, age)
+    yearly = _finalise(_predict(built, age), age)
     r5 = yearly.get("5_year", list(yearly.values())[-1])
 
-    # Per-exam contribution by leave-one-out. With a single exam there is
-    # nothing to compare against, so it takes the whole share.
+    # Per-exam contribution by leave-one-out on the 5-year figure. Readouts
+    # are cached per exam, so each ablation is only the head. The patient's
+    # age belongs to her latest exam; if that exam is left out, her age at the
+    # new latest exam is shifted back by the gap.
     contributions = {}
     if len(built) > 1:
         drops = {}
         for b in built:
             others = [x for x in built if x is not b]
-            without = _finalise(_predict(others)[0], age)
+            a2 = (age - (built[-1]["date"] - others[-1]["date"]).days / 365.25
+                  if age is not None else None)
+            without = _finalise(_predict(others, a2), age)
             w5 = without.get("5_year", list(without.values())[-1])
             drops[b["exam_id"]] = max(r5 - w5, 0.0)
         total = sum(drops.values())
