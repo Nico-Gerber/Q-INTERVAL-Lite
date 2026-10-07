@@ -1,0 +1,33 @@
+Stable repaired split created
+Patients: 2230
+Retained patients: 2212
+Removed frozen patients: 2
+New patients: 18
+New validation patients: 3
+New test patients: 0
+
+Split counts
+split
+train         1566
+validation     334
+test           330
+
+Event intervals by split
+split       event_interval          
+test        cancer_between_1_and_2yr      13
+            cancer_between_2_and_3yr       1
+            cancer_between_3_and_4yr       1
+            cancer_within_1yr              6
+            no_cancer_within_5yr         309
+train       cancer_between_1_and_2yr      65
+            cancer_between_2_and_3yr       8
+            cancer_between_3_and_4yr       3
+            cancer_between_4_and_5yr       2
+            cancer_within_1yr             32
+            no_cancer_within_5yr        1456
+validation  cancer_between_1_and_2yr      13
+            cancer_between_2_and_3yr       2
+            cancer_within_1yr              7
+            no_cancer_within_5yr         312
+
+Output: /fred/oz508/EMBED/classical_future_risk_vihanga/v2_hazard_sprint05/rebuild_repaired/splits/patient_splits.csv

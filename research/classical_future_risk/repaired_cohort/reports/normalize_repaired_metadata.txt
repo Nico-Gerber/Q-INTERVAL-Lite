@@ -1,0 +1,7 @@
+Normalization completed
+Rows: 444886
+Unique patients: 23241
+Unique accessions: 72401
+Missing patient IDs: 0
+Missing accession IDs: 0
+Output: /fred/oz508/EMBED/classical_future_risk_vihanga/v2_hazard_sprint05/rebuild_repaired/data/metadata_clean_repaired_normalized.csv

@@ -1,0 +1,6 @@
+Temporal feature generation completed
+Patients: 2230
+Examinations: 4942
+Output shape: (2230, 5, 2)
+Positive gap years: min=0.0027, median=1.0157, max=4.9966
+Years before anchor: min=0.0000, median=0.9993, max=5.9466

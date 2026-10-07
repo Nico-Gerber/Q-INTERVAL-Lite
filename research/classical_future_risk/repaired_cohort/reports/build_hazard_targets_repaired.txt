@@ -1,0 +1,7 @@
+Hazard target generation completed
+Patients: 2230
+Events within five years: 153
+Non-events within five years: 2077
+At-risk patient-intervals: 10671
+Frozen cumulative labels reproduced: yes
+Outputs: /fred/oz508/EMBED/classical_future_risk_vihanga/v2_hazard_sprint05/rebuild_repaired/data/derived

@@ -1,0 +1,11 @@
+Recovered rows: 54914
+Recovered patients: 2947
+Recovered accessions: 9159
+New patients added: 2380
+New accessions added: 8444
+Recovered rows also flagged: 0
+Existing old clean rows also flagged: 129
+Recovered rows for cohort patients: 0
+Cohort patients affected: 0
+Recovered rows for selected accessions: 0
+Selected accessions affected: 0

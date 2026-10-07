@@ -1,0 +1,65 @@
+Reconstructing the audited cohort...
+Loading image-selection metadata...
+
+MANIFEST CREATION COMPLETE
+============================================================================
+Patients: 2230
+Examinations: 4942
+Selected images: 19054
+
+IMAGE SELECTION
+============================================================================
+Candidate images: 22415
+Extra duplicate images excluded: 3361
+View slots with multiple candidates: 3158
+
+SEQUENCE LENGTHS
+============================================================================
+sequence_length
+2    1859
+3     292
+4      47
+5      32
+Name: count, dtype: Int64
+
+AVAILABLE VIEWS PER EXAMINATION
+============================================================================
+num_available_views
+1      52
+2     258
+3      42
+4    4590
+Name: count, dtype: int64
+
+CORRECTED PATIENT LABELS
+============================================================================
+1-year: positive=45, negative=2185
+2-year: positive=136, negative=2094
+3-year: positive=147, negative=2083
+4-year: positive=151, negative=2079
+5-year: positive=153, negative=2077
+
+OUTCOME TYPES
+============================================================================
+outcome_type
+cancer_free_5yr_followup    2076
+cancer_within_5yr            153
+cancer_after_5yr               1
+Name: count, dtype: int64
+
+OUTPUT FILES
+============================================================================
+/fred/oz508/EMBED/classical_future_risk_vihanga/v2_hazard_sprint05/rebuild_repaired/manifests/patient_anchor_manifest.csv
+/fred/oz508/EMBED/classical_future_risk_vihanga/v2_hazard_sprint05/rebuild_repaired/manifests/exam_manifest.csv
+/fred/oz508/EMBED/classical_future_risk_vihanga/v2_hazard_sprint05/rebuild_repaired/manifests/image_manifest.csv
+
+VALIDATION
+============================================================================
+PASS: one row per patient anchor
+PASS: one row per patient examination
+PASS: one image per examination view slot
+PASS: all selected PNG files exist
+PASS: every patient has 2 to 5 examinations
+PASS: every patient has exactly one anchor
+PASS: all cumulative labels are monotonic
+PASS: source files were not modified

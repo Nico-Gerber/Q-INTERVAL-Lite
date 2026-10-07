@@ -1,0 +1,54 @@
+Loading image features and manifests...
+
+BUILDING EXAMINATION FEATURES
+========================================================================
+Examinations: 4942
+Built 1/4,942 examinations
+Built 500/4,942 examinations
+Built 1,000/4,942 examinations
+Built 1,500/4,942 examinations
+Built 2,000/4,942 examinations
+Built 2,500/4,942 examinations
+Built 3,000/4,942 examinations
+Built 3,500/4,942 examinations
+Built 4,000/4,942 examinations
+Built 4,500/4,942 examinations
+Built 4,942/4,942 examinations
+
+BUILDING PATIENT SEQUENCES
+========================================================================
+Patients: 2230
+
+SEQUENCE BUILD COMPLETE
+========================================================================
+Examination features: (4942, 6149)
+Patient sequences: (2230, 5, 6149)
+Sequence masks: (2230, 5)
+Patient labels: (2230, 5)
+
+SEQUENCE LENGTHS
+========================================================================
+2    1859
+3     292
+4      47
+5      32
+Name: sequence_length, dtype: int64
+
+PATIENTS BY SPLIT
+========================================================================
+train         1566
+validation     334
+test           330
+Name: split, dtype: int64
+
+VALIDATION
+========================================================================
+PASS: image features match their metadata
+PASS: every examination has one 6,149-value vector
+PASS: view masks match the image manifest
+PASS: recency weights sum to one per patient
+PASS: every patient has 2 to 5 chronological exams
+PASS: every sequence ends with its anchor exam
+PASS: sequence masks match sequence lengths
+PASS: patient labels remain cumulative
+PASS: source files were not modified

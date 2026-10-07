@@ -1,0 +1,7 @@
+Hazard weighting configuration created
+Training patients: 1566
+Positive counts: [32, 65, 8, 3, 2]
+none: [1.0, 1.0, 1.0, 1.0, 1.0]
+raw_reference: [47.9375, 22.6, 182.625, 486.0, 728.0]
+sqrt: [6.9237, 4.7539, 13.5139, 22.0454, 26.9815]
+capped_raw_50: [47.9375, 22.6, 50.0, 50.0, 50.0]
