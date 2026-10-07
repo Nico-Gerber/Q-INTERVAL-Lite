@@ -1,7 +1,7 @@
 {
   "_comment": "Model weights that must exist on disk at runtime. Git LFS files are NOT available on Railway, so anything missing (or still a tiny LFS pointer stub) is downloaded at startup. 'path' is relative to backend/. Use 'hf' (file name inside the Hugging Face repo set by HF_MODEL_REPO) or 'url' (public).",
   "files": [
-    { "path": "routers/classical_session_analysis/models/final_v12_ensemble_bundle.pth",                "hf": "final_v12_ensemble_bundle.pth" },
+    { "path": "routers/classical_session_analysis/models/Classical-ConvNext.pth",                "hf": "final_v12_ensemble_bundle.pth" },
     { "path": "routers/classical_session_analysis/models/final_v9_effnetv2_mt-none_dro_ce_bundle.pth", "hf": "final_v9_effnetv2_mt-none_dro_ce_bundle.pth" },
     { "path": "routers/classical_session_analysis/models/final_v8_resnet101_nosrc_ce_bundle.pth",      "hf": "final_v8_resnet101_nosrc_ce_bundle.pth" },
     { "path": "routers/classical_session_analysis/models/density_v2_explainable.pth",                  "hf": "density_v2_explainable.pth" },

@@ -28,7 +28,7 @@ Requirements:
     pip install torch torchvision opencv-python numpy
 
 Files needed in the folder:
-    final_v12_ensemble_bundle.pth                  (new)
+    Classical-ConvNext.pth                  (new)
     final_v9_effnetv2_mt-none_dro_ce_bundle.pth    (new)
     final_v8_resnet101_nosrc_ce_bundle.pth         (new)
     density_v2_explainable.pth                     (from the Sprint 3 folder)

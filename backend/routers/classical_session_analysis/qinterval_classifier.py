@@ -236,7 +236,7 @@ class Classifier:
 
     Parameters
     ----------
-    bundle_dir : folder containing final_v12_ensemble_bundle.pth and the member
+    bundle_dir : folder containing Classical-ConvNext.pth and the member
                  bundles it names. Files are located by name, so folder layout
                  does not matter.
     device     : 'cuda', 'cpu', or None to pick automatically.
@@ -254,10 +254,10 @@ class Classifier:
         self.tta = tta
         self.defer_margin = defer_margin
 
-        ens_path = self._find(bundle_dir, 'final_v12_ensemble_bundle.pth')
+        ens_path = self._find(bundle_dir, 'Classical-ConvNext.pth')
         if ens_path is None:
             raise FileNotFoundError(
-                f'final_v12_ensemble_bundle.pth not found under {bundle_dir}')
+                f'Classical-ConvNext.pth not found under {bundle_dir}')
         self.cfg = torch.load(ens_path, map_location='cpu', weights_only=False)
 
         self.members: List[str] = list(self.cfg['members'])
