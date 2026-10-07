@@ -1,0 +1,146 @@
+Loading duplicate-image metadata...
+
+DUPLICATE METADATA LINKAGE
+============================================================================
+Duplicate view slots: 1622
+Images inside duplicate slots: 3341
+Rows without linked metadata: 0
+
+FIELDS THAT DIFFER WITHIN DUPLICATED SLOTS
+============================================================================
+PresentationIntentType: 0 slots differ
+ImageType: 1 slots differ
+QualityControlImage: 1 slots differ
+SeriesDescription: 1 slots differ
+SeriesNumber: 691 slots differ
+InstanceNumber: 1622 slots differ
+Rows: 20 slots differ
+Columns: 20 slots differ
+BreastImplantPresent: 6 slots differ
+0_ViewCodeSequence_0_ViewModifierCodeSequence_CodeMeaning: 463 slots differ
+DerivationDescription: 1 slots differ
+ProtocolName: 868 slots differ
+ImagesInAcquisition: 1 slots differ
+
+MOST COMMON VALUES AMONG DUPLICATE IMAGES
+============================================================================
+
+PresentationIntentType
+----------------------------------------------------------------------------
+PresentationIntentType
+FOR PRESENTATION    3341
+
+ImageType
+----------------------------------------------------------------------------
+ImageType
+('DERIVED', 'PRIMARY')                                     2827
+('ORIGINAL', 'PRIMARY', '')                                 474
+('DERIVED', 'PRIMARY', '', '', '', '', '', '', '50000')      40
+
+QualityControlImage
+----------------------------------------------------------------------------
+QualityControlImage
+NO           3284
+<MISSING>      57
+
+SeriesDescription
+----------------------------------------------------------------------------
+SeriesDescription
+R MLO                                   1107
+L MLO                                   1067
+MG Screening Digital Bilateral           380
+R CC                                     335
+L CC                                     318
+MG Screening Digital Bilateral w/CAD      92
+LMLO                                      15
+RMLO                                      13
+RCC                                       10
+MG Screening Digital Right                 2
+LCC                                        2
+
+BreastImplantPresent
+----------------------------------------------------------------------------
+BreastImplantPresent
+NO           2935
+<MISSING>     274
+YES           132
+
+0_ViewCodeSequence_0_ViewModifierCodeSequence_CodeMeaning
+----------------------------------------------------------------------------
+0_ViewCodeSequence_0_ViewModifierCodeSequence_CodeMeaning
+<MISSING>               2839
+Infra-mammary fold       221
+Nipple in profile        117
+Implant Displaced         91
+Axillary tissue           38
+Anterior compression      35
+
+DerivationDescription
+----------------------------------------------------------------------------
+DerivationDescription
+<MISSING>                                        3324
+LORAD IP 4.13.3                                    11
+G1.4T#1.40-0.06,MBP2.5EE0.6,PBJG2.0,C*1.0*1.0       6
+
+ProtocolName
+----------------------------------------------------------------------------
+ProtocolName
+R MLO          388
+L MLO          365
+RMLO           294
+<MISSING>      274
+LMLO           264
+R MLO Combo    242
+ROUTINE        240
+L MLO Combo    235
+R CC           124
+L CC           117
+L MLOIMF        91
+R MLOIMF        80
+LCC             77
+RCC             74
+R CC Combo      70
+
+SAMPLE DUPLICATED VIEW RECORDS
+============================================================================
+empi_anon         acc_anon view_slot                                filename PresentationIntentType              ImageType QualityControlImage  SeriesNumber  InstanceNumber   Rows  Columns 0_ViewCodeSequence_0_ViewModifierCodeSequence_CodeMeaning
+ 12853900 1043649066783982     L_MLO 20131124 00:00:00_negative_L_MLO_10.png       FOR PRESENTATION ('DERIVED', 'PRIMARY')                  NO      71100000               8 4096.0   3328.0                                                       NaN
+ 12853900 1043649066783982     L_MLO 20131124 00:00:00_negative_L_MLO_11.png       FOR PRESENTATION ('DERIVED', 'PRIMARY')                  NO      71100000               9 4096.0   3328.0                                                       NaN
+ 12853900 1043649066783982     L_MLO  20131124 00:00:00_negative_L_MLO_9.png       FOR PRESENTATION ('DERIVED', 'PRIMARY')                  NO      71100000              14 4096.0   3328.0                                                       NaN
+ 19147811 5800627295257183     R_MLO  20140606 00:00:00_negative_R_MLO_6.png       FOR PRESENTATION ('DERIVED', 'PRIMARY')                  NO      71100000              53 3328.0   2560.0                                                       NaN
+ 19147811 5800627295257183     R_MLO  20140606 00:00:00_negative_R_MLO_5.png       FOR PRESENTATION ('DERIVED', 'PRIMARY')                  NO      71100000              59 3328.0   2560.0                                                       NaN
+ 19147811 5800627295257183     R_MLO  20140606 00:00:00_negative_R_MLO_7.png       FOR PRESENTATION ('DERIVED', 'PRIMARY')                  NO      71100000              61 3328.0   2560.0                                                       NaN
+ 22639398 8179085706498725     L_MLO 20140312 00:00:00_negative_L_MLO_17.png       FOR PRESENTATION ('DERIVED', 'PRIMARY')                  NO      71100000              47 4096.0   3328.0                                                       NaN
+ 22639398 8179085706498725     L_MLO 20140312 00:00:00_negative_L_MLO_15.png       FOR PRESENTATION ('DERIVED', 'PRIMARY')                  NO      71100000              49 4096.0   3328.0                                                       NaN
+ 22639398 8179085706498725     L_MLO 20140312 00:00:00_negative_L_MLO_16.png       FOR PRESENTATION ('DERIVED', 'PRIMARY')                  NO      71100000              90 4096.0   3328.0                                                       NaN
+ 22639398 8179085706498725     L_MLO 20140312 00:00:00_negative_L_MLO_18.png       FOR PRESENTATION ('DERIVED', 'PRIMARY')                  NO      71100000              91 4096.0   3328.0                                                       NaN
+ 24770649 9027659758338283     R_MLO 20130830 00:00:00_negative_R_MLO_21.png       FOR PRESENTATION ('DERIVED', 'PRIMARY')                  NO      71100000              37 4096.0   3328.0                                                       NaN
+ 24770649 9027659758338283     R_MLO 20130830 00:00:00_negative_R_MLO_19.png       FOR PRESENTATION ('DERIVED', 'PRIMARY')                  NO      71100000              38 4096.0   3328.0                                                       NaN
+ 24770649 9027659758338283     R_MLO 20130830 00:00:00_negative_R_MLO_20.png       FOR PRESENTATION ('DERIVED', 'PRIMARY')                  NO      71100000              39 4096.0   3328.0                                                       NaN
+ 24770649 9027659758338283     R_MLO 20130830 00:00:00_negative_R_MLO_18.png       FOR PRESENTATION ('DERIVED', 'PRIMARY')                  NO      71100000              45 4096.0   3328.0                                      Anterior compression
+ 25157390 2138304757301195     L_MLO  20140713 00:00:00_negative_L_MLO_7.png       FOR PRESENTATION ('DERIVED', 'PRIMARY')                  NO      71100000             302 3328.0   2560.0                                                       NaN
+ 25157390 2138304757301195     L_MLO  20140713 00:00:00_negative_L_MLO_6.png       FOR PRESENTATION ('DERIVED', 'PRIMARY')                  NO      71100000             304 3328.0   2560.0                                                       NaN
+ 25157390 2138304757301195     L_MLO  20140713 00:00:00_negative_L_MLO_5.png       FOR PRESENTATION ('DERIVED', 'PRIMARY')                  NO      71300000             290 3328.0   2560.0                                                       NaN
+ 26360215 5068033238831831     L_MLO  20130705 00:00:00_negative_L_MLO_2.png       FOR PRESENTATION ('DERIVED', 'PRIMARY')                  NO      71100000              10 3328.0   2560.0                                                       NaN
+ 26360215 5068033238831831     L_MLO    20130705 00:00:00_negative_L_MLO.png       FOR PRESENTATION ('DERIVED', 'PRIMARY')                  NO      71100000              12 3328.0   2560.0                                         Implant Displaced
+ 26360215 5068033238831831     L_MLO  20130705 00:00:00_negative_L_MLO_1.png       FOR PRESENTATION ('DERIVED', 'PRIMARY')                  NO      71100000              13 3328.0   2560.0                                         Implant Displaced
+ 46695394 2789444868147034      L_CC   20141209 00:00:00_negative_L_CC_3.png       FOR PRESENTATION ('DERIVED', 'PRIMARY')                  NO      71100000             314 4096.0   3328.0                                                       NaN
+ 46695394 2789444868147034      L_CC   20141209 00:00:00_negative_L_CC_1.png       FOR PRESENTATION ('DERIVED', 'PRIMARY')                  NO      71100000             337 3328.0   2560.0                                                       NaN
+ 46695394 2789444868147034      L_CC     20141209 00:00:00_negative_L_CC.png       FOR PRESENTATION ('DERIVED', 'PRIMARY')                  NO      71100000             343 4096.0   3328.0                                                       NaN
+ 46695394 2789444868147034      L_CC   20141209 00:00:00_negative_L_CC_2.png       FOR PRESENTATION ('DERIVED', 'PRIMARY')                  NO      71300000             310 4096.0   3328.0                                                       NaN
+ 53486941 9950410796334716     L_MLO 20140502 00:00:00_negative_L_MLO_14.png       FOR PRESENTATION ('DERIVED', 'PRIMARY')                  NO      71100000              74 4096.0   3328.0                                                       NaN
+ 53486941 9950410796334716     L_MLO 20140502 00:00:00_negative_L_MLO_13.png       FOR PRESENTATION ('DERIVED', 'PRIMARY')                  NO      71100000              78 4096.0   3328.0                                                       NaN
+ 53486941 9950410796334716     L_MLO 20140502 00:00:00_negative_L_MLO_11.png       FOR PRESENTATION ('DERIVED', 'PRIMARY')                  NO      71100000              80 4096.0   3328.0                                         Nipple in profile
+ 53486941 9950410796334716     L_MLO 20140502 00:00:00_negative_L_MLO_12.png       FOR PRESENTATION ('DERIVED', 'PRIMARY')                  NO      71100000              81 4096.0   3328.0                                        Infra-mammary fold
+ 54318498 9972289880928670     L_MLO 20150531 00:00:00_negative_L_MLO_14.png       FOR PRESENTATION ('DERIVED', 'PRIMARY')                  NO      71100000             146 3328.0   2560.0                                        Infra-mammary fold
+ 54318498 9972289880928670     L_MLO 20150531 00:00:00_negative_L_MLO_13.png       FOR PRESENTATION ('DERIVED', 'PRIMARY')                  NO      71100000             148 3328.0   2560.0                                                       NaN
+ 54318498 9972289880928670     L_MLO 20150531 00:00:00_negative_L_MLO_12.png       FOR PRESENTATION ('DERIVED', 'PRIMARY')                  NO      71300000             140 3328.0   2560.0                                                       NaN
+ 54349136 2454028407517773     R_MLO  20130201 00:00:00_negative_R_MLO_3.png       FOR PRESENTATION ('DERIVED', 'PRIMARY')                  NO      71100000               5 4096.0   3328.0                                                       NaN
+ 54349136 2454028407517773     R_MLO  20130201 00:00:00_negative_R_MLO_2.png       FOR PRESENTATION ('DERIVED', 'PRIMARY')                  NO      71100000               6 4096.0   3328.0                                                       NaN
+ 54349136 2454028407517773     R_MLO  20130201 00:00:00_negative_R_MLO_4.png       FOR PRESENTATION ('DERIVED', 'PRIMARY')                  NO      71100000               7 4096.0   3328.0                                                       NaN
+
+AUDIT NOTES
+============================================================================
+No source file was modified.
+No image-selection rule was applied.
+No training manifest was created.

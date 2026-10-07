@@ -1,0 +1,95 @@
+Loading cleaned-image manifest...
+Loading complete image metadata...
+Loading complete clinical table...
+
+SOURCE LINKAGE
+======================================================================
+Clean rows: 365628
+Duplicate clean source paths: 0
+Full metadata rows: 480323
+Duplicate metadata paths: 0
+Rows linked to full metadata: 365628
+Rows not linked: 0
+Patient-ID mismatches: 0
+Accession-ID mismatches: 0
+
+IMAGE ELIGIBILITY STAGES
+======================================================================
+All linked clean images: images=365,628, exams=72,207, patients=23,161
+Screening images: images=302,430, exams=55,721, patients=20,371
+Diagnostic images: images=63,190, exams=16,486, patients=9,521
+Screening and 2D: images=213,243, exams=49,956, patients=19,263
+Screening, 2D and standard view: images=203,059, exams=49,055, patients=18,995
+Final eligible screening images: images=203,055, exams=49,055, patients=18,995
+
+MOST COMMON STUDY DESCRIPTIONS
+======================================================================
+StudyDescription
+MG Screen Bilat w/Tomo/CAD Stnd Protocol    228988
+MG Screening Bilateral                       38182
+MG Screening Bilateral w/CAD                 27711
+MG Diagnostic Bilateral w/ CAD               26030
+MG Diagnostic Mammo Bilateral                 9701
+MG Diagnostic Left w/CAD                      6525
+MG Diagnostic Right w/CAD                     6502
+MG Diagnostic Bilateral w/Tomo/CAD            5011
+MG Diagnostic Left                            3322
+MG Diagnostic Right                           3114
+MG Screening Left w/Tomo/CAD                  2517
+MG Screening Right w/Tomo/CAD                 2351
+MG Diagnostic  Left w/Tomo/CAD                1025
+MG Diagnostic  Right w/Tomo/CAD                954
+MG Diagnostic Bilateral w/Tomosynthesis        668
+MG Screening Right w/CAD                       597
+MG Screening Left w/CAD                        511
+MG Screening Bilat w/Tomosynthesis             414
+MG Screening Digital BL w/Tomo/CAD             385
+MG Screen Bilat w/Tomo/CAD Rad Protocol        233
+Name: count, dtype: int64
+
+ELIGIBLE EXAMINATION STRUCTURE
+======================================================================
+Eligible examinations: 49055
+Eligible patients: 18995
+
+Available view-slot count per examination:
+num_view_slots
+1     1550
+2     3897
+3     2537
+4    41071
+Name: count, dtype: int64
+
+Examinations with all four standard views: 41071
+
+CORRECTED SCREENING TIMING
+======================================================================
+Eligible screening exams without a true-cancer event: 47933
+Eligible screening exams before true cancer: 565
+Eligible screening exams on the first cancer date: 231
+Eligible screening exams after first cancer: 326
+
+TRUE-CANCER PATIENTS WITH PRIOR SCREENING EXAMS
+======================================================================
+At least 1 screening exam(s): 255
+At least 2 screening exam(s): 141
+At least 3 screening exam(s): 86
+At least 4 screening exam(s): 48
+At least 5 screening exam(s): 24
+
+LONGITUDINAL SCREENING CANCER PATIENTS
+======================================================================
+Patients with at least two prior screening exams: 141
+Patients with closest screening exam within 1 year(s): 35
+Patients with closest screening exam within 2 year(s): 108
+Patients with closest screening exam within 3 year(s): 121
+Patients with closest screening exam within 4 year(s): 130
+Patients with closest screening exam within 5 year(s): 138
+
+AUDIT NOTES
+======================================================================
+No source files were changed.
+No training manifest was created.
+Flagged images were not included.
+Cancer-free follow-up has not yet been assessed.
+The final cohort may change after censoring rules are applied.

@@ -1,0 +1,65 @@
+Reconstructing the audited cohort...
+Loading image-selection metadata...
+
+MANIFEST CREATION COMPLETE
+============================================================================
+Patients: 2214
+Examinations: 4862
+Selected images: 18689
+
+IMAGE SELECTION
+============================================================================
+Candidate images: 20408
+Extra duplicate images excluded: 1719
+View slots with multiple candidates: 1622
+
+SEQUENCE LENGTHS
+============================================================================
+sequence_length
+2    1866
+3     286
+4      38
+5      24
+Name: count, dtype: Int64
+
+AVAILABLE VIEWS PER EXAMINATION
+============================================================================
+num_available_views
+1      61
+2     267
+3      42
+4    4492
+Name: count, dtype: int64
+
+CORRECTED PATIENT LABELS
+============================================================================
+1-year: positive=35, negative=2179
+2-year: positive=108, negative=2106
+3-year: positive=121, negative=2093
+4-year: positive=130, negative=2084
+5-year: positive=138, negative=2076
+
+OUTCOME TYPES
+============================================================================
+outcome_type
+cancer_free_5yr_followup    2073
+cancer_within_5yr            138
+cancer_after_5yr               3
+Name: count, dtype: int64
+
+OUTPUT FILES
+============================================================================
+/fred/oz508/EMBED/classical_future_risk_vihanga/manifests/patient_anchor_manifest.csv
+/fred/oz508/EMBED/classical_future_risk_vihanga/manifests/exam_manifest.csv
+/fred/oz508/EMBED/classical_future_risk_vihanga/manifests/image_manifest.csv
+
+VALIDATION
+============================================================================
+PASS: one row per patient anchor
+PASS: one row per patient examination
+PASS: one image per examination view slot
+PASS: all selected PNG files exist
+PASS: every patient has 2 to 5 examinations
+PASS: every patient has exactly one anchor
+PASS: all cumulative labels are monotonic
+PASS: source files were not modified

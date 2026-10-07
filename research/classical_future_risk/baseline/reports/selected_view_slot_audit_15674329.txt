@@ -1,0 +1,71 @@
+SELECTED COHORT
+========================================================================
+Selected patients: 2214
+Selected anchors: 2214
+Selected examinations: 4862
+Selected images: 20408
+
+SEQUENCE LENGTHS
+========================================================================
+2    1866
+3     286
+4      38
+5      24
+Name: count, dtype: int64
+
+AVAILABLE VIEW SLOTS PER EXAMINATION
+========================================================================
+view_slot
+1      61
+2     267
+3      42
+4    4492
+Name: count, dtype: int64
+
+DUPLICATE VIEW SLOTS
+========================================================================
+Total view slots: 18689
+Duplicate view slots: 1622
+Examinations containing a duplicate slot: 1097
+
+Images per duplicated slot:
+images_in_slot
+2    1529
+3      89
+4       4
+Name: count, dtype: int64
+
+Largest duplicate slots:
+empi_anon         acc_anon view_slot  images_in_slot
+ 24770649 9027659758338283     R_MLO               4
+ 53486941 9950410796334716     L_MLO               4
+ 22639398 8179085706498725     L_MLO               4
+ 46695394 2789444868147034      L_CC               4
+ 54349136 2454028407517773     R_MLO               3
+ 25157390 2138304757301195     L_MLO               3
+ 54318498 9972289880928670     L_MLO               3
+ 26360215 5068033238831831     L_MLO               3
+ 19147811 5800627295257183     R_MLO               3
+ 12853900 1043649066783982     L_MLO               3
+ 26360215 5068033238831831      L_CC               3
+ 21445595 9266604192629095     R_MLO               3
+ 42377199 8569049768568421     R_MLO               3
+ 37122987 8160682542852153     L_MLO               3
+ 54134098 7364357819883019      R_CC               3
+ 21377698 5744517841692106     L_MLO               3
+ 54318498 3033066490280503     L_MLO               3
+ 51938065 1704439927401376     L_MLO               3
+ 42316990 4454180052970134     R_MLO               3
+ 25982813 4000210172948229     L_MLO               3
+
+IMAGE FILE CHECK
+========================================================================
+Existing image files: 20408
+Missing image files: 0
+
+AUDIT NOTES
+========================================================================
+No source files were modified.
+No training manifest was created.
+No duplicate image was removed.
+This audit only checks the proposed final cohort.
