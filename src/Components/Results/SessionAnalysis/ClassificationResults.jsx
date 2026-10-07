@@ -7,6 +7,7 @@ import {
     DialogTitle,
     DialogContent,
     DialogActions,
+    CircularProgress,
     useTheme
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
@@ -2327,17 +2328,42 @@ export default function ClassificationResults({
                                                 textAlign: 'center',
                                             }}
                                         >
-                                            <Typography
-                                                sx={{
-                                                    fontSize: 12.5,
-                                                    color: t.dim,
-                                                    lineHeight: 1.5,
-                                                    maxWidth: 260
-                                                }}
-                                            >
-                                                Generate an AI explanation for the{' '}
-                                                {currentView} view.
-                                            </Typography>
+                                            {LLMloading ? (
+                                                <>
+                                                    <CircularProgress size={26} thickness={4.5} sx={{ color: t.selLine }} />
+                                                    <Typography
+                                                        role="status"
+                                                        aria-live="polite"
+                                                        sx={{ fontSize: 12.5, color: t.body, fontWeight: 600, lineHeight: 1.5 }}
+                                                    >
+                                                        Generating explanation for the {currentView} view…
+                                                    </Typography>
+                                                    <Typography sx={{ fontSize: 11.5, color: t.dim, lineHeight: 1.5, maxWidth: 260 }}>
+                                                        This can take up to a minute.
+                                                    </Typography>
+                                                </>
+                                            ) : (
+                                                <Typography
+                                                    sx={{
+                                                        fontSize: 12.5,
+                                                        color: t.dim,
+                                                        lineHeight: 1.5,
+                                                        maxWidth: 260
+                                                    }}
+                                                >
+                                                    Generate an AI explanation for the{' '}
+                                                    {currentView} view.
+                                                </Typography>
+                                            )}
+
+                                            {currentExplanation?.error && !LLMloading && (
+                                                <Typography
+                                                    role="alert"
+                                                    sx={{ fontSize: 12, color: t.danger, lineHeight: 1.5, maxWidth: 280 }}
+                                                >
+                                                    {currentExplanation.error}
+                                                </Typography>
+                                            )}
 
                                             <Box
                                                 onClick={
@@ -2371,7 +2397,9 @@ export default function ClassificationResults({
                                                 >
                                                     {LLMloading
                                                         ? 'Generating…'
-                                                        : 'Generate AI Explanation'}
+                                                        : currentExplanation?.error
+                                                            ? 'Try again'
+                                                            : 'Generate AI Explanation'}
                                                 </Typography>
                                             </Box>
                                         </Box>

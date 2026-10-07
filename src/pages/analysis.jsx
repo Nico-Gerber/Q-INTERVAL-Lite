@@ -93,7 +93,7 @@ export default function Analysis() {
 
   const [LLMloading, setLLMLoading] = useState(false);
 
-  const [VLMloading, setVLMLoading] = useState(false);
+  const [VLMloading, setVLMLoading] = useState(null); // view key currently generating, or null
 
 
   const [viewData, setViewData] = useState({
@@ -816,7 +816,9 @@ export default function Analysis() {
 
   const currentViewData = viewData[selectedView];
   const handleExplainView = async () => {
-    setVLMLoading(true);
+    const explainedView = selectedView;
+    setVLMLoading(explainedView);   // which view is generating, so other views don't show a spinner
+    setViewData(prev => ({ ...prev, [explainedView]: { ...prev[explainedView], error: null } }));
 
 
 
@@ -859,9 +861,12 @@ export default function Analysis() {
 
     } catch (err) {
       console.error("VLM error:", err);
-
+      const message = err instanceof TypeError
+        ? 'Could not reach the server. Please try again.'
+        : (err.message || 'Could not generate the explanation. Please try again.');
+      setViewData(prev => ({ ...prev, [explainedView]: { ...prev[explainedView], explanation: null, generated: false, error: message } }));
     } finally {
-      setVLMLoading(false);
+      setVLMLoading(null);
     }
   };
 
@@ -1267,7 +1272,7 @@ export default function Analysis() {
                                 <ClassificationResults
                                   analyisedImage={preview} reset={handleReset} sessionId={sessionId}
                                   currentModel={modelMode} results={result} onModelSelect={setModelMode}
-                                  viewData={viewData} LLMloading={VLMloading} audience={audience}
+                                  viewData={viewData} LLMloading={VLMloading === selectedView} audience={audience}
                                   setAudience={setAudience} onGenerateExplanation={handleExplainView}
                                   onOpenFullExplanation={() => setCollapsed(false)}
                                   verifications={verifications} onVerifyView={canVerify ? handleVerifyView : undefined} setSelectedView={setSelectedView}

@@ -22,8 +22,13 @@ SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-OPENROUTER_TEXT_MODEL = os.getenv("OPENROUTER_TEXT_MODEL", "qwen/qwen3-4b:free")           # text explanations
-OPENROUTER_VLM_MODEL = os.getenv("OPENROUTER_VLM_MODEL", "dots-studio/dots-3-note-preview:free")  # image explanations
+# One model can serve both jobs. Set OPENROUTER_VLM_MODEL (must accept image input); text explanations use
+# OPENROUTER_TEXT_MODEL if set, otherwise the same model. Free models are retired from time to time, so
+# list backups in the *_FALLBACKS vars (comma-separated); OpenRouter tries them if the primary is unavailable.
+OPENROUTER_VLM_MODEL = os.getenv("OPENROUTER_VLM_MODEL") or "google/gemma-4-31b-it:free"
+OPENROUTER_TEXT_MODEL = os.getenv("OPENROUTER_TEXT_MODEL") or OPENROUTER_VLM_MODEL
+OPENROUTER_VLM_FALLBACKS = _csv("OPENROUTER_VLM_FALLBACKS")
+OPENROUTER_TEXT_FALLBACKS = _csv("OPENROUTER_TEXT_FALLBACKS")
 
 # Require a valid, approved Supabase login on analysis/explain endpoints. Only set to "false" for local dev.
 REQUIRE_AUTH = os.getenv("REQUIRE_AUTH", "true").lower() != "false"

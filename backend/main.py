@@ -26,6 +26,11 @@ from routers.shared.Explain import (
 logging.basicConfig(level=config.LOG_LEVEL, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logging.getLogger("httpx").setLevel(logging.WARNING)   # request URLs include user ids
 config.validate_for_production()
+logging.getLogger(__name__).info(
+    "Explanation models: text=%s (fallbacks=%s) vlm=%s (fallbacks=%s)",
+    config.OPENROUTER_TEXT_MODEL, config.OPENROUTER_TEXT_FALLBACKS,
+    config.OPENROUTER_VLM_MODEL, config.OPENROUTER_VLM_FALLBACKS,
+)
 
 app = FastAPI(
     title="Q-Interval Lite API",

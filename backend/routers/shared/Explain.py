@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 import httpx
@@ -15,6 +16,11 @@ OPENROUTER_API_KEY = config.OPENROUTER_API_KEY
 OPENROUTER_URL = config.OPENROUTER_URL
 TEXT_MODEL = config.OPENROUTER_TEXT_MODEL
 VLM = config.OPENROUTER_VLM_MODEL
+
+
+def _model_fields(model: str, fallbacks: list) -> dict:
+    """`model` alone, or OpenRouter's `models` list (primary first) when backups are configured."""
+    return {"models": [model, *fallbacks]} if fallbacks else {"model": model}
 
 DISCLAIMER = (
     "This explanation is AI-generated and intended solely to interpret model outputs. "
@@ -34,22 +40,35 @@ class ExplanationUnavailable(Exception):
     """The LLM provider is unreachable or returned an error (details are logged, never sent to clients)."""
 
 
+_RETRY_STATUSES = {429, 502, 503, 504}
+_RETRY_DELAYS = (2.0, 6.0)   # seconds before the 2nd and 3rd attempt
+
+
+async def _post_openrouter(client: httpx.AsyncClient, payload: dict) -> httpx.Response:
+    """POST to OpenRouter, retrying briefly when the provider is rate-limited or temporarily down.
+    Free models share provider pools and return 429 in bursts, which usually clears within seconds."""
+    response = await client.post(OPENROUTER_URL, headers=_openrouter_headers(), json=payload)
+    for delay in _RETRY_DELAYS:
+        if response.status_code not in _RETRY_STATUSES:
+            break
+        logger.info("OpenRouter returned %s; retrying in %.0fs", response.status_code, delay)
+        await asyncio.sleep(delay)
+        response = await client.post(OPENROUTER_URL, headers=_openrouter_headers(), json=payload)
+    return response
+
+
 async def generate_text(prompt: str) -> str:
     """Text explanation via OpenRouter (replaces the local Ollama model)."""
     if not OPENROUTER_API_KEY:
         raise ExplanationUnavailable("OPENROUTER_API_KEY is not configured")
     try:
         async with httpx.AsyncClient(timeout=120.0) as client:
-            response = await client.post(
-                OPENROUTER_URL,
-                headers=_openrouter_headers(),
-                json={
-                    "model": TEXT_MODEL,
-                    "messages": [{"role": "user", "content": prompt}],
-                    "temperature": 0.3,
-                    "reasoning": {"enabled": False},   # answer directly, no hidden chain-of-thought
-                },
-            )
+            response = await _post_openrouter(client, {
+                **_model_fields(TEXT_MODEL, config.OPENROUTER_TEXT_FALLBACKS),
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.3,
+                "reasoning": {"enabled": False},   # answer directly, no hidden chain-of-thought
+            })
     except httpx.HTTPError as exc:
         raise ExplanationUnavailable(f"{type(exc).__name__}") from exc
     if not response.is_success:
@@ -60,7 +79,10 @@ async def generate_text(prompt: str) -> str:
 
 def unavailable_response(exc: Exception) -> JSONResponse:
     logger.warning("Explanation request failed: %s", exc)
-    return JSONResponse(status_code=503, content={"error": "The explanation service is unavailable. Please try again."})
+    busy = "429" in str(exc)
+    message = ("The AI explanation service is busy right now. Please try again in a minute."
+               if busy else "The explanation service is unavailable. Please try again.")
+    return JSONResponse(status_code=503, content={"error": message})
 
 
 def as_data_uri(image_b64: str) -> str:
@@ -91,7 +113,7 @@ class ExplainRequest(BaseModel):
     views: dict
     composite_risk_score: Optional[float] = None
     composite_risk_level: Optional[str] = None
-    highest_density: Optional[float] = None
+    highest_density: Optional[str] = None      # density category, e.g. "C"
     highest_birads:  Optional[float] = None
     # QML — secondary
     qml_overall_classification: Optional[str] = None
@@ -99,7 +121,7 @@ class ExplainRequest(BaseModel):
     qml_views: Optional[dict] = None
     qml_composite_risk_score: Optional[float] = None
     qml_composite_risk_level: Optional[str] = None
-    qml_highest_density: Optional[float] = None
+    qml_highest_density: Optional[str] = None
     qml_highest_birads:  Optional[float] = None
 
 # ── Prompt builder ─────────────────────────────────────────────────────────────
@@ -191,8 +213,9 @@ STRICT RULES:
 
 
 MODEL CONTEXT:
-- Classical CNN (ResNet50):
-- Quantum ML (VQC):
+- Classical model
+- Quantum model
+- Refer to them only as "the Classical model" and "the Quantum model". Do NOT mention CNN, ResNet, VQC, neural networks or any model architecture.
 
 - Describe what the model CLASSIFIED each view as. Do NOT assert that lesions, masses, or abnormalities are actually present — the model outputs classifications, not findings.
 - Asymmetry between left and right is expected and is not a contradiction. Only flag disagreement when two views of the SAME breast diverge, or when confidence is low (e.g. a "Malignant" label below ~50%).
@@ -201,10 +224,10 @@ MODEL CONTEXT:
 - When commenting on agreement, refer to classification and composite risk SEPARATELY — do not merge them into one "agree/disagree".
 - If any view is classified Malignant, clearly state that a malignant classification was reached on that view and recommend timely clinical review. Do NOT describe it as merely "suspicious", and do NOT reassure that the overall result is fine.
 
-CLASSICAL CNN — PER-VIEW CLASSIFICATIONS:
+CLASSICAL MODEL — PER-VIEW CLASSIFICATIONS:
 {view_summary}
 
-QUANTUM ML — PER-VIEW:
+QUANTUM MODEL — PER-VIEW:
 {qml_view_summary}
 {composite_section}
 
@@ -297,8 +320,9 @@ STRICT RULES:
 - End with a reminder to consult a qualified clinician
 
 MODEL CONTEXT:
-- Classical CNN 
-- Quantum ML 
+- Classical model
+- Quantum model
+- Refer to them only as "the Classical model" and "the Quantum model". Do NOT mention CNN, ResNet, LSTM, VQC, neural networks or any model architecture.
 
 PATIENT:
   Age: {data.patient_age if data.patient_age is not None else "not provided"}
@@ -425,7 +449,8 @@ async def explainview(data: VLMCompareRequest):
         return JSONResponse(status_code=503, content={"error": "The explanation service is unavailable. Please try again."})
 
     payload = {
-        "model": VLM,
+        **_model_fields(VLM, config.OPENROUTER_VLM_FALLBACKS),
+        "reasoning": {"enabled": False},   # answer directly rather than spending tokens on hidden reasoning
 
         "messages": [
             {
@@ -472,7 +497,7 @@ async def explainview(data: VLMCompareRequest):
 
     try:
         async with httpx.AsyncClient(timeout=320.0) as client:
-            response = await client.post(OPENROUTER_URL, headers=_openrouter_headers(), json=payload)
+            response = await _post_openrouter(client, payload)
         if not response.is_success:
             raise ExplanationUnavailable(f"OpenRouter returned HTTP {response.status_code}")
         result = response.json()
