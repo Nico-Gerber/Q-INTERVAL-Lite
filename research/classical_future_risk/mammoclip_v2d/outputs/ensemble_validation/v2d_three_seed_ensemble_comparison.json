@@ -1,0 +1,129 @@
+{
+  "status": "validation_only_pre_test_selection_check",
+  "test_set_evaluated": false,
+  "method": "arithmetic mean of three yearly hazard probabilities",
+  "component_seeds": [
+    42,
+    123,
+    2026
+  ],
+  "ranking_metric_tolerance": 0.005,
+  "decision_rule": "Select ensemble only when NLL and Brier improve, AUROC and AUPRC do not decrease by more than 0.005, and monotonicity violations are zero.",
+  "seed_2026": {
+    "candidate": "seed_2026",
+    "validation_unweighted_masked_nll": 0.03568430823097483,
+    "mean_auroc": 0.8922697877124335,
+    "mean_auprc": 0.68768245699519,
+    "mean_brier_score": 0.02089461098608322,
+    "mean_expected_calibration_error": 0.012185848881967335,
+    "patients_with_monotonicity_violation": 0,
+    "per_horizon": {
+      "1yr": {
+        "patients": 334,
+        "positives": 7,
+        "auroc": 0.8968982088248142,
+        "auprc": 0.40853926774979404,
+        "brier_score": 0.01525468218614574,
+        "expected_calibration_error": 0.010735288389011976
+      },
+      "2yr": {
+        "patients": 334,
+        "positives": 20,
+        "auroc": 0.9047770700636942,
+        "auprc": 0.7309870843267916,
+        "brier_score": 0.021852180447631,
+        "expected_calibration_error": 0.011809739718018323
+      },
+      "3yr": {
+        "patients": 334,
+        "positives": 22,
+        "auroc": 0.8869463869463869,
+        "auprc": 0.7663633981600501,
+        "brier_score": 0.022482832840121633,
+        "expected_calibration_error": 0.0138808327171867
+      },
+      "4yr": {
+        "patients": 334,
+        "positives": 22,
+        "auroc": 0.886509324009324,
+        "auprc": 0.7662799990356328,
+        "brier_score": 0.022445697569734014,
+        "expected_calibration_error": 0.012767512496547813
+      },
+      "5yr": {
+        "patients": 334,
+        "positives": 22,
+        "auroc": 0.8862179487179488,
+        "auprc": 0.7662425357036814,
+        "brier_score": 0.022437661886783714,
+        "expected_calibration_error": 0.01173587108907186
+      }
+    }
+  },
+  "ensemble": {
+    "candidate": "three_seed_hazard_ensemble",
+    "validation_unweighted_masked_nll": 0.036217377138285885,
+    "mean_auroc": 0.8777511304702621,
+    "mean_auprc": 0.6951171813215936,
+    "mean_brier_score": 0.020974724841477253,
+    "mean_expected_calibration_error": 0.015160247522285947,
+    "patients_with_monotonicity_violation": 0,
+    "per_horizon": {
+      "1yr": {
+        "patients": 334,
+        "positives": 7,
+        "auroc": 0.8824814329401484,
+        "auprc": 0.4637555427029111,
+        "brier_score": 0.01512851299119427,
+        "expected_calibration_error": 0.014276997105718562
+      },
+      "2yr": {
+        "patients": 334,
+        "positives": 20,
+        "auroc": 0.8939490445859873,
+        "auprc": 0.7269093556538996,
+        "brier_score": 0.021850387395106016,
+        "expected_calibration_error": 0.013605966990573967
+      },
+      "3yr": {
+        "patients": 334,
+        "positives": 22,
+        "auroc": 0.870920745920746,
+        "auprc": 0.7617683145033598,
+        "brier_score": 0.02263172882264417,
+        "expected_calibration_error": 0.014855667980498291
+      },
+      "4yr": {
+        "patients": 334,
+        "positives": 22,
+        "auroc": 0.8709207459207459,
+        "auprc": 0.7616293381436263,
+        "brier_score": 0.022629058195736,
+        "expected_calibration_error": 0.016088497586661286
+      },
+      "5yr": {
+        "patients": 334,
+        "positives": 22,
+        "auroc": 0.870483682983683,
+        "auprc": 0.7615233556041713,
+        "brier_score": 0.0226339368027058,
+        "expected_calibration_error": 0.016974107947977636
+      }
+    }
+  },
+  "decision": "retain_seed_2026",
+  "source_files": {
+    "42": {
+      "path": "experiments/v2c_mammoclip_b5/outputs/predictions/v2d_mammoclip_b5_none_seed42_job17790781_validation.csv",
+      "sha256": "abc9c4b4c010b1b6d3c2b366f4951d8c30996f4f192a5c34b72f3fb16c5b5135"
+    },
+    "123": {
+      "path": "experiments/v2c_mammoclip_b5/outputs/predictions/v2d_mammoclip_b5_none_seed123_job17791025_validation.csv",
+      "sha256": "ac1a6c230e008279c03dcecbf97a249c9d0c061c73cad627a00608e598d839f9"
+    },
+    "2026": {
+      "path": "experiments/v2c_mammoclip_b5/outputs/predictions/v2d_mammoclip_b5_none_seed2026_job17791028_validation.csv",
+      "sha256": "0b7f8a0b1c650bbd208b3c53b12206143d24b482006604142b6d43f1812cd3e6"
+    }
+  }
+}

@@ -1,0 +1,85 @@
+Loading image manifest and patient split...
+Loading Mammo-CLIP EfficientNet-B5...
+
+FEATURE EXTRACTION
+========================================================================
+GPU: NVIDIA A100-SXM4-80GB
+Images: 19054
+Batch size: 16
+Feature dimension: 2048
+Processed 16/19,054 images
+Processed 400/19,054 images
+Processed 800/19,054 images
+Processed 1,200/19,054 images
+Processed 1,600/19,054 images
+Processed 2,000/19,054 images
+Processed 2,400/19,054 images
+Processed 2,800/19,054 images
+Processed 3,200/19,054 images
+Processed 3,600/19,054 images
+Processed 4,000/19,054 images
+Processed 4,400/19,054 images
+Processed 4,800/19,054 images
+Processed 5,200/19,054 images
+Processed 5,600/19,054 images
+Processed 6,000/19,054 images
+Processed 6,400/19,054 images
+Processed 6,800/19,054 images
+Processed 7,200/19,054 images
+Processed 7,600/19,054 images
+Processed 8,000/19,054 images
+Processed 8,400/19,054 images
+Processed 8,800/19,054 images
+Processed 9,200/19,054 images
+Processed 9,600/19,054 images
+Processed 10,000/19,054 images
+Processed 10,400/19,054 images
+Processed 10,800/19,054 images
+Processed 11,200/19,054 images
+Processed 11,600/19,054 images
+Processed 12,000/19,054 images
+Processed 12,400/19,054 images
+Processed 12,800/19,054 images
+Processed 13,200/19,054 images
+Processed 13,600/19,054 images
+Processed 14,000/19,054 images
+Processed 14,400/19,054 images
+Processed 14,800/19,054 images
+Processed 15,200/19,054 images
+Processed 15,600/19,054 images
+Processed 16,000/19,054 images
+Processed 16,400/19,054 images
+Processed 16,800/19,054 images
+Processed 17,200/19,054 images
+Processed 17,600/19,054 images
+Processed 18,000/19,054 images
+Processed 18,400/19,054 images
+Processed 18,800/19,054 images
+Processed 19,054/19,054 images
+
+FEATURE EXTRACTION COMPLETE
+========================================================================
+Feature matrix shape: (19054, 2048)
+Expected feature size MiB: 148.86
+
+IMAGES BY SPLIT
+========================================================================
+train         13392
+validation     2912
+test           2750
+Name: split, dtype: int64
+
+OUTPUT FILES
+========================================================================
+/fred/oz508/EMBED/classical_future_risk_vihanga/v2_hazard_sprint06/experiments/v2c_mammoclip_b5/features/mammoclip_b5_features.npy
+/fred/oz508/EMBED/classical_future_risk_vihanga/v2_hazard_sprint06/experiments/v2c_mammoclip_b5/features/mammoclip_b5_feature_metadata.csv
+/fred/oz508/EMBED/classical_future_risk_vihanga/v2_hazard_sprint06/experiments/v2c_mammoclip_b5/configs/mammoclip_b5_feature_config.json
+
+VALIDATION
+========================================================================
+PASS: every manifest image was processed
+PASS: feature order matches feature_index
+PASS: feature shape is correct
+PASS: all feature values are finite
+PASS: no labels were used by Mammo-CLIP
+PASS: source images and manifests were unchanged

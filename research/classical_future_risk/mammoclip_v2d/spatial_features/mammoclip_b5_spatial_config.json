@@ -1,0 +1,43 @@
+{
+  "model": "Mammo-CLIP",
+  "image_encoder": "tf_efficientnet_b5_ns-detect",
+  "encoder_architecture": "efficientnet-b5",
+  "encoder_output": "final_convolutional_spatial_map",
+  "feature_channels": 2048,
+  "native_spatial_size": [
+    16,
+    16
+  ],
+  "stored_spatial_size": [
+    8,
+    8
+  ],
+  "spatial_reduction": "adaptive_average_pooling",
+  "encoder_parameter_count": 28340784,
+  "encoder_frozen": true,
+  "storage_dtype": "float16",
+  "source_image_size": [
+    500,
+    500
+  ],
+  "source_image_mode": "grayscale",
+  "colour_channels": 3,
+  "source_conversion": "grayscale_to_rgb",
+  "resizing_during_extraction": false,
+  "intensity_scaling": "per_image_min_max",
+  "normalization_mean": 0.3089279,
+  "normalization_std": 0.25053555408335154,
+  "augmentation": false,
+  "labels_used_during_extraction": false,
+  "resolution_limit": "Available EMBED inputs were previously processed to 500x500, whereas the official Mammo-CLIP tutorial used higher-resolution 1520x912 inputs.",
+  "batch_size": 16,
+  "number_of_images": 19054,
+  "mammoclip_git_commit": "0d68563352c06784400080e140ae3d447e779283",
+  "image_manifest_sha256": "aa81eee7e872215ef647dee9e871a59ab7d067fd54ea203971cca363150c95c1",
+  "patient_splits_sha256": "4a28b460ccbbdc6803fd79ac927bc3ea806c57060866f6466233b16c8ed3d17f",
+  "pretrained_weights_sha256": "0baccb0cc19cd6093ff8252f7c2b7a6efbc32973498640abcb311210c46fd02c",
+  "extractor_script_sha256": "59e550bfe2b97c36122603e20b8acca1daf0176da8e355d78d45970b4282db33",
+  "feature_file_sha256": "b3393b90006e64bf6f5b8e84973ffa8082d2c11c1b7a8ab2bacca3e4fa4ba0f7",
+  "torch_version": "2.2.2+cu118",
+  "cuda_version": "11.8"
+}

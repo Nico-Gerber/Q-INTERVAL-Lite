@@ -1,0 +1,103 @@
+{
+  "run_name": "v2d_mammoclip_b5_none_seed123_job17791025",
+  "slurm_job_id": "17791025",
+  "model": "V2DSpatialMultiviewHazardLSTM",
+  "status": "completed",
+  "weighting": "none",
+  "positive_weights": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+  ],
+  "random_seed": 123,
+  "parameter_count": 572999,
+  "best_epoch": 10,
+  "epochs_completed": 20,
+  "selection_criterion": "minimum validation unweighted masked negative log-likelihood",
+  "best_validation_unweighted_nll": 0.036344263940266776,
+  "validation_metrics": {
+    "per_horizon": {
+      "1yr": {
+        "patients": 334,
+        "positives": 7,
+        "negatives": 327,
+        "prevalence": 0.020958083832335328,
+        "auroc": 0.8789864569681083,
+        "auprc": 0.40580539908270996,
+        "brier_score": 0.01479354610262559,
+        "expected_calibration_error": 0.009708009972543775
+      },
+      "2yr": {
+        "patients": 334,
+        "positives": 20,
+        "negatives": 314,
+        "prevalence": 0.059880239520958084,
+        "auroc": 0.8718152866242038,
+        "auprc": 0.7435787430784907,
+        "brier_score": 0.02096946383002215,
+        "expected_calibration_error": 0.01303479253888844
+      },
+      "3yr": {
+        "patients": 334,
+        "positives": 22,
+        "negatives": 312,
+        "prevalence": 0.0658682634730539,
+        "auroc": 0.8489219114219115,
+        "auprc": 0.7568392732348079,
+        "brier_score": 0.021592154838506857,
+        "expected_calibration_error": 0.013551887816297794
+      },
+      "4yr": {
+        "patients": 334,
+        "positives": 22,
+        "negatives": 312,
+        "prevalence": 0.0658682634730539,
+        "auroc": 0.8487762237762239,
+        "auprc": 0.756773632114121,
+        "brier_score": 0.021616687592923657,
+        "expected_calibration_error": 0.014853805838944672
+      },
+      "5yr": {
+        "patients": 334,
+        "positives": 22,
+        "negatives": 312,
+        "prevalence": 0.0658682634730539,
+        "auroc": 0.8490675990675991,
+        "auprc": 0.756835568170033,
+        "brier_score": 0.021636681582887177,
+        "expected_calibration_error": 0.015681813933892168
+      }
+    },
+    "mean_auroc": 0.8595134955716093,
+    "mean_auprc": 0.6839665231360325,
+    "mean_brier_score": 0.020121706789393085,
+    "patients_with_monotonicity_violation": 0,
+    "monotonicity_violation_rate": 0.0
+  },
+  "empirical_hazard_rates": [
+    0.020434226840734482,
+    0.04237288236618042,
+    0.005445881746709347,
+    0.002053388161584735,
+    0.0013717421097680926
+  ],
+  "initial_output_biases": [
+    -3.8698980808258057,
+    -3.117949962615967,
+    -5.20743465423584,
+    -6.186208724975586,
+    -6.590301036834717
+  ],
+  "training_seconds": 148.1168282032013,
+  "test_set_evaluated": false,
+  "device": "NVIDIA A100-SXM4-80GB",
+  "torch_version": "1.12.1",
+  "cuda_version": "11.7",
+  "outputs": {
+    "checkpoint": "/fred/oz508/EMBED/classical_future_risk_vihanga/v2_hazard_sprint06/experiments/v2c_mammoclip_b5/checkpoints/v2d_mammoclip_b5_none_seed123_job17791025_best.pt",
+    "history": "/fred/oz508/EMBED/classical_future_risk_vihanga/v2_hazard_sprint06/experiments/v2c_mammoclip_b5/outputs/metrics/v2d_mammoclip_b5_none_seed123_job17791025_history.json",
+    "validation_predictions": "/fred/oz508/EMBED/classical_future_risk_vihanga/v2_hazard_sprint06/experiments/v2c_mammoclip_b5/outputs/predictions/v2d_mammoclip_b5_none_seed123_job17791025_validation.csv"
+  }
+}

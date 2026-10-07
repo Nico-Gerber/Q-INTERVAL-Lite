@@ -1,0 +1,41 @@
+{
+  "image_feature_size": 2048,
+  "exam_feature_size": 6149,
+  "maximum_sequence_length": 5,
+  "view_order": [
+    "L_CC",
+    "R_CC",
+    "L_MLO",
+    "R_MLO"
+  ],
+  "exam_feature_layout": {
+    "mean_available_views": [
+      0,
+      2048
+    ],
+    "cc_absolute_asymmetry": [
+      2048,
+      4096
+    ],
+    "mlo_absolute_asymmetry": [
+      4096,
+      6144
+    ],
+    "view_mask": [
+      6144,
+      6148
+    ],
+    "recency_weight": [
+      6148,
+      6149
+    ]
+  },
+  "recency_formula": "exp(-0.5 * years_before_anchor), normalised within patient",
+  "padding": "right padding after chronological exams",
+  "number_of_patients": 2230,
+  "number_of_examinations": 4942,
+  "image_features_sha256": "de75f28b2001099a67fe6e61d07ff1e4f59bd321810f1f284a8620c9a32d2d8b",
+  "image_feature_metadata_sha256": "3f3eba08e63e9701dd783b93da4e683dbabcb8124210a962f5273b6f52fc2259",
+  "exam_manifest_sha256": "8d1518fbe5371e8971d6d1b240600d8ab15bbeedcbcbe69129733a2e8df2c79c",
+  "patient_splits_sha256": "4a28b460ccbbdc6803fd79ac927bc3ea806c57060866f6466233b16c8ed3d17f"
+}
