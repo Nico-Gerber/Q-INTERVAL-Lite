@@ -24,7 +24,8 @@ from routers.shared.Explain import (
 )
 
 logging.basicConfig(level=config.LOG_LEVEL, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
-logging.getLogger("httpx").setLevel(logging.WARNING)   # request URLs include user ids
+for noisy in ("httpx", "httpcore", "asyncio"):   # their debug output includes request URLs and user ids
+    logging.getLogger(noisy).setLevel(logging.WARNING)
 config.validate_for_production()
 logging.getLogger(__name__).info(
     "Explanation models: text=%s (fallbacks=%s) vlm=%s (fallbacks=%s)",

@@ -1,9 +1,12 @@
+import logging
 from typing import Optional
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
 from .response_builder import build_session_response
 from .schemas import SessionAnalysisResponse
+
+logger = logging.getLogger(__name__)
 
 
 def create_session_analysis_router(
@@ -47,9 +50,10 @@ def create_session_analysis_router(
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         except Exception as exc:
+            logger.exception("%s session analysis failed", model_name)   # full traceback in server logs only
             raise HTTPException(
                 status_code=500,
-                detail=f"{model_name} session analysis failed: {exc}",
+                detail=f"{model_name} session analysis failed.",
             ) from exc
 
         try:

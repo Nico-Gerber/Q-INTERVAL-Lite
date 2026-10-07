@@ -1,11 +1,14 @@
 """Generic Future Risk FastAPI router factory."""
 
+import logging
 from typing import List, Optional
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
 from .contract import build_future_risk_response
 from .request_parser import parse_future_risk_request
+
+logger = logging.getLogger(__name__)
 
 
 def create_future_risk_router(
@@ -58,9 +61,10 @@ def create_future_risk_router(
         try:
             ensure_initialised()
         except Exception as exc:
+            logger.exception("Future-risk model failed to initialise")
             raise HTTPException(
                 status_code=500,
-                detail=f"Model failed to initialise: {exc}",
+                detail="Model failed to initialise.",
             ) from exc
 
         model_input = await parse_future_risk_request(metadata_json, files)
@@ -72,7 +76,8 @@ def create_future_risk_router(
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         except RuntimeError as exc:
-            raise HTTPException(status_code=500, detail=str(exc)) from exc
+            logger.exception("Future-risk inference failed")
+            raise HTTPException(status_code=500, detail="Future risk analysis failed.") from exc
 
         try:
             return build_future_risk_response(

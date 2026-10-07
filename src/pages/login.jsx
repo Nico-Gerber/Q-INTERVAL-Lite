@@ -20,6 +20,7 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!supabase) { setError('Sign in is unavailable right now.'); return; }
     setError(null);
     setSubmitting(true);
     try {
