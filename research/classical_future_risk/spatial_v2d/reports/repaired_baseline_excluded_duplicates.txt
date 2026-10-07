@@ -1,0 +1,4 @@
+Jobs 17105389 and 17105390 are excluded from multi-seed analysis.
+Both received seed 42 because SEED was not explicitly exported through sbatch.
+Their checkpoints are byte-identical to the valid seed-42 job 17104939.
+Replacement jobs: 17105700 for seed 123 and 17105701 for seed 2026.

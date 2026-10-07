@@ -1,0 +1,16 @@
+{
+  "selected_model": "V2CStructuredHazardLSTM",
+  "evaluated_method": "single_temperature_scaling",
+  "fitting_data": "validation split only",
+  "fitted_temperature": 1.0208828330075856,
+  "validation_nll_before": 0.04334319325600172,
+  "validation_nll_after": 0.04331349784269458,
+  "validation_brier_before": 0.028215429428934125,
+  "validation_brier_after": 0.028260226054642217,
+  "validation_ece_before": 0.014406111390290858,
+  "validation_ece_after": 0.013851847098788053,
+  "decision": "retain_uncalibrated_predictions",
+  "deployment_temperature": 1.0,
+  "reason": "Temperature scaling gave negligible mixed validation changes and slightly worsened the mean Brier score.",
+  "test_set_used": false
+}

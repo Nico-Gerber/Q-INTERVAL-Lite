@@ -1,0 +1,162 @@
+{
+  "model": "V2CStructuredHazardLSTM",
+  "checkpoint": "/fred/oz508/EMBED/classical_future_risk_vihanga/v2_hazard_sprint06/checkpoints/v2c_none_seed42_job17108579_best.pt",
+  "split": "validation",
+  "patients": 334,
+  "masked_hazard_nll": 0.04334319452216395,
+  "calibration_temperature": 1.0,
+  "metrics": {
+    "per_horizon": {
+      "1yr": {
+        "patients": 334,
+        "positives": 7,
+        "negatives": 327,
+        "prevalence": 0.020958083832335328,
+        "auroc": 0.8278724333770205,
+        "auprc": 0.38776148957235473,
+        "brier_score": 0.016613880867518735,
+        "expected_calibration_error": 0.004849111605547146
+      },
+      "2yr": {
+        "patients": 334,
+        "positives": 20,
+        "negatives": 314,
+        "prevalence": 0.059880239520958084,
+        "auroc": 0.878343949044586,
+        "auprc": 0.6075129879131876,
+        "brier_score": 0.030996977421222167,
+        "expected_calibration_error": 0.018440268353787724
+      },
+      "3yr": {
+        "patients": 334,
+        "positives": 22,
+        "negatives": 312,
+        "prevalence": 0.0658682634730539,
+        "auroc": 0.8556235431235432,
+        "auprc": 0.6555115442664589,
+        "brier_score": 0.031162825123388457,
+        "expected_calibration_error": 0.017890465473700424
+      },
+      "4yr": {
+        "patients": 334,
+        "positives": 22,
+        "negatives": 312,
+        "prevalence": 0.0658682634730539,
+        "auroc": 0.8562062937062938,
+        "auprc": 0.6560431603030358,
+        "brier_score": 0.03115687909826299,
+        "expected_calibration_error": 0.016106500240143186
+      },
+      "5yr": {
+        "patients": 334,
+        "positives": 22,
+        "negatives": 312,
+        "prevalence": 0.0658682634730539,
+        "auroc": 0.8563519813519813,
+        "auprc": 0.655902515696005,
+        "brier_score": 0.03114658463427828,
+        "expected_calibration_error": 0.01474421127827581
+      }
+    },
+    "mean_auroc": 0.8548796401206851,
+    "mean_auprc": 0.5925463395502083,
+    "mean_brier_score": 0.028215429428934125,
+    "patients_with_monotonicity_violation": 0,
+    "monotonicity_violation_rate": 0.0
+  },
+  "discrete_time_c_index": 0.8504646175839886,
+  "confidence_intervals": {
+    "1yr": {
+      "auroc": {
+        "bootstrap_samples": 1999,
+        "lower_95": 0.5650951589061345,
+        "upper_95": 0.9924816439008312
+      },
+      "auprc": {
+        "bootstrap_samples": 1999,
+        "lower_95": 0.06250619420228233,
+        "upper_95": 0.7633302943668797
+      },
+      "brier_score": {
+        "bootstrap_samples": 2000,
+        "lower_95": 0.006228395847628284,
+        "upper_95": 0.0286014989661093
+      }
+    },
+    "2yr": {
+      "auroc": {
+        "bootstrap_samples": 2000,
+        "lower_95": 0.7628190150970524,
+        "upper_95": 0.9664071822226716
+      },
+      "auprc": {
+        "bootstrap_samples": 2000,
+        "lower_95": 0.3823732307399455,
+        "upper_95": 0.8140075240128041
+      },
+      "brier_score": {
+        "bootstrap_samples": 2000,
+        "lower_95": 0.015107896731088654,
+        "upper_95": 0.04872819951609137
+      }
+    },
+    "3yr": {
+      "auroc": {
+        "bootstrap_samples": 2000,
+        "lower_95": 0.7258032829428588,
+        "upper_95": 0.9564824879227053
+      },
+      "auprc": {
+        "bootstrap_samples": 2000,
+        "lower_95": 0.4514016521118906,
+        "upper_95": 0.8301703802328362
+      },
+      "brier_score": {
+        "bootstrap_samples": 2000,
+        "lower_95": 0.014746528864738418,
+        "upper_95": 0.04942406715453217
+      }
+    },
+    "4yr": {
+      "auroc": {
+        "bootstrap_samples": 2000,
+        "lower_95": 0.7264100481906176,
+        "upper_95": 0.9567614945896323
+      },
+      "auprc": {
+        "bootstrap_samples": 2000,
+        "lower_95": 0.4519571785048945,
+        "upper_95": 0.8304981064934566
+      },
+      "brier_score": {
+        "bootstrap_samples": 2000,
+        "lower_95": 0.014829128563548366,
+        "upper_95": 0.049348206013927746
+      }
+    },
+    "5yr": {
+      "auroc": {
+        "bootstrap_samples": 2000,
+        "lower_95": 0.7261029513498909,
+        "upper_95": 0.9567315251572326
+      },
+      "auprc": {
+        "bootstrap_samples": 2000,
+        "lower_95": 0.45186277956228893,
+        "upper_95": 0.8305290532759609
+      },
+      "brier_score": {
+        "bootstrap_samples": 2000,
+        "lower_95": 0.014870120659814218,
+        "upper_95": 0.04928867089633558
+      }
+    }
+  },
+  "c_index_confidence_interval": {
+    "bootstrap_samples": 2000,
+    "lower_95": 0.7249707970644003,
+    "upper_95": 0.9540388871702032
+  },
+  "bootstrap_iterations": 2000,
+  "test_confirmation_supplied": false
+}

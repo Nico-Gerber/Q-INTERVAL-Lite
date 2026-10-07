@@ -1,0 +1,35 @@
+{
+  "version": "1.0",
+  "dataset": "repaired EMBED longitudinal cohort",
+  "patients": 2230,
+  "splits": {
+    "train": 1566,
+    "validation": 334,
+    "test": 330
+  },
+  "seeds": [
+    42,
+    123,
+    2026
+  ],
+  "candidates": [
+    "baseline",
+    "current_exam",
+    "v2b",
+    "v2c",
+    "v2d"
+  ],
+  "selection_split": "validation",
+  "primary_metric": "mean unweighted masked validation NLL",
+  "secondary_metric": "mean validation AUPRC",
+  "tertiary_metric": "mean validation Brier score",
+  "required": [
+    "finite predictions",
+    "monotonic cumulative risk",
+    "patient-separated splits"
+  ],
+  "calibration_data": "validation only",
+  "test_status": "locked until final model is frozen",
+  "test_uses": 1,
+  "clinical_use": false
+}

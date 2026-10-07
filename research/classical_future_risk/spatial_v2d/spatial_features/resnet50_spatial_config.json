@@ -1,0 +1,40 @@
+{
+  "model": "resnet50",
+  "weights": "IMAGENET1K_V2",
+  "feature_layer": "layer4",
+  "feature_channels": 2048,
+  "native_spatial_size": [
+    16,
+    16
+  ],
+  "stored_spatial_size": [
+    8,
+    8
+  ],
+  "spatial_reduction": "adaptive_average_pooling",
+  "storage_dtype": "float16",
+  "image_size": [
+    512,
+    512
+  ],
+  "colour_channels": 3,
+  "source_conversion": "grayscale_to_rgb",
+  "normalization_mean": [
+    0.485,
+    0.456,
+    0.406
+  ],
+  "normalization_std": [
+    0.229,
+    0.224,
+    0.225
+  ],
+  "augmentation": false,
+  "labels_used_during_extraction": false,
+  "batch_size": 64,
+  "number_of_images": 19054,
+  "image_manifest_sha256": "aa81eee7e872215ef647dee9e871a59ab7d067fd54ea203971cca363150c95c1",
+  "patient_splits_sha256": "4a28b460ccbbdc6803fd79ac927bc3ea806c57060866f6466233b16c8ed3d17f",
+  "pretrained_weights_sha256": "11ad3fa62ca79e40addfd354a8ec4b7c75143b3038b8d2a807fbc68deab379ca",
+  "feature_file_sha256": "17c354b6aed9ab2708d23a2ddebd471c082e27ec3284a8c3482f31913b24639c"
+}

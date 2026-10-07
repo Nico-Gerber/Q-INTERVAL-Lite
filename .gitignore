@@ -58,7 +58,6 @@ venvs/
 **/checkpoints/
 **/logs/
 **/outputs/predictions/
-**/spatial_features/
 
 # Patient-level and private explanation inputs
 **/vlm_inputs/

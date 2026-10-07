@@ -1,0 +1,40 @@
+V2D SPATIAL INDEX COMPLETE
+{
+  "shape": [
+    2230,
+    5,
+    4
+  ],
+  "dtype": "int64",
+  "patients": 2230,
+  "examinations": 4942,
+  "mapped_images": 19054,
+  "missing_view_slots": 714,
+  "images_by_view": {
+    "L_CC": 4776,
+    "R_CC": 4767,
+    "L_MLO": 4766,
+    "R_MLO": 4745
+  },
+  "examinations_by_view_count": {
+    "1": 52,
+    "2": 258,
+    "3": 42,
+    "4": 4590
+  },
+  "patients_by_split": {
+    "train": 1566,
+    "validation": 334,
+    "test": 330
+  },
+  "source_sha256": {
+    "spatial_metadata": "3f3eba08e63e9701dd783b93da4e683dbabcb8124210a962f5273b6f52fc2259",
+    "exam_metadata": "3465b2a694b4ad5096d5b04912fb2093a76ab7036572aa047288f95f2f6dca6e",
+    "patient_metadata": "0a7be50f12a28963dddd394fcff3163662611de8868d0fe5c1b3db42dba3d481",
+    "sequence_masks": "89382e6004a55f2e7eb865a673260d4b89289673c1d230f07c25db03603e69bc"
+  },
+  "output_index_sha256": "c757676f79c72abe3b0d70053f9dace5607d68f7ba49c8b764f6bedfab42b84f"
+}
+Index: /fred/oz508/EMBED/classical_future_risk_vihanga/v2_hazard_sprint06/spatial_features/patient_spatial_indices_5x4.npy
+Summary: /fred/oz508/EMBED/classical_future_risk_vihanga/v2_hazard_sprint06/spatial_features/patient_spatial_index_summary.json
+V2D SPATIAL ALIGNMENT: PASS

@@ -1,0 +1,137 @@
+{
+  "model": "V2CStructuredHazardLSTM",
+  "checkpoint": "checkpoints/v2c_none_seed42_job17108579_best.pt",
+  "fitting_split": "validation",
+  "validation_patients": 334,
+  "method": "single_temperature_scaling",
+  "temperature": 1.0208828330075856,
+  "test_set_loaded": false,
+  "before": {
+    "masked_hazard_nll": 0.04334319325600172,
+    "mean_brier_score": 0.028215429428934125,
+    "mean_expected_calibration_error": 0.014406111390290858,
+    "metrics": {
+      "per_horizon": {
+        "1yr": {
+          "patients": 334,
+          "positives": 7,
+          "negatives": 327,
+          "prevalence": 0.020958083832335328,
+          "auroc": 0.8278724333770205,
+          "auprc": 0.38776148957235473,
+          "brier_score": 0.016613880867518735,
+          "expected_calibration_error": 0.004849111605547146
+        },
+        "2yr": {
+          "patients": 334,
+          "positives": 20,
+          "negatives": 314,
+          "prevalence": 0.059880239520958084,
+          "auroc": 0.878343949044586,
+          "auprc": 0.6075129879131876,
+          "brier_score": 0.030996977421222167,
+          "expected_calibration_error": 0.018440268353787724
+        },
+        "3yr": {
+          "patients": 334,
+          "positives": 22,
+          "negatives": 312,
+          "prevalence": 0.0658682634730539,
+          "auroc": 0.8556235431235432,
+          "auprc": 0.6555115442664589,
+          "brier_score": 0.031162825123388457,
+          "expected_calibration_error": 0.017890465473700424
+        },
+        "4yr": {
+          "patients": 334,
+          "positives": 22,
+          "negatives": 312,
+          "prevalence": 0.0658682634730539,
+          "auroc": 0.8562062937062938,
+          "auprc": 0.6560431603030358,
+          "brier_score": 0.03115687909826299,
+          "expected_calibration_error": 0.016106500240143186
+        },
+        "5yr": {
+          "patients": 334,
+          "positives": 22,
+          "negatives": 312,
+          "prevalence": 0.0658682634730539,
+          "auroc": 0.8563519813519813,
+          "auprc": 0.655902515696005,
+          "brier_score": 0.03114658463427828,
+          "expected_calibration_error": 0.01474421127827581
+        }
+      },
+      "mean_auroc": 0.8548796401206851,
+      "mean_auprc": 0.5925463395502083,
+      "mean_brier_score": 0.028215429428934125,
+      "patients_with_monotonicity_violation": 0,
+      "monotonicity_violation_rate": 0.0
+    }
+  },
+  "after": {
+    "masked_hazard_nll": 0.04331349784269458,
+    "mean_brier_score": 0.028260226054642217,
+    "mean_expected_calibration_error": 0.013851847098788053,
+    "metrics": {
+      "per_horizon": {
+        "1yr": {
+          "patients": 334,
+          "positives": 7,
+          "negatives": 327,
+          "prevalence": 0.020958083832335328,
+          "auroc": 0.8278724333770205,
+          "auprc": 0.38776148957235473,
+          "brier_score": 0.01661211067620959,
+          "expected_calibration_error": 0.004788733584578347
+        },
+        "2yr": {
+          "patients": 334,
+          "positives": 20,
+          "negatives": 314,
+          "prevalence": 0.059880239520958084,
+          "auroc": 0.878343949044586,
+          "auprc": 0.6075129879131876,
+          "brier_score": 0.03103082406841939,
+          "expected_calibration_error": 0.016879000423298547
+        },
+        "3yr": {
+          "patients": 334,
+          "positives": 22,
+          "negatives": 312,
+          "prevalence": 0.0658682634730539,
+          "auroc": 0.8556235431235432,
+          "auprc": 0.6555115442664589,
+          "brier_score": 0.03121804150244309,
+          "expected_calibration_error": 0.017288137302416403
+        },
+        "4yr": {
+          "patients": 334,
+          "positives": 22,
+          "negatives": 312,
+          "prevalence": 0.0658682634730539,
+          "auroc": 0.8562062937062938,
+          "auprc": 0.6560431603030358,
+          "brier_score": 0.031221853799101907,
+          "expected_calibration_error": 0.015918939640418253
+        },
+        "5yr": {
+          "patients": 334,
+          "positives": 22,
+          "negatives": 312,
+          "prevalence": 0.0658682634730539,
+          "auroc": 0.856497668997669,
+          "auprc": 0.6559131605619861,
+          "brier_score": 0.031218300227037126,
+          "expected_calibration_error": 0.01438442454322872
+        }
+      },
+      "mean_auroc": 0.8549087776498225,
+      "mean_auprc": 0.5925484685234046,
+      "mean_brier_score": 0.028260226054642217,
+      "patients_with_monotonicity_violation": 0,
+      "monotonicity_violation_rate": 0.0
+    }
+  }
+}
