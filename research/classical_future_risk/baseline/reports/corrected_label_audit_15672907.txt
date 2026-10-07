@@ -1,0 +1,63 @@
+Loading clean-image manifest...
+Loading complete clinical table...
+
+CURRENT PIPELINE LABELS
+============================================================
+cancer_status  negative  positive
+path_severity                    
+0.0                2222         0
+1.0                 866         0
+2.0                1714         0
+3.0                   0       192
+4.0                   0      9390
+5.0                   0       444
+NaN              350800         0
+
+CORRECTED COHORT SUMMARY
+============================================================
+Clean manifest rows: 365628
+Unique image filenames: 365628
+Patients with clean images: 23161
+Accessions with clean images: 72207
+True-cancer patients in the clinical table: 658
+True-cancer patients represented by clean images: 655
+
+Corrected image timing:
+No true-cancer event: 350191
+Before true cancer: 3824
+On first cancer date: 3382
+After first cancer: 8231
+Invalid image dates: 0
+
+TRUE-CANCER PATIENTS WITH PRIOR CLEAN ACCESSIONS
+============================================================
+At least 1 prior accession(s): 293
+At least 2 prior accession(s): 191
+At least 3 prior accession(s): 135
+At least 4 prior accession(s): 85
+At least 5 prior accession(s): 59
+
+CLOSEST PRIOR EXAMINATION TO CANCER
+============================================================
+Patients with closest prior exam within 1 year(s): 93
+Patients with closest prior exam within 2 year(s): 255
+Patients with closest prior exam within 3 year(s): 278
+Patients with closest prior exam within 4 year(s): 286
+Patients with closest prior exam within 5 year(s): 290
+
+LONGITUDINAL TRUE-CANCER PATIENTS
+============================================================
+Patients with at least two prior clean accessions: 191
+Longitudinal patients within 1 year(s): 63
+Longitudinal patients within 2 year(s): 171
+Longitudinal patients within 3 year(s): 184
+Longitudinal patients within 4 year(s): 187
+Longitudinal patients within 5 year(s): 189
+
+AUDIT NOTES
+============================================================
+No existing files were changed.
+No corrected manifest was created.
+Diagnostic and screening exams have not yet been separated.
+Cancer-free follow-up and censoring have not yet been assessed.
+The counts in this report are audit results, not the final cohort.

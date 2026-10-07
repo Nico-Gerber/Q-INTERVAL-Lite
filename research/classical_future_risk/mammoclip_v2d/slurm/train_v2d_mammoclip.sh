@@ -1,0 +1,35 @@
+#!/bin/bash
+#SBATCH --job-name=v2d_mclip_b5
+#SBATCH --partition=milan-c
+#SBATCH --account=oz508
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=32G
+#SBATCH --time=02:00:00
+#SBATCH --gres=gpu:a100:1
+#SBATCH --output=/fred/oz508/EMBED/classical_future_risk_vihanga/v2_hazard_sprint06/experiments/v2c_mammoclip_b5/logs/v2d_train_%j.out
+#SBATCH --error=/fred/oz508/EMBED/classical_future_risk_vihanga/v2_hazard_sprint06/experiments/v2c_mammoclip_b5/logs/v2d_train_%j.err
+
+set -euo pipefail
+
+module load gcc/11.3.0
+module load openmpi/4.1.4
+module load pytorch/1.12.1-cuda-11.7.0
+
+source ~/venvs/classical_future_risk_vihanga/bin/activate
+
+cd /fred/oz508/EMBED/classical_future_risk_vihanga/v2_hazard_sprint06
+
+export OMP_NUM_THREADS="$SLURM_CPUS_PER_TASK"
+export CUBLAS_WORKSPACE_CONFIG=":4096:8"
+export PYTHONPATH="/fred/oz508/EMBED/classical_future_risk_vihanga/v2_hazard_sprint06/src:/fred/oz508/EMBED/classical_future_risk_vihanga/v2_hazard_sprint06/experiments/v2c_mammoclip_b5/scripts:${PYTHONPATH:-}"
+
+WEIGHTING="${WEIGHTING:-none}"
+SEED="${SEED:-42}"
+RUN_NAME="v2d_mammoclip_b5_${WEIGHTING}_seed${SEED}_job${SLURM_JOB_ID}"
+
+python -u experiments/v2c_mammoclip_b5/scripts/train_v2d_mammoclip.py \
+  --weighting "$WEIGHTING" \
+  --seed "$SEED" \
+  --run-name "$RUN_NAME"

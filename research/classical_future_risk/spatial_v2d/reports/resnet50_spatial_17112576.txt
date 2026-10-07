@@ -1,0 +1,49 @@
+Loading image manifest and patient split...
+Loading ImageNet-pretrained ResNet50...
+
+FEATURE EXTRACTION
+========================================================================
+GPU: NVIDIA A100-SXM4-80GB
+Images: 19054
+Batch size: 64
+Spatial feature shape: (2048, 8, 8)
+Processed 64/19,054 images
+Processed 1,600/19,054 images
+Processed 3,200/19,054 images
+Processed 4,800/19,054 images
+Processed 6,400/19,054 images
+Processed 8,000/19,054 images
+Processed 9,600/19,054 images
+Processed 11,200/19,054 images
+Processed 12,800/19,054 images
+Processed 14,400/19,054 images
+Processed 16,000/19,054 images
+Processed 17,600/19,054 images
+Processed 19,054/19,054 images
+
+FEATURE EXTRACTION COMPLETE
+========================================================================
+Feature matrix shape: (19054, 2048, 8, 8)
+Expected feature size MiB: 4763.5
+
+IMAGES BY SPLIT
+========================================================================
+train         13392
+validation     2912
+test           2750
+Name: split, dtype: int64
+
+OUTPUT FILES
+========================================================================
+/fred/oz508/EMBED/classical_future_risk_vihanga/v2_hazard_sprint06/spatial_features/resnet50_layer4_8x8_float16.npy
+/fred/oz508/EMBED/classical_future_risk_vihanga/v2_hazard_sprint06/spatial_features/resnet50_spatial_metadata.csv
+/fred/oz508/EMBED/classical_future_risk_vihanga/v2_hazard_sprint06/spatial_features/resnet50_spatial_config.json
+
+VALIDATION
+========================================================================
+PASS: every manifest image was processed
+PASS: feature order matches feature_index
+PASS: feature shape is correct
+PASS: all feature values are finite
+PASS: no labels were used by ResNet50
+PASS: source images and manifests were unchanged

@@ -1,0 +1,40 @@
+ARRAY SHAPES
+targets          (2230, 5) float32
+at_risk          (2230, 5) float32
+sequences        (2230, 5, 6149) float32
+sequence_masks   (2230, 5) float32
+
+SEQUENCE LENGTH DISTRIBUTION
+split            test  train  validation   All
+sequence_length                               
+2                 287   1298         274  1859
+3                  34    211          47   292
+4                   4     37           6    47
+5                   5     20           7    32
+All               330   1566         334  2230
+
+HAZARD INTERVAL BALANCE
+     split  year_interval  patients_at_risk  events  non_events event_rate raw_positive_weight
+     train              1              1566      32        1534   0.020434               47.94
+     train              2              1534      65        1469   0.042373               22.60
+     train              3              1469       8        1461   0.005446              182.62
+     train              4              1461       3        1458   0.002053              486.00
+     train              5              1458       2        1456   0.001372              728.00
+validation              1               334       7         327   0.020958               46.71
+validation              2               327      13         314   0.039755               24.15
+validation              3               314       2         312   0.006369              156.00
+validation              4               312       0         312   0.000000                 inf
+validation              5               312       0         312   0.000000                 inf
+      test              1               330       6         324   0.018182               54.00
+      test              2               324      13         311   0.040123               23.92
+      test              3               311       1         310   0.003215              310.00
+      test              4               310       1         309   0.003226              309.00
+      test              5               309       0         309   0.000000                 inf
+
+TRAINING EVENT COUNTS
+ year_interval  patients_at_risk  events raw_positive_weight
+             1              1566      32               47.94
+             2              1534      65               22.60
+             3              1469       8              182.62
+             4              1461       3              486.00
+             5              1458       2              728.00

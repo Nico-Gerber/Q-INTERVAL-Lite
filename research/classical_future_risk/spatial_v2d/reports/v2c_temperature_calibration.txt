@@ -1,0 +1,11 @@
+Temperature: 1.0208828330075856
+Before NLL: 0.04334319325600172
+After NLL: 0.04331349784269458
+Before mean Brier: 0.028215429428934125
+After mean Brier: 0.028260226054642217
+Before mean ECE: 0.014406111390290858
+After mean ECE: 0.013851847098788053
+Metrics: /fred/oz508/EMBED/classical_future_risk_vihanga/v2_hazard_sprint06/outputs/metrics/v2c_temperature_calibration_validation.json
+Calibration bins: /fred/oz508/EMBED/classical_future_risk_vihanga/v2_hazard_sprint06/outputs/metrics/v2c_temperature_calibration_bins.csv
+Calibrated predictions: /fred/oz508/EMBED/classical_future_risk_vihanga/v2_hazard_sprint06/outputs/predictions/v2c_none_seed42_job17108579_validation_temperature_scaled.csv
+V2C TEMPERATURE CALIBRATION: PASS

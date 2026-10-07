@@ -1,0 +1,58 @@
+{
+  "model": "Mammo-CLIP",
+  "image_encoder": "tf_efficientnet_b5_ns-detect",
+  "encoder_architecture": "efficientnet-b5",
+  "encoder_output": "final_convolutional_spatial_map",
+  "feature_channels": 2048,
+  "native_spatial_size": [
+    16,
+    16
+  ],
+  "stored_spatial_size": [
+    8,
+    8
+  ],
+  "spatial_reduction": "adaptive_average_pooling",
+  "encoder_parameter_count": 28340784,
+  "encoder_frozen": true,
+  "storage_dtype": "float16",
+  "source_image_size": [
+    500,
+    500
+  ],
+  "source_image_mode": "grayscale",
+  "colour_channels": 3,
+  "source_conversion": "grayscale_to_rgb",
+  "label_cleaning": {
+    "enabled": true,
+    "threshold": "median + 0.10 * (95th_percentile - median)",
+    "component_selection": "largest_8_connected_component",
+    "fill_holes": true,
+    "binary_closing_iterations": 2,
+    "binary_dilation_iterations": 4,
+    "operation": "replace bright disconnected pixels outside the breast component with median background",
+    "background_preserved": true,
+    "breast_pixels_preserved": true,
+    "minimum_area_fraction": 0.03,
+    "maximum_area_fraction": 0.95,
+    "full_cohort_audit_path": "/fred/oz508/EMBED/classical_future_risk_vihanga/v2_hazard_sprint06/experiments/v2d_mammoclip_b5_labelclean/audit/full_cohort_label_cleaning_audit.csv",
+    "full_cohort_audit_sha256": "7a4067ec66ac7d6a8d220e4acd05c25f9ac02bdad4f251702d76d93a5c2d5d26"
+  },
+  "resizing_during_extraction": false,
+  "intensity_scaling": "per_image_min_max",
+  "normalization_mean": 0.3089279,
+  "normalization_std": 0.25053555408335154,
+  "augmentation": false,
+  "labels_used_during_extraction": false,
+  "resolution_limit": "Available EMBED inputs were previously processed to 500x500, whereas the official Mammo-CLIP tutorial used higher-resolution 1520x912 inputs.",
+  "batch_size": 16,
+  "number_of_images": 19054,
+  "mammoclip_git_commit": "0d68563352c06784400080e140ae3d447e779283",
+  "image_manifest_sha256": "aa81eee7e872215ef647dee9e871a59ab7d067fd54ea203971cca363150c95c1",
+  "patient_splits_sha256": "4a28b460ccbbdc6803fd79ac927bc3ea806c57060866f6466233b16c8ed3d17f",
+  "pretrained_weights_sha256": "0baccb0cc19cd6093ff8252f7c2b7a6efbc32973498640abcb311210c46fd02c",
+  "extractor_script_sha256": "4848c8bdd70970707927832864f418d35849d98c6599e291b536ffe9f521800c",
+  "feature_file_sha256": "92f8d706d2798b101e9d14ebf258f612253c2fa7daf471878861ee3169463080",
+  "torch_version": "2.2.2+cu118",
+  "cuda_version": "11.8"
+}

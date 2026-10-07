@@ -1,0 +1,29 @@
+{
+  "model": "resnet50",
+  "weights": "IMAGENET1K_V2",
+  "feature_dimension": 2048,
+  "image_size": [
+    512,
+    512
+  ],
+  "colour_channels": 3,
+  "source_conversion": "grayscale_to_rgb",
+  "normalization_mean": [
+    0.485,
+    0.456,
+    0.406
+  ],
+  "normalization_std": [
+    0.229,
+    0.224,
+    0.225
+  ],
+  "augmentation": false,
+  "labels_used_during_extraction": false,
+  "batch_size": 64,
+  "number_of_images": 18689,
+  "image_manifest_sha256": "f3a65468386c7c85ffc8de6c0f15aa6577b29e5edbd47f9a35299066d3f4bd58",
+  "patient_splits_sha256": "6be25c150836b88984f9b00a14715f579c82ee6ade5da5479e71036739499626",
+  "pretrained_weights_sha256": "11ad3fa62ca79e40addfd354a8ec4b7c75143b3038b8d2a807fbc68deab379ca",
+  "feature_file_sha256": "4866888b70cb870a4c2ee01748205068105b78e46bb865d54e86c853c989a296"
+}

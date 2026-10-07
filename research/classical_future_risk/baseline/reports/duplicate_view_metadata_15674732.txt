@@ -1,0 +1,6 @@
+Loading duplicate-image metadata...
+
+DUPLICATE METADATA LINKAGE
+============================================================================
+Duplicate view slots: 1622
+Images inside duplicate slots: 3341

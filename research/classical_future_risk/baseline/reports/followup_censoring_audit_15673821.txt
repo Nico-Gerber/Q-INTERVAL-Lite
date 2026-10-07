@@ -1,0 +1,94 @@
+Loading cleaned-image manifest...
+Loading complete image metadata...
+Loading complete clinical table...
+
+FOLLOW-UP SOURCE
+========================================================================
+Overall metadata date range: 2012-07-16 00:00:00 to 2021-02-25 00:00:00
+Eligible screening exams: 49055
+Eligible screening patients: 18995
+Candidate anchors with at least two sessions: 29673
+Patients represented by candidate anchors: 10797
+Candidate patients with high-risk or borderline pathology: 147
+
+ALL CANDIDATE ANCHORS
+========================================================================
+
+1-year horizon
+  Valid anchor samples: 19907
+  Positive anchor samples: 35
+  Negative anchor samples: 19872
+  Censored anchor samples: 9766
+  Valid patients: 7650
+  Positive patients: 35
+  Negative patients: 7641
+
+2-year horizon
+  Valid anchor samples: 14124
+  Positive anchor samples: 132
+  Negative anchor samples: 13992
+  Censored anchor samples: 15549
+  Valid patients: 6202
+  Positive patients: 108
+  Negative patients: 6156
+
+3-year horizon
+  Valid anchor samples: 9537
+  Positive anchor samples: 202
+  Negative anchor samples: 9335
+  Censored anchor samples: 20136
+  Valid patients: 4966
+  Positive patients: 121
+  Negative patients: 4892
+
+4-year horizon
+  Valid anchor samples: 5869
+  Positive anchor samples: 254
+  Negative anchor samples: 5615
+  Censored anchor samples: 23804
+  Valid patients: 3798
+  Positive patients: 130
+  Negative patients: 3701
+
+5-year horizon
+  Valid anchor samples: 2697
+  Positive anchor samples: 294
+  Negative anchor samples: 2403
+  Censored anchor samples: 26976
+  Valid patients: 2248
+  Positive patients: 138
+  Negative patients: 2121
+
+ONE FIVE-YEAR-VALID ANCHOR PER PATIENT
+========================================================================
+Selected patients: 2248
+Selected ambiguous pathology patients: 34
+
+1-year horizon
+  Positive patients: 35
+  Negative patients: 2213
+
+2-year horizon
+  Positive patients: 108
+  Negative patients: 2140
+
+3-year horizon
+  Positive patients: 121
+  Negative patients: 2127
+
+4-year horizon
+  Positive patients: 130
+  Negative patients: 2118
+
+5-year horizon
+  Positive patients: 138
+  Negative patients: 2110
+
+AUDIT NOTES
+========================================================================
+No existing files were changed.
+No training manifest was created.
+Follow-up currently ends at each patient's last recorded mammogram.
+High-risk and borderline patients have not yet been removed.
+The one-anchor cohort is a comparison, not a final decision.
+Patient-level splitting is required before model training.

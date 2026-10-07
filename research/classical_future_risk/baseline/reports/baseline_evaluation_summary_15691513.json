@@ -1,0 +1,54 @@
+{
+  "training_run_id": "15691343",
+  "evaluation_run_id": "15691513",
+  "bootstrap_iterations_requested": 2000,
+  "bootstrap_unit": "patient",
+  "threshold_selection": "Youden J selected using validation data only",
+  "test_used_for_threshold_selection": false,
+  "confidence_interval_method": "patient-level percentile bootstrap",
+  "calibration_bins": 5,
+  "calibration_summary": {
+    "1yr": {
+      "observed_prevalence": 0.015105740181268883,
+      "mean_predicted_probability": 0.22426624026888217,
+      "brier_score": 0.07158265020278427,
+      "null_brier_score": 0.014877556794844888,
+      "brier_skill_score": -3.8114519870351193,
+      "expected_calibration_error": 0.20916050008761328
+    },
+    "2yr": {
+      "observed_prevalence": 0.04833836858006042,
+      "mean_predicted_probability": 0.27588652746223563,
+      "brier_score": 0.09920822916405687,
+      "null_brier_score": 0.04600177070307866,
+      "brier_skill_score": -1.1566176181434984,
+      "expected_calibration_error": 0.22754815888217525
+    },
+    "3yr": {
+      "observed_prevalence": 0.054380664652567974,
+      "mean_predicted_probability": 0.27632325060422963,
+      "brier_score": 0.0982052671121281,
+      "null_brier_score": 0.05142340796451292,
+      "brier_skill_score": -0.9097385995867708,
+      "expected_calibration_error": 0.22194258595166166
+    },
+    "4yr": {
+      "observed_prevalence": 0.05740181268882175,
+      "mean_predicted_probability": 0.2942540338670695,
+      "brier_score": 0.10570575941761387,
+      "null_brier_score": 0.05410684458885918,
+      "brier_skill_score": -0.9536485674010109,
+      "expected_calibration_error": 0.23685222117824778
+    },
+    "5yr": {
+      "observed_prevalence": 0.06042296072507553,
+      "mean_predicted_probability": 0.3014914754380665,
+      "brier_score": 0.10752937837392516,
+      "null_brier_score": 0.056772026542291514,
+      "brier_skill_score": -0.8940556630266261,
+      "expected_calibration_error": 0.24106851471299093
+    }
+  },
+  "validation_monotonic_violation_rate": 0.4561933534743202,
+  "test_monotonic_violation_rate": 0.4380664652567976
+}

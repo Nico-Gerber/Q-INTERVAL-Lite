@@ -1,0 +1,89 @@
+Loading corrected manifests...
+
+PATIENT SPLIT COMPLETE
+============================================================================
+Random seed: 42
+Split file: /fred/oz508/EMBED/classical_future_risk_vihanga/splits/patient_splits.csv
+
+PATIENT COUNTS
+============================================================================
+split
+train         1552
+validation     331
+test           331
+Name: count, dtype: int64
+
+EXAMINATION COUNTS
+============================================================================
+split
+train         3413
+validation     735
+test           714
+Name: count, dtype: int64
+
+IMAGE COUNTS
+============================================================================
+split
+train         13098
+validation     2854
+test           2737
+Name: count, dtype: int64
+
+EVENT-INTERVAL STRATIFICATION
+============================================================================
+split                     train  validation  test
+event_interval                                   
+cancer_between_1_and_2yr     51          11    11
+cancer_between_2_and_3yr      9           2     2
+cancer_between_3_and_4yr      7           1     1
+cancer_between_4_and_5yr      6           1     1
+cancer_within_1yr            25           5     5
+no_cancer_within_5yr       1454         311   311
+
+POSITIVE PATIENTS BY HORIZON
+============================================================================
+
+1-year
+split
+train         25
+validation     5
+test           5
+
+2-year
+split
+train         76
+validation    16
+test          16
+
+3-year
+split
+train         85
+validation    18
+test          18
+
+4-year
+split
+train         92
+validation    19
+test          19
+
+5-year
+split
+train         98
+validation    20
+test          20
+
+MANIFEST CHECKSUMS
+============================================================================
+patient_anchor_manifest.csv: b2b3986038c7c88dfcfbbeb7d70fc0b0047c31d03e31cd79dabd68a3dcd64b7f
+exam_manifest.csv: 0b1e9a35b3e2465a638fab8620c49a169f246c1a6c1e46a306e9ab2eeb09300e
+image_manifest.csv: f3a65468386c7c85ffc8de6c0f15aa6577b29e5edbd47f9a35299066d3f4bd58
+
+VALIDATION
+============================================================================
+PASS: every patient was assigned exactly once
+PASS: no patient appears in multiple splits
+PASS: every label interval is represented in each split
+PASS: every examination received a split
+PASS: every image received a split
+PASS: the corrected manifests were not modified

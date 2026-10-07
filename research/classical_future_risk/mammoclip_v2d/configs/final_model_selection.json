@@ -1,0 +1,76 @@
+{
+  "status": "validation_selected_and_frozen",
+  "selected_model": "Mammo-CLIP B5 V2D",
+  "selected_seed": 2026,
+  "training_job_id": 17791028,
+  "checkpoint": "checkpoints/v2d_mammoclip_b5_none_seed2026_job17791028_best.pt",
+  "selection_criterion": "minimum validation unweighted masked negative log-likelihood",
+  "validation_nll": 0.035684308952176065,
+  "validation_metrics": {
+    "per_horizon": {
+      "1yr": {
+        "patients": 334,
+        "positives": 7,
+        "negatives": 327,
+        "prevalence": 0.020958083832335328,
+        "auroc": 0.8968982088248142,
+        "auprc": 0.40853926774979404,
+        "brier_score": 0.015254682371015594,
+        "expected_calibration_error": 0.010735288530052779
+      },
+      "2yr": {
+        "patients": 334,
+        "positives": 20,
+        "negatives": 314,
+        "prevalence": 0.059880239520958084,
+        "auroc": 0.9047770700636943,
+        "auprc": 0.7309870843267918,
+        "brier_score": 0.02185218040791302,
+        "expected_calibration_error": 0.011809740594761099
+      },
+      "3yr": {
+        "patients": 334,
+        "positives": 22,
+        "negatives": 312,
+        "prevalence": 0.0658682634730539,
+        "auroc": 0.8869463869463869,
+        "auprc": 0.7663633981600501,
+        "brier_score": 0.022482832420673,
+        "expected_calibration_error": 0.013880837106419177
+      },
+      "4yr": {
+        "patients": 334,
+        "positives": 22,
+        "negatives": 312,
+        "prevalence": 0.0658682634730539,
+        "auroc": 0.886509324009324,
+        "auprc": 0.7662799990356328,
+        "brier_score": 0.02244569719719974,
+        "expected_calibration_error": 0.012767515496579474
+      },
+      "5yr": {
+        "patients": 334,
+        "positives": 22,
+        "negatives": 312,
+        "prevalence": 0.0658682634730539,
+        "auroc": 0.8862179487179488,
+        "auprc": 0.7662425357036814,
+        "brier_score": 0.022437661076311996,
+        "expected_calibration_error": 0.01173587063115514
+      }
+    },
+    "mean_auroc": 0.8922697877124337,
+    "mean_auprc": 0.68768245699519,
+    "mean_brier_score": 0.02089461069462267,
+    "patients_with_monotonicity_violation": 0,
+    "monotonicity_violation_rate": 0.0
+  },
+  "three_seed_mean": {
+    "nll": 0.036861217741683446,
+    "auroc": 0.8786891979508704,
+    "auprc": 0.6864884001977356,
+    "brier": 0.021734977146971656
+  },
+  "test_set_evaluated": false,
+  "selection_used_test_data": false
+}

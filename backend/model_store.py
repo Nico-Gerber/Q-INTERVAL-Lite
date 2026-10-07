@@ -34,6 +34,25 @@ def _is_usable(path: Path) -> bool:
         return not f.read(len(_LFS_MAGIC)).startswith(_LFS_MAGIC)
 
 
+def _entry_enabled(entry: dict) -> bool:
+    """Return whether an optional environment condition is satisfied."""
+    conditions = entry.get("when_env")
+
+    if conditions is None:
+        return True
+
+    if not isinstance(conditions, dict):
+        raise ValueError(
+            "Model manifest when_env must be an object."
+        )
+
+    return all(
+        os.getenv(name, "").strip().lower()
+        == str(expected).strip().lower()
+        for name, expected in conditions.items()
+    )
+
+
 def _source_url(entry: dict) -> tuple[str, dict]:
     if entry.get("url"):
         return entry["url"], {}
@@ -62,14 +81,15 @@ def _download(entry: dict, dest: Path) -> None:
 
 
 def ensure_models() -> None:
-    entries = json.loads(MANIFEST_PATH.read_text())["files"] if MANIFEST_PATH.exists() else []
+    all_entries = json.loads(MANIFEST_PATH.read_text())["files"] if MANIFEST_PATH.exists() else []
+    entries = [entry for entry in all_entries if _entry_enabled(entry)]
     missing = [(e, BACKEND_DIR / e["path"]) for e in entries if not _is_usable(BACKEND_DIR / e["path"])]
     if not missing:
-        logger.info("All %d model files present", len(entries))
+        logger.info("All %d active model files present", len(entries))
         _state.update(status="ready", error=None)
         return
     _state.update(status="downloading", error=None)
-    logger.info("%d of %d model files need downloading", len(missing), len(entries))
+    logger.info("%d of %d active model files need downloading", len(missing), len(entries))
     try:
         for entry, dest in missing:
             _download(entry, dest)

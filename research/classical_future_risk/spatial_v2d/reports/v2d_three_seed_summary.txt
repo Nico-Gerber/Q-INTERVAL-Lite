@@ -1,0 +1,16 @@
+V2D RUNS
+model  seed   job_id  best_epoch  validation_nll  mean_auroc  mean_auprc  mean_brier  monotonicity_violations
+  V2D    42 17128238           8        0.049824    0.776115    0.517207    0.036126                      0.0
+  V2D   123 17128299           7        0.049411    0.801340    0.534344    0.034987                      0.0
+  V2D  2026 17128302           7        0.048342    0.809936    0.542147    0.034293                      0.0
+
+FOUR-MODEL COMPARISON
+            validation_nll           mean_auroc           mean_auprc           mean_brier           monotonicity_violations
+                      mean       std       mean       std       mean       std       mean       std                    mean  std
+model
+CurrentExam       0.060766  0.000381   0.686030  0.013144   0.153033  0.004662   0.050750  0.000186                     0.0  0.0
+V2B               0.044110  0.001136   0.864825  0.010598   0.587807  0.009354   0.028278  0.000216                     0.0  0.0
+V2C               0.043614  0.000241   0.868135  0.017080   0.590747  0.006180   0.028735  0.000691                     0.0  0.0
+V2D               0.049192  0.000765   0.795797  0.017579   0.531232  0.012758   0.035135  0.000926                     0.0  0.0
+
+V2D THREE-SEED VERIFICATION: PASS

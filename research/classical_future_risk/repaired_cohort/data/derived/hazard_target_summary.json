@@ -1,0 +1,33 @@
+{
+  "patients": 2230,
+  "events_within_5yr": 153,
+  "non_events_within_5yr": 2077,
+  "at_risk_patient_intervals": 10671,
+  "split_counts": {
+    "train": 1566,
+    "validation": 334,
+    "test": 330
+  },
+  "event_interval_counts": {
+    "no_cancer_within_5yr": 2077,
+    "cancer_between_1_and_2yr": 91,
+    "cancer_within_1yr": 45,
+    "cancer_between_2_and_3yr": 11,
+    "cancer_between_3_and_4yr": 4,
+    "cancer_between_4_and_5yr": 2
+  },
+  "hazard_targets_shape": [
+    2230,
+    5
+  ],
+  "at_risk_masks_shape": [
+    2230,
+    5
+  ],
+  "reproduces_frozen_cumulative_labels": true,
+  "source_files": {
+    "patient_splits": "/fred/oz508/EMBED/classical_future_risk_vihanga/v2_hazard_sprint05/rebuild_repaired/splits/patient_splits.csv",
+    "sequence_metadata": "/fred/oz508/EMBED/classical_future_risk_vihanga/v2_hazard_sprint05/rebuild_repaired/features/patient_sequence_metadata.csv",
+    "frozen_labels": "/fred/oz508/EMBED/classical_future_risk_vihanga/v2_hazard_sprint05/rebuild_repaired/features/patient_labels_1to5yr.npy"
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "job_id": "17104939",
+  "random_seed": 42,
+  "best_epoch": 25,
+  "validation_patients": 334,
+  "test_set_loaded": false,
+  "validation_unweighted_bce": 0.4250042140483856,
+  "per_horizon": [
+    {
+      "horizon": "1yr",
+      "patients": 334,
+      "positives": 7,
+      "auroc": 0.9375273044997816,
+      "auprc": 0.4415795548036721,
+      "brier_score": 0.10022667050361633,
+      "expected_calibration_error": 0.2140793143632169
+    },
+    {
+      "horizon": "2yr",
+      "patients": 334,
+      "positives": 20,
+      "auroc": 0.8835987261146496,
+      "auprc": 0.5592531739499874,
+      "brier_score": 0.12277110666036606,
+      "expected_calibration_error": 0.23152816694921358
+    },
+    {
+      "horizon": "3yr",
+      "patients": 334,
+      "positives": 22,
+      "auroc": 0.8699009324009324,
+      "auprc": 0.6382095621387343,
+      "brier_score": 0.1285836398601532,
+      "expected_calibration_error": 0.24099381723089844
+    },
+    {
+      "horizon": "4yr",
+      "patients": 334,
+      "positives": 22,
+      "auroc": 0.8728146853146853,
+      "auprc": 0.6395043142476884,
+      "brier_score": 0.1337505578994751,
+      "expected_calibration_error": 0.2460896002719859
+    },
+    {
+      "horizon": "5yr",
+      "patients": 334,
+      "positives": 22,
+      "auroc": 0.8722319347319347,
+      "auprc": 0.6391290578765481,
+      "brier_score": 0.13093680143356323,
+      "expected_calibration_error": 0.2517194205415463
+    }
+  ],
+  "mean_auroc": 0.8872147166123966,
+  "mean_auprc": 0.5835351326033261,
+  "mean_brier_score": 0.12325375527143478,
+  "mean_expected_calibration_error": 0.23688206387137223,
+  "monotonicity_violation_rate": 0.592814371257485
+}
+Predictions: /fred/oz508/EMBED/classical_future_risk_vihanga/v2_hazard_sprint06/outputs/predictions/repaired_baseline_17104939_validation.csv
+Metrics: /fred/oz508/EMBED/classical_future_risk_vihanga/v2_hazard_sprint06/outputs/metrics/repaired_baseline_17104939_validation.json
+VALIDATION-ONLY EVALUATION: PASS

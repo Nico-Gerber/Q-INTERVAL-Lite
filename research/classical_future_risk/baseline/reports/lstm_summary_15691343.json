@@ -1,0 +1,29 @@
+{
+  "run_id": "15691343",
+  "random_seed": 42,
+  "best_epoch": 22,
+  "best_validation_loss": 0.8779816047662695,
+  "final_validation_loss": 0.8779816047662695,
+  "final_test_loss": 0.9373691888734293,
+  "training_patients": 1552,
+  "validation_patients": 331,
+  "test_patients": 331,
+  "training_positive_counts": [
+    25,
+    76,
+    85,
+    92,
+    98
+  ],
+  "positive_weights": [
+    61.08000183105469,
+    19.421052932739258,
+    17.25882339477539,
+    15.8695650100708,
+    14.836734771728516
+  ],
+  "validation_probability_monotonic_violation_rate": 0.4561933534743202,
+  "test_probability_monotonic_violation_rate": 0.4380664652567976,
+  "test_used_for_model_selection": false,
+  "classification_threshold": 0.5
+}

@@ -1,0 +1,31 @@
+{
+  "patients": 2230,
+  "examinations": 4942,
+  "shape": [
+    2230,
+    5,
+    2
+  ],
+  "dtype": "float32",
+  "layout": {
+    "0": "years_since_previous_examination",
+    "1": "years_before_anchor"
+  },
+  "first_examination_gap": 0.0,
+  "padding": "right-padded zeros, governed by sequence mask",
+  "positive_gap_years": {
+    "minimum": 0.00273785088211298,
+    "median": 1.0157426595687866,
+    "maximum": 4.996577739715576
+  },
+  "years_before_anchor": {
+    "minimum": 0.0,
+    "median": 0.9993155598640442,
+    "maximum": 5.9466118812561035
+  },
+  "source_sha256": {
+    "exam_metadata": "3465b2a694b4ad5096d5b04912fb2093a76ab7036572aa047288f95f2f6dca6e",
+    "patient_metadata": "0a7be50f12a28963dddd394fcff3163662611de8868d0fe5c1b3db42dba3d481",
+    "sequence_masks": "89382e6004a55f2e7eb865a673260d4b89289673c1d230f07c25db03603e69bc"
+  }
+}

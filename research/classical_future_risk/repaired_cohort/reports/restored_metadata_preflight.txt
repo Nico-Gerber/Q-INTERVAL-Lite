@@ -1,0 +1,14 @@
+Old rows: 389972
+Repaired rows: 444886
+Recovered rows: 54914
+Old paths absent from repaired: 0
+Newly recovered unique paths: 54914
+Duplicate original paths: 0
+Duplicate filenames: 0
+Unique patients: 23241
+Unique accessions: 72408
+Clean and flagged overlap: 129
+Manifest paths: 480323
+Repaired clean paths: 444886
+Flagged paths: 33962
+Genuinely unaccounted manifest paths: 1604

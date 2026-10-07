@@ -1,0 +1,60 @@
+{
+  "job_id": "17105700",
+  "random_seed": 123,
+  "best_epoch": 20,
+  "validation_patients": 334,
+  "test_set_loaded": false,
+  "validation_unweighted_bce": 0.44038909673690796,
+  "per_horizon": [
+    {
+      "horizon": "1yr",
+      "patients": 334,
+      "positives": 7,
+      "auroc": 0.9222367846221058,
+      "auprc": 0.4323385627659303,
+      "brier_score": 0.12036507576704025,
+      "expected_calibration_error": 0.28354378535362057
+    },
+    {
+      "horizon": "2yr",
+      "patients": 334,
+      "positives": 20,
+      "auroc": 0.885828025477707,
+      "auprc": 0.5521610304141564,
+      "brier_score": 0.13010051846504211,
+      "expected_calibration_error": 0.26086660505768783
+    },
+    {
+      "horizon": "3yr",
+      "patients": 334,
+      "positives": 22,
+      "auroc": 0.8761655011655012,
+      "auprc": 0.6316878520886992,
+      "brier_score": 0.12867401540279388,
+      "expected_calibration_error": 0.26228331671860405
+    },
+    {
+      "horizon": "4yr",
+      "patients": 334,
+      "positives": 22,
+      "auroc": 0.8748543123543123,
+      "auprc": 0.6305515847357852,
+      "brier_score": 0.13716191053390503,
+      "expected_calibration_error": 0.27777236811593625
+    },
+    {
+      "horizon": "5yr",
+      "patients": 334,
+      "positives": 22,
+      "auroc": 0.875,
+      "auprc": 0.6310763339545811,
+      "brier_score": 0.1347447633743286,
+      "expected_calibration_error": 0.2777571064715614
+    }
+  ],
+  "mean_auroc": 0.8868169247239253,
+  "mean_auprc": 0.5755630727918304,
+  "mean_brier_score": 0.130209256708622,
+  "mean_expected_calibration_error": 0.27244463634348204,
+  "monotonicity_violation_rate": 0.8532934131736527
+}

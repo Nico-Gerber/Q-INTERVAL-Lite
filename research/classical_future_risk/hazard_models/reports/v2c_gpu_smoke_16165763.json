@@ -1,0 +1,42 @@
+{
+  "status": "passed",
+  "model": "v2c",
+  "slurm_job_id": "16165763",
+  "device": "NVIDIA A100-SXM4-80GB",
+  "torch_version": "1.12.1",
+  "cuda_version": "11.7",
+  "parameter_count": 1394965,
+  "input_shape": [
+    8,
+    5,
+    6149
+  ],
+  "temporal_shape": [
+    8,
+    5,
+    2
+  ],
+  "logit_shape": [
+    8,
+    5
+  ],
+  "empirical_hazard_rates": [
+    0.01610824652016163,
+    0.0333988219499588,
+    0.006097560748457909,
+    0.004771642852574587,
+    0.004109588917344809
+  ],
+  "initial_output_biases": [
+    -4.112184524536133,
+    -3.365265369415283,
+    -5.09375,
+    -5.3402814865112305,
+    -5.49031400680542
+  ],
+  "loss": 0.5035673379898071,
+  "gradient_norm": 0.16750504562029875,
+  "gradient_parameter_count": 1394965,
+  "cumulative_risk_monotonic": true,
+  "peak_gpu_memory_mb": 28.2373046875
+}

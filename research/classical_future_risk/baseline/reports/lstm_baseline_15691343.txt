@@ -1,0 +1,93 @@
+Loading LSTM sequence data...
+
+TRAINING CONFIGURATION
+============================================================================
+GPU: NVIDIA A100-SXM4-80GB
+Training patients: 1552
+Validation patients: 331
+Test patients: 331
+Batch size: 64
+Maximum epochs: 50
+Early-stopping patience: 10
+
+TRAINING POSITIVE COUNTS
+============================================================================
+1yr: positive=25, negative=1527, pos_weight=61.0800
+2yr: positive=76, negative=1476, pos_weight=19.4211
+3yr: positive=85, negative=1467, pos_weight=17.2588
+4yr: positive=92, negative=1460, pos_weight=15.8696
+5yr: positive=98, negative=1454, pos_weight=14.8367
+
+TRAINING
+============================================================================
+Epoch 01/50 | train=1.320774 | validation=1.298466 | best_epoch=1
+Epoch 02/50 | train=1.318986 | validation=1.297222 | best_epoch=2
+Epoch 03/50 | train=1.317328 | validation=1.295461 | best_epoch=3
+Epoch 04/50 | train=1.316302 | validation=1.293243 | best_epoch=4
+Epoch 05/50 | train=1.312490 | validation=1.287100 | best_epoch=5
+Epoch 06/50 | train=1.304490 | validation=1.276096 | best_epoch=6
+Epoch 07/50 | train=1.291976 | validation=1.251852 | best_epoch=7
+Epoch 08/50 | train=1.264482 | validation=1.212308 | best_epoch=8
+Epoch 09/50 | train=1.231220 | validation=1.163270 | best_epoch=9
+Epoch 10/50 | train=1.195122 | validation=1.104934 | best_epoch=10
+Epoch 11/50 | train=1.125990 | validation=1.051787 | best_epoch=11
+Epoch 12/50 | train=1.069673 | validation=0.999783 | best_epoch=12
+Epoch 13/50 | train=1.007664 | validation=0.974165 | best_epoch=13
+Epoch 14/50 | train=1.004150 | validation=0.949861 | best_epoch=14
+Epoch 15/50 | train=0.953912 | validation=0.934200 | best_epoch=15
+Epoch 16/50 | train=0.932919 | validation=0.910416 | best_epoch=16
+Epoch 17/50 | train=0.897104 | validation=0.889827 | best_epoch=17
+Epoch 18/50 | train=0.856624 | validation=0.926681 | best_epoch=17
+Epoch 19/50 | train=0.813653 | validation=0.934512 | best_epoch=17
+Epoch 20/50 | train=0.863820 | validation=0.948445 | best_epoch=17
+Epoch 21/50 | train=0.772927 | validation=0.897599 | best_epoch=17
+Epoch 22/50 | train=0.730836 | validation=0.877982 | best_epoch=22
+Epoch 23/50 | train=0.669697 | validation=1.027192 | best_epoch=22
+Epoch 24/50 | train=0.663846 | validation=0.981860 | best_epoch=22
+Epoch 25/50 | train=0.600306 | validation=0.920586 | best_epoch=22
+Epoch 26/50 | train=0.538241 | validation=1.133566 | best_epoch=22
+Epoch 27/50 | train=0.531450 | validation=1.005018 | best_epoch=22
+Epoch 28/50 | train=0.445321 | validation=1.115802 | best_epoch=22
+Epoch 29/50 | train=0.415869 | validation=0.976190 | best_epoch=22
+Epoch 30/50 | train=0.390859 | validation=1.023936 | best_epoch=22
+Epoch 31/50 | train=0.347469 | validation=1.188917 | best_epoch=22
+Epoch 32/50 | train=0.353033 | validation=1.164236 | best_epoch=22
+Early stopping triggered.
+
+TRAINING COMPLETE
+============================================================================
+Best epoch: 22
+Best validation loss: 0.877982
+Final test loss: 0.937369
+
+TEST METRICS
+============================================================================
+horizon  positives    auroc    auprc  precision  recall_sensitivity  specificity       f1  brier_score
+    1yr          5 0.925153 0.255000   0.190476            0.800000     0.947853 0.307692     0.071583
+    2yr         16 0.802778 0.394006   0.230769            0.562500     0.904762 0.327273     0.099208
+    3yr         18 0.783103 0.505767   0.256410            0.555556     0.907348 0.350877     0.098205
+    4yr         19 0.793354 0.529035   0.285714            0.631579     0.903846 0.393443     0.105706
+    5yr         20 0.797910 0.517772   0.268293            0.550000     0.903537 0.360656     0.107529
+
+MONOTONICITY CHECK
+============================================================================
+Validation violation rate: 0.4561933534743202
+Test violation rate: 0.4380664652567976
+
+OUTPUT FILES
+============================================================================
+/fred/oz508/EMBED/classical_future_risk_vihanga/models/lstm_baseline_15691343.pt
+/fred/oz508/EMBED/classical_future_risk_vihanga/reports/lstm_training_history_15691343.csv
+/fred/oz508/EMBED/classical_future_risk_vihanga/reports/lstm_metrics_15691343.csv
+/fred/oz508/EMBED/classical_future_risk_vihanga/reports/lstm_summary_15691343.json
+/fred/oz508/EMBED/classical_future_risk_vihanga/reports/lstm_validation_predictions_15691343.csv
+/fred/oz508/EMBED/classical_future_risk_vihanga/reports/lstm_test_predictions_15691343.csv
+
+VALIDATION
+============================================================================
+PASS: fixed patient-level split used
+PASS: weighted loss calculated from training patients
+PASS: validation set used for model selection
+PASS: test set was not used for model selection
+PASS: best validation checkpoint restored
+PASS: patient-level predictions saved

@@ -1,0 +1,58 @@
+Loading LSTM sequence data...
+
+TRAINING CONFIGURATION
+============================================================================
+GPU: NVIDIA A100-SXM4-80GB
+Training patients: 1566
+Validation patients: 334
+Batch size: 64
+Maximum epochs: 50
+Early-stopping patience: 10
+
+TRAINING POSITIVE COUNTS
+============================================================================
+1yr: positive=32, negative=1534, pos_weight=47.9375
+2yr: positive=97, negative=1469, pos_weight=15.1443
+3yr: positive=105, negative=1461, pos_weight=13.9143
+4yr: positive=108, negative=1458, pos_weight=13.5000
+5yr: positive=110, negative=1456, pos_weight=13.2364
+
+TRAINING
+============================================================================
+Epoch 01/50 | train=1.304808 | validation=1.286662 | best_epoch=1
+Epoch 02/50 | train=1.298989 | validation=1.280143 | best_epoch=2
+Epoch 03/50 | train=1.290632 | validation=1.268036 | best_epoch=3
+Epoch 04/50 | train=1.276328 | validation=1.247430 | best_epoch=4
+Epoch 05/50 | train=1.256686 | validation=1.209139 | best_epoch=5
+Epoch 06/50 | train=1.216921 | validation=1.150078 | best_epoch=6
+Epoch 07/50 | train=1.168297 | validation=1.074324 | best_epoch=7
+Epoch 08/50 | train=1.086254 | validation=1.002648 | best_epoch=8
+Epoch 09/50 | train=1.037584 | validation=0.947484 | best_epoch=9
+Epoch 10/50 | train=0.973754 | validation=0.915104 | best_epoch=10
+Epoch 11/50 | train=0.915401 | validation=0.983845 | best_epoch=10
+Epoch 12/50 | train=0.928512 | validation=0.865681 | best_epoch=12
+Epoch 13/50 | train=0.869294 | validation=0.853482 | best_epoch=13
+Epoch 14/50 | train=0.841147 | validation=0.856165 | best_epoch=13
+Epoch 15/50 | train=0.776095 | validation=0.832630 | best_epoch=15
+Epoch 16/50 | train=0.762802 | validation=0.826070 | best_epoch=16
+Epoch 17/50 | train=0.764822 | validation=0.953690 | best_epoch=16
+Epoch 18/50 | train=0.702665 | validation=0.882920 | best_epoch=16
+Epoch 19/50 | train=0.687534 | validation=0.807988 | best_epoch=19
+Epoch 20/50 | train=0.686242 | validation=0.853465 | best_epoch=19
+Epoch 21/50 | train=0.572040 | validation=0.880909 | best_epoch=19
+Epoch 22/50 | train=0.544195 | validation=0.854537 | best_epoch=19
+Epoch 23/50 | train=0.505547 | validation=0.858569 | best_epoch=19
+Epoch 24/50 | train=0.489583 | validation=1.136078 | best_epoch=19
+Epoch 25/50 | train=0.474529 | validation=0.860774 | best_epoch=19
+Epoch 26/50 | train=0.401851 | validation=1.197571 | best_epoch=19
+Epoch 27/50 | train=0.324489 | validation=1.197597 | best_epoch=19
+Epoch 28/50 | train=0.347550 | validation=1.271042 | best_epoch=19
+Epoch 29/50 | train=0.316002 | validation=1.718901 | best_epoch=19
+Early stopping triggered.
+
+TRAINING COMPLETE
+Best epoch: 19
+Best validation loss: 0.8079878252423452
+Checkpoint: /fred/oz508/EMBED/classical_future_risk_vihanga/v2_hazard_sprint06/checkpoints/lstm_baseline_17105701.pt
+History: /fred/oz508/EMBED/classical_future_risk_vihanga/v2_hazard_sprint06/reports/lstm_training_history_17105701.csv
+Test set evaluated: no

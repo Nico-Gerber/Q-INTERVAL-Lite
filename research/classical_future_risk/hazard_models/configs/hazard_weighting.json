@@ -1,0 +1,73 @@
+{
+  "training_patients": 1552,
+  "intervals": [
+    "0_to_1_year",
+    "1_to_2_years",
+    "2_to_3_years",
+    "3_to_4_years",
+    "4_to_5_years"
+  ],
+  "patients_at_risk": [
+    1552,
+    1527,
+    1476,
+    1467,
+    1460
+  ],
+  "positive_counts": [
+    25,
+    51,
+    9,
+    7,
+    6
+  ],
+  "negative_counts": [
+    1527,
+    1476,
+    1467,
+    1460,
+    1454
+  ],
+  "weights": {
+    "none": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "raw_reference": [
+      61.08000183105469,
+      28.941177368164062,
+      163.0,
+      208.57142639160156,
+      242.3333282470703
+    ],
+    "sqrt": [
+      7.815369606018066,
+      5.379700660705566,
+      12.767145156860352,
+      14.442002296447754,
+      15.567059516906738
+    ],
+    "capped_raw_50": [
+      50.0,
+      28.941177368164062,
+      50.0,
+      50.0,
+      50.0
+    ]
+  },
+  "planned_experiments": {
+    "primary": "sqrt",
+    "controls": [
+      "none",
+      "capped_raw_50"
+    ],
+    "raw_reference_trained": false
+  },
+  "selection_data": "validation_only",
+  "test_set_usage": "final_selected_model_only",
+  "loss_normalization": "sum of masked element losses divided by valid at-risk patient-interval count",
+  "reason": "Raw inverse-frequency weights exceed 160 for years 3 to 5. Square-root weighting is the primary setting, with unweighted and capped controls used to assess stability and calibration."
+}

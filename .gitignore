@@ -26,3 +26,47 @@ backend-dev-8000.err.log
 frontend-dev-3000.err.log
 frontend-dev-3000.log
 /supabase/migrations
+
+# Python-generated files
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Python environments
+.venv/
+venv/
+venvs/
+
+# Local secrets and environment configuration
+.env
+.env.*
+!.env.example
+
+# Machine-learning artifacts
+*.npy
+*.npz
+*.pkl
+*.pickle
+*.pt
+*.pth
+*.safetensors
+*.joblib
+*.tar
+
+# Generated training artifacts
+**/checkpoints/
+**/logs/
+**/outputs/predictions/
+
+# Patient-level and private explanation inputs
+**/vlm_inputs/
+**/patient_data/
+**/private_outputs/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*~
