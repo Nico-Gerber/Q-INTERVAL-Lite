@@ -33,13 +33,13 @@ def _find_artifact():
     env = os.environ.get("QESFRP_ARTIFACTS")
     if env:
         return Path(env)
-    for name in ("QeSFRP_V0.4.pkl", "qesfrp.pkl"):
+    for name in ("QeSFRP_V0.4.1.pkl", "qesfrp.pkl"):
         p = _HERE / "models" / name
         if p.exists():
             return p
     found = sorted((_HERE / "models").glob("QeSFRP_*.pkl"),
                    key=lambda p: p.stat().st_mtime)
-    return found[-1] if found else _HERE / "models" / "QeSFRP_V0.4.pkl"
+    return found[-1] if found else _HERE / "models" / "QeSFRP_V0.4.1.pkl"
 
 
 ARTIFACTS_PATH = _find_artifact()
@@ -453,7 +453,7 @@ def initialise():
     if not ARTIFACTS_PATH.exists():
         raise FileNotFoundError(
             "model artifact not found: %s\n"
-            "Put QeSFRP_V0.4.pkl in models/, or set QESFRP_ARTIFACTS." % ARTIFACTS_PATH)
+            "Put QeSFRP_V0.4.1.pkl in models/, or set QESFRP_ARTIFACTS." % ARTIFACTS_PATH)
 
     with open(ARTIFACTS_PATH, "rb") as fh:
         _artifacts = pickle.load(fh)
