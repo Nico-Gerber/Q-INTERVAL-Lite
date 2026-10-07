@@ -3,11 +3,13 @@ import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
   Accordion, AccordionDetails, AccordionSummary,
   Box, Button, Container, Dialog, DialogActions, DialogContent, DialogTitle,
-  Skeleton, TextField, Typography,
+  InputAdornment, Skeleton, TextField, Typography,
 } from '@mui/material';
 import {
   Link as LinkIcon,
   ShieldOutlined as ShieldIcon,
+  ArrowForwardRounded as ArrowForwardIcon,
+  ContentPasteRounded as PasteIcon,
   PlayCircleOutlineRounded as PlayIcon,
   ExpandMoreRounded as ExpandIcon,
   CheckRounded as CheckIcon,
@@ -122,31 +124,73 @@ function OpenResultDialog({ open, onClose }) {
     navigate(`/report/${token}`);
   };
 
+  const pasteFromClipboard = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) { setValue(text); setError(''); }
+    } catch {
+      setError('Your browser did not allow pasting automatically. Press Ctrl+V or Cmd+V in the box instead.');
+    }
+  };
+
   return (
-    <Dialog open={open} onClose={close} fullWidth maxWidth="xs" aria-labelledby="open-result-title">
+    <Dialog
+      open={open}
+      onClose={close}
+      fullWidth
+      maxWidth="xs"
+      aria-labelledby="open-result-title"
+      PaperProps={{ sx: { borderRadius: 4, overflow: 'hidden' } }}
+    >
       <form onSubmit={submit} noValidate>
-        <DialogTitle id="open-result-title" sx={{ fontWeight: 700 }}>Open your result</DialogTitle>
-        <DialogContent>
-          <Typography sx={{ color: 'text.secondary', fontSize: '0.9rem', mb: 2, lineHeight: 1.7 }}>
-            Your clinician will have given you a private link. Paste it here to view your result. You do not need an account.
+        <Box sx={(theme) => ({ px: 3, pt: 3.5, pb: 2.5, backgroundColor: theme.palette.mode === 'dark' ? 'rgba(34,211,238,0.08)' : 'rgba(14,116,144,0.08)', borderBottom: '1px solid', borderColor: 'divider' })}>
+          <Box
+            aria-hidden="true"
+            sx={{ width: 48, height: 48, borderRadius: '50%', mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', color: accent, border: '2px solid currentColor', backgroundColor: 'background.paper' }}
+          >
+            <LinkIcon sx={{ fontSize: 24 }} />
+          </Box>
+          <DialogTitle id="open-result-title" sx={{ p: 0, fontWeight: 800, fontSize: '1.45rem', letterSpacing: '-0.02em' }}>Open your result</DialogTitle>
+          <Typography sx={{ color: 'text.secondary', fontSize: '0.95rem', mt: 0.75, lineHeight: 1.6 }}>
+            Paste the private link your clinician gave you.
           </Typography>
+        </Box>
+
+        <DialogContent sx={{ px: 3, pt: 3, pb: 1 }}>
           <TextField
             autoFocus fullWidth
             label="Result link or code"
+            placeholder="Paste the link here"
             value={value}
             onChange={(e) => { setValue(e.target.value); if (error) setError(''); }}
             error={Boolean(error)}
             helperText={error || ' '}
             inputProps={{ 'aria-describedby': error ? 'open-result-error' : undefined }}
+            InputProps={{
+              startAdornment: <InputAdornment position="start"><LinkIcon sx={{ fontSize: 18, color: 'text.secondary' }} /></InputAdornment>,
+              endAdornment: (
+                <InputAdornment position="end">
+                  <Button size="small" onClick={pasteFromClipboard} startIcon={<PasteIcon sx={{ fontSize: 16 }} />} sx={{ fontWeight: 700, color: accent }}>
+                    Paste
+                  </Button>
+                </InputAdornment>
+              ),
+            }}
             FormHelperTextProps={{
               id: 'open-result-error',
               sx: { '&.Mui-error': { color: (theme) => (theme.palette.mode === 'dark' ? theme.palette.error.main : theme.palette.error.dark) } },
             }}
           />
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mt: 0.5 }}>
+            <ShieldIcon aria-hidden="true" sx={{ fontSize: 18, mt: '2px', color: accent, flexShrink: 0 }} />
+            <Typography sx={{ color: 'text.secondary', fontSize: '0.85rem', lineHeight: 1.6 }}>
+              No account needed. Only results a clinician has published can be opened.
+            </Typography>
+          </Box>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2.5 }}>
+        <DialogActions sx={{ px: 3, pt: 2, pb: 3 }}>
           <Button onClick={close} color="inherit">Cancel</Button>
-          <Button type="submit" variant="contained">Open result</Button>
+          <Button type="submit" variant="contained" endIcon={<ArrowForwardIcon sx={{ fontSize: 18 }} />}>Open result</Button>
         </DialogActions>
       </form>
     </Dialog>
