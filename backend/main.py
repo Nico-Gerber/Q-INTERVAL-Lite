@@ -39,6 +39,41 @@ logging.getLogger(__name__).info(
     config.OPENROUTER_VLM_MODEL, config.OPENROUTER_VLM_FALLBACKS,
 )
 
+def _startup_checks():
+    """Fail loudly if a library the models depend on is missing.
+
+    Some code (e.g. the future-risk feature extractor) quietly skips work when an optional library is absent
+    and still returns confident, wrong answers. In production we refuse to start instead; elsewhere we log an ERROR.
+    """
+    import importlib
+    import importlib.metadata as md
+
+    log = logging.getLogger(__name__)
+    required = {"skimage": "scikit-image", "scipy": "scipy", "sklearn": "scikit-learn", "matplotlib": "matplotlib",
+                "cv2": "opencv-python-headless", "torch": "torch", "torchvision": "torchvision",
+                "pennylane": "pennylane", "joblib": "joblib", "pandas": "pandas",
+                "albumentations": "albumentations", "pytorch_grad_cam": "grad-cam"}
+    missing = []
+    for module, package in required.items():
+        try:
+            importlib.import_module(module)
+        except Exception as exc:   # ImportError, or a broken native library
+            missing.append(f"{package} ({type(exc).__name__})")
+    versions = []
+    for package in ("torch", "numpy", "scikit-learn", "scikit-image", "scipy", "pennylane", "fastapi"):
+        try:
+            versions.append(f"{package}={md.version(package)}")
+        except md.PackageNotFoundError:
+            pass
+    log.info("Library versions: %s", ", ".join(versions))
+    if missing:
+        message = "Missing or broken libraries: " + ", ".join(missing) + ". Check backend/requirements.txt."
+        if config.IS_PRODUCTION:
+            raise RuntimeError(message)
+        log.error(message)
+
+
+_startup_checks()
 model_store.start_background_download()   # fetch weights Git LFS can't provide; no-op locally
 
 app = FastAPI(
