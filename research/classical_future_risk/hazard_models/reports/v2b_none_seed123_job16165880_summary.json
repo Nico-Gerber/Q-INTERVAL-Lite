@@ -1,0 +1,103 @@
+{
+  "run_name": "v2b_none_seed123_job16165880",
+  "slurm_job_id": "16165880",
+  "model": "V2BTemporalHazardLSTM",
+  "status": "completed",
+  "weighting": "none",
+  "positive_weights": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+  ],
+  "random_seed": 123,
+  "parameter_count": 1788853,
+  "best_epoch": 31,
+  "epochs_completed": 41,
+  "selection_criterion": "minimum validation unweighted masked negative log-likelihood",
+  "best_validation_unweighted_nll": 0.04708899683788484,
+  "validation_metrics": {
+    "per_horizon": {
+      "1yr": {
+        "patients": 331,
+        "positives": 5,
+        "negatives": 326,
+        "prevalence": 0.015105740181268883,
+        "auroc": 0.9128834355828221,
+        "auprc": 0.3775091575091575,
+        "brier_score": 0.012147125429442837,
+        "expected_calibration_error": 0.006288506293224784
+      },
+      "2yr": {
+        "patients": 331,
+        "positives": 16,
+        "negatives": 315,
+        "prevalence": 0.04833836858006042,
+        "auroc": 0.8775793650793651,
+        "auprc": 0.5435377216842329,
+        "brier_score": 0.028329162604709985,
+        "expected_calibration_error": 0.01940231849059598
+      },
+      "3yr": {
+        "patients": 331,
+        "positives": 18,
+        "negatives": 313,
+        "prevalence": 0.054380664652567974,
+        "auroc": 0.8764643237486687,
+        "auprc": 0.5969764817416522,
+        "brier_score": 0.02886667439314624,
+        "expected_calibration_error": 0.014518630288518812
+      },
+      "4yr": {
+        "patients": 331,
+        "positives": 19,
+        "negatives": 312,
+        "prevalence": 0.05740181268882175,
+        "auroc": 0.8525641025641025,
+        "auprc": 0.5719664769047335,
+        "brier_score": 0.03177806509703682,
+        "expected_calibration_error": 0.014182093100245265
+      },
+      "5yr": {
+        "patients": 331,
+        "positives": 20,
+        "negatives": 311,
+        "prevalence": 0.06042296072507553,
+        "auroc": 0.8466237942122186,
+        "auprc": 0.5526882422012573,
+        "brier_score": 0.034629818468419934,
+        "expected_calibration_error": 0.014417995318905464
+      }
+    },
+    "mean_auroc": 0.8732230042374354,
+    "mean_auprc": 0.5285356160082066,
+    "mean_brier_score": 0.027150169198551167,
+    "patients_with_monotonicity_violation": 0,
+    "monotonicity_violation_rate": 0.0
+  },
+  "empirical_hazard_rates": [
+    0.01610824652016163,
+    0.0333988219499588,
+    0.006097560748457909,
+    0.004771642852574587,
+    0.004109588917344809
+  ],
+  "initial_output_biases": [
+    -4.112184524536133,
+    -3.365265369415283,
+    -5.09375,
+    -5.3402814865112305,
+    -5.49031400680542
+  ],
+  "training_seconds": 12.219482660293579,
+  "test_set_evaluated": false,
+  "device": "NVIDIA A100-SXM4-80GB",
+  "torch_version": "1.12.1",
+  "cuda_version": "11.7",
+  "outputs": {
+    "checkpoint": "/fred/oz508/EMBED/classical_future_risk_vihanga/v2_hazard_sprint05/checkpoints/v2b_none_seed123_job16165880_best.pt",
+    "history": "/fred/oz508/EMBED/classical_future_risk_vihanga/v2_hazard_sprint05/outputs/metrics/v2b_none_seed123_job16165880_history.json",
+    "validation_predictions": "/fred/oz508/EMBED/classical_future_risk_vihanga/v2_hazard_sprint05/outputs/predictions/v2b_none_seed123_job16165880_validation.csv"
+  }
+}
