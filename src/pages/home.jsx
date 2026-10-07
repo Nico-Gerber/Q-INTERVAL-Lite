@@ -29,7 +29,7 @@ import logoLight from '../assets/logo-light.svg';
 import {
   accent, ArrowLink, BAND, ImageSlot, HEADING_WRAP, LEAD_SX, PARAGRAPH_WRAP, Reveal, SECTION_HEADING_COMPACT_SX, SECTION_HEADING_SX, SectionMotif, SlideIn,
   SPLIT_SX, sectionCompact, sectionSx, sectionTall,
-} from '../Components/Shared/pageKit';
+} from '../Components/Shared/PublicPageKit';
 
 const NAV_H = 70;
 
@@ -815,7 +815,7 @@ const FAQS = [
   },
   {
     q: 'Is my data used for anything else?',
-    a: 'Data is used to produce the analysis that was requested. Any other use, such as research or model training, would need explicit consent and ethics approval.',
+    a: 'Your data is used to produce the analysis that was requested. When a classification session is uploaded there is an optional, off-by-default choice to allow its verified images and results to help improve the models. Your result is the same either way, future risk analyses are never used, and the choice can be withdrawn from My Sessions.',
   },
   {
     q: 'Where does the written explanation come from?',

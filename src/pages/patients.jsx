@@ -8,16 +8,23 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { deleteSessionImages } from '../supabase/sessionArtifacts';
+import NeuralCanvas from '../Components/Shared/NeuralCanvas';
+import ResultShell from '../Components/Shared/ResultShell';
 import { supabase } from '../supabase/supabase';
 import { useAssignedPatients } from '../supabase/useAssignedPatients';
+import { useAuth } from '../supabase/AuthContext';
+import { GreetingBlock, PrototypeNotice } from '../Components/Shared/DashboardHeader';
 
 const fmt = (iso) => new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+
+const initialsOf = (name) => (name || '?').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('');
 
 export default function Patients() {
   const theme = useTheme();
   const t = theme.palette.results;
   const { reportStatus } = theme.palette;
   const navigate = useNavigate();
+  const { user, profile } = useAuth();
   const { patients, loading, error } = useAssignedPatients();
   const [sessionsByPatient, setSessionsByPatient] = useState({});
   const [sessionsLoading, setSessionsLoading] = useState(true);
@@ -87,14 +94,45 @@ export default function Patients() {
   const awaiting = (id) => (sessionsByPatient[id] ?? []).filter((s) => !isFuture(s) && !s.verified).length;
   // Patients with sessions to review come first.
   const ordered = [...patients].sort((a, b) => awaiting(b.id) - awaiting(a.id));
+  const totalAwaiting = patients.reduce((n, p) => n + awaiting(p.id), 0);
+  const displayName = profile?.full_name || user?.email?.split('@')[0] || '';
 
   return (
     <Box sx={{ minHeight: '100vh', position: 'relative', overflow: 'clip', background: (th) => th.palette.background.hero }}>
+      <NeuralCanvas />
+      <Box sx={{
+        position: 'absolute', top: '-40%', left: '50%',
+        transform: 'translateX(-50%)', width: '500px', height: '500px',
+        borderRadius: '50%',
+        background: (th) => `radial-gradient(circle, ${th.palette.primary.main}0F 0%, transparent 70%)`,
+        pointerEvents: 'none', zIndex: 0,
+      }} />
+      <Box sx={{
+        position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0,
+        backgroundImage: (th) =>
+          `linear-gradient(${th.palette.primary.main}${th.palette.mode === 'dark' ? '07' : '14'} 1px, transparent 1px),
+           linear-gradient(90deg, ${th.palette.primary.main}${th.palette.mode === 'dark' ? '07' : '14'} 1px, transparent 1px)`,
+        backgroundSize: '60px 60px',
+      }} />
+
       <Container maxWidth="md" sx={{ position: 'relative', zIndex: 1, py: 8 }}>
-        <Typography variant="h4" sx={{ mb: 0.5 }}>My Patients</Typography>
-        <Typography color="text.secondary" sx={{ mb: 4 }}>
-          Patients assigned to you and their stored analysis sessions.
+        <PrototypeNotice />
+        <Typography variant="h3" sx={{ fontWeight: 700, letterSpacing: '-0.02em', color: 'text.primary', mb: 1.5, fontSize: { xs: '1.8rem', md: '2.25rem' } }}>
+          My
+          <Box component="span" sx={{ color: 'primary.main', fontStyle: 'italic' }}>
+            Patients
+          </Box>
         </Typography>
+        <GreetingBlock
+          name={displayName}
+          stats={!loading && !sessionsLoading && patients.length > 0 ? [
+            { value: patients.length, label: patients.length === 1 ? 'Assigned patient' : 'Assigned patients' },
+            { value: totalAwaiting, label: 'Awaiting review', warn: true },
+          ] : []}
+          note={!loading && !sessionsLoading && patients.length > 0
+            ? 'Patients with sessions waiting are listed first.'
+            : 'Patients assigned to you and their stored analysis sessions.'}
+        />
 
         {loading || sessionsLoading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>
@@ -103,26 +141,48 @@ export default function Patients() {
         ) : !patients.length ? (
           <Alert severity="info">No patients are assigned to you yet. An administrator can assign patients from User Management.</Alert>
         ) : (
-          ordered.map((p) => {
+          <ResultShell sx={{ p: { xs: 2, md: 2.5 } }}>
+          {ordered.map((p) => {
             const list = sessionsByPatient[p.id] ?? [];
             const pending = awaiting(p.id);
             return (
-              <Accordion key={p.id} disableGutters sx={{ mb: 1.5 }}>
+              <Accordion
+                key={p.id}
+                disableGutters
+                elevation={0}
+                sx={{
+                  mb: 1.5, backgroundImage: 'none', backgroundColor: t.inputBg, border: `1px solid ${t.lineStrong}`, borderRadius: 2,
+                  '&::before': { display: 'none' }, '&:last-of-type': { mb: 0 },
+                }}
+              >
                 <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap', width: '100%' }}>
-                    <Typography sx={{ fontWeight: 700 }}>{p.full_name || 'Unnamed patient'}</Typography>
-                    <Chip size="small" variant="outlined" label={`${list.length} session${list.length === 1 ? '' : 's'}`} />
-                    {pending > 0 && <Chip size="small" label={`${pending} awaiting review`} sx={{ bgcolor: `${reportStatus.pending}22`, color: reportStatus.pending, fontWeight: 700 }} />}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.75, width: '100%', pr: 1 }}>
+                    <Box
+                      aria-hidden="true"
+                      sx={{
+                        width: 40, height: 40, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '0.85rem', fontWeight: 800, color: 'primary.main', border: '1.5px solid', borderColor: 'primary.main',
+                      }}
+                    >
+                      {initialsOf(p.full_name)}
+                    </Box>
+                    <Typography sx={{ flex: 1, minWidth: 0, fontWeight: 800, fontSize: { xs: '1.05rem', md: '1.2rem' }, color: t.text, letterSpacing: '-0.01em', lineHeight: 1.2 }}>
+                      {p.full_name || 'Unnamed patient'}
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                      {pending > 0 && <Chip size="small" label={`${pending} awaiting review`} sx={{ bgcolor: `${reportStatus.pending}22`, color: reportStatus.pending, fontWeight: 700 }} />}
+                      <Chip size="small" variant="outlined" label={`${list.length} session${list.length === 1 ? '' : 's'}`} />
+                    </Box>
                   </Box>
                 </AccordionSummary>
                 <AccordionDetails>
                   {list.length ? (
                     <TableContainer sx={{ overflowX: 'auto' }}>
-                      <Table size="small">
+                      <Table size="small" sx={{ '& .MuiTableCell-root': { px: 1.5 } }}>
                         <TableHead>
                           <TableRow>
                             {['Session', 'Date', 'Status', ''].map((h) => (
-                              <TableCell key={h} sx={{ fontWeight: 700, color: t.label, borderColor: t.line }}>{h}</TableCell>
+                              <TableCell key={h || 'actions'} sx={{ py: 1.5, fontWeight: 700, color: t.label, borderBottom: `2px solid ${t.lineStrong}`, whiteSpace: 'nowrap' }}>{h}</TableCell>
                             ))}
                           </TableRow>
                         </TableHead>
@@ -131,12 +191,12 @@ export default function Patients() {
                             const st = statusOf(s);
                             return (
                               <TableRow key={s.id} hover>
-                                <TableCell sx={{ fontFamily: 'monospace', borderColor: t.line }}>{s.session_code}</TableCell>
-                                <TableCell sx={{ whiteSpace: 'nowrap', borderColor: t.line }}>{fmt(s.created_at)}</TableCell>
-                                <TableCell sx={{ borderColor: t.line }}>
+                                <TableCell sx={{ py: 2, fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 700, color: t.text, borderColor: t.lineStrong, whiteSpace: 'nowrap' }}>{s.session_code}</TableCell>
+                                <TableCell sx={{ py: 2, fontSize: '0.85rem', color: t.body, whiteSpace: 'nowrap', borderColor: t.lineStrong }}>{fmt(s.created_at)}</TableCell>
+                                <TableCell sx={{ py: 2, borderColor: t.lineStrong }}>
                                   <Chip size="small" label={st.label} sx={{ bgcolor: `${st.color}22`, color: st.color, fontWeight: 700 }} />
                                 </TableCell>
-                                <TableCell align="right" sx={{ borderColor: t.line }}>
+                                <TableCell align="right" sx={{ py: 2, borderColor: t.lineStrong, whiteSpace: 'nowrap' }}>
                                   <Button size="small" startIcon={<OpenInNewIcon sx={{ fontSize: 15 }} />} onClick={() => navigate(`/Analysis?session=${s.id}`)}>
                                     Open
                                   </Button>
@@ -158,7 +218,8 @@ export default function Patients() {
                 </AccordionDetails>
               </Accordion>
             );
-          })
+          })}
+          </ResultShell>
         )}
       </Container>
 

@@ -4,7 +4,8 @@ import { Box, Typography } from '@mui/material';
 import { ArrowForwardRounded as ArrowForwardIcon, ImageOutlined as ImageIcon } from '@mui/icons-material';
 import { motion, useReducedMotion } from 'framer-motion';
 
-// Shared building blocks for the Home and About pages.
+// Building blocks for the public marketing pages (Home and About): section bands, headings, reveal animations and motifs.
+// Signed-in dashboard pages use DashboardHeader instead.
 
 // Theme main cyan is only ~3.3:1 on the light page, so light mode uses a darker teal that also clears the tinted bands.
 export const accent = (theme) => (theme.palette.mode === 'dark' ? theme.palette.primary.main : '#0A5C72');

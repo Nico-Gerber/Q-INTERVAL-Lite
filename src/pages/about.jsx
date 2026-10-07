@@ -15,9 +15,9 @@ import {
 } from '@mui/icons-material';
 import { animate, motion, useInView, useReducedMotion } from 'framer-motion';
 import {
-  accent, AccentWord, BAND, HEADING_WRAP, ImageSlot, LEAD_SX, PARAGRAPH_WRAP, Reveal, SECTION_HEADING_COMPACT_SX, SECTION_HEADING_SX, SectionMotif, SlideIn,
+  accent, AccentWord, BAND, HEADING_WRAP, ImageSlot, LEAD_SX, PARAGRAPH_WRAP, Reveal, SECTION_HEADING_SX, SectionMotif, SlideIn,
   SPLIT_SX, sectionSx, sectionTall,
-} from '../Components/Shared/pageKit';
+} from '../Components/Shared/PublicPageKit';
 import logoDark from '../assets/logo-dark.svg';
 import logoLight from '../assets/logo-light.svg';
 
@@ -496,7 +496,7 @@ function ResponsibleSection() {
             <CheckIcon aria-hidden="true" sx={{ fontSize: 22, mt: '2px', color: accent, flexShrink: 0 }} />
             <Typography sx={{ color: 'text.secondary', fontSize: '0.95rem', lineHeight: 1.7, ...PARAGRAPH_WRAP }}>
               <Box component="span" sx={{ color: 'text.primary', fontWeight: 700 }}>Saved sessions stay private. </Box>
-              Images and results are kept in private storage so a clinician can return to a session, and a patient sees a result only once it has been published.
+              Images and results are kept in private storage so a clinician can return to a session, and a patient sees a result only once it has been published. Using a session to improve the models is optional, off by default, and limited to verified classification sessions.
             </Typography>
           </Box>
         </Reveal>

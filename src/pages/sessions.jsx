@@ -21,6 +21,7 @@ import { deleteSessionImages } from '../supabase/sessionArtifacts';
 import { TRAINING_TERMS_VERSION } from '../Components/ImageUpload/TrainingConsent';
 import NeuralCanvas from '../Components/Shared/NeuralCanvas';
 import ResultShell from '../Components/Shared/ResultShell';
+import { GreetingBlock, PrototypeNotice } from '../Components/Shared/DashboardHeader';
 
 const VIEWS = ['L-CC', 'L-MLO', 'R-CC', 'R-MLO'];
 const RESULTS = ['Malignant', 'Benign', 'Normal'];
@@ -225,31 +226,22 @@ export default function Sessions() {
       }} />
 
       <Container maxWidth="md" sx={{ position: 'relative', zIndex: 1, py: 8 }}>
-        <Chip
-          label="RESEARCH PROTOTYPE · NOT FOR CLINICAL USE"
-          size="small"
-          sx={{
-            mb: 2.5, bgcolor: (theme) => `${theme.palette.error.main}18`, color: 'error.main',
-            letterSpacing: '0.08em', fontSize: '0.65rem', fontWeight: 700,
-            border: '1px solid', borderColor: (theme) => `${theme.palette.error.main}35`,
-            borderRadius: '999px',
-          }}
-        />
+        <PrototypeNotice />
         <Typography variant="h3" sx={{ fontWeight: 700, letterSpacing: '-0.02em', color: 'text.primary', mb: 1.5, fontSize: { xs: '1.8rem', md: '2.25rem' } }}>
           My
           <Box component="span" sx={{ color: 'primary.main', fontStyle: 'italic' }}>
             Sessions
           </Box>
-          {user?.email && (
-            <Box component="span" sx={{ color: 'text.secondary', fontStyle: 'normal', fontWeight: 500, fontSize: '0.55em', ml: 1.5 }}>
-              — {user.email.split('@')[0]}
-            </Box>
-          )}
         </Typography>
-        <Typography sx={{ color: 'text.secondary', mb: 4, fontSize: '0.95rem', lineHeight: 1.75, maxWidth: 640 }}>
-          Every Session Analysis you've run — reviewed or not. Open one to correct an already-reviewed result;
-          views you never reviewed with the image visible stay locked.
-        </Typography>
+        <GreetingBlock
+          name={profile?.full_name || user?.email?.split('@')[0]}
+          stats={sessions && sessions.length > 0 ? [
+            { value: sessions.length, label: 'Sessions' },
+            { value: sessions.filter((s) => s.verified).length, label: 'Published' },
+            { value: sessions.filter((s) => !s.verified).length, label: 'Awaiting review', warn: true },
+          ] : []}
+          note="Every Session Analysis you've run, reviewed or not. Open one to correct an already-reviewed result; views you never reviewed with the image visible stay locked."
+        />
 
         {sessions === null ? (
           <Box sx={{ minHeight: '30vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1.75 }}>
@@ -305,7 +297,7 @@ export default function Sessions() {
               </Typography>
             ) : (
             <TableContainer sx={{ overflowX: 'auto' }}>
-            <Table size="small" sx={{ minWidth: 640 }}>
+            <Table size="small" sx={{ minWidth: 600, '& .MuiTableCell-root': { px: 1.5 } }}>
               <TableHead>
                 <TableRow>
                   <TableCell sx={{ py: 1.5, color: t.label, borderBottom: `2px solid ${t.lineStrong}`, whiteSpace: 'nowrap' }}>Session</TableCell>
@@ -341,14 +333,14 @@ export default function Sessions() {
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <Button
                           size="small" startIcon={<VisibilityIcon sx={{ fontSize: 15 }} />} onClick={() => openDetail(s)}
-                          sx={{ color: modelAccent.classical, minWidth: 84, justifyContent: 'flex-start' }}
+                          sx={{ color: modelAccent.classical, minWidth: 72, justifyContent: 'flex-start' }}
                         >
                           View
                         </Button>
                         <Divider orientation="vertical" flexItem sx={{ borderColor: t.lineStrong, mx: 0.5, my: 0.5 }} />
                         <Button
                           size="small" startIcon={<OpenInNewIcon sx={{ fontSize: 15 }} />} onClick={() => navigate(`/Analysis?session=${s.id}`)}
-                          sx={{ color: modelAccent.quantum, minWidth: 84, justifyContent: 'flex-start' }}
+                          sx={{ color: modelAccent.quantum, minWidth: 72, justifyContent: 'flex-start' }}
                         >
                           Open
                         </Button>
@@ -356,14 +348,14 @@ export default function Sessions() {
                         {s.verified ? (
                           <Button
                             size="small" startIcon={<IosShareIcon sx={{ fontSize: 14 }} />} onClick={() => { setShareSession(s); setCopied(false); }}
-                            sx={{ color: reportStatus.verified, minWidth: 84, justifyContent: 'flex-start' }}
+                            sx={{ color: reportStatus.verified, minWidth: 72, justifyContent: 'flex-start' }}
                           >
                             Share
                           </Button>
                         ) : canVerify ? (
                           <Button
                             size="small" startIcon={<DeleteOutlineIcon sx={{ fontSize: 15 }} />} onClick={() => setPendingDelete(s)}
-                            sx={{ color: t.label, minWidth: 84, justifyContent: 'flex-start' }}
+                            sx={{ color: t.label, minWidth: 72, justifyContent: 'flex-start' }}
                           >
                             Delete
                           </Button>
@@ -384,7 +376,7 @@ export default function Sessions() {
             <Typography variant="h6" sx={{ mb: 1.5 }}>Future Risk analyses</Typography>
             <ResultShell sx={{ p: { xs: 2, md: 2.5 } }}>
               <TableContainer sx={{ overflowX: 'auto' }}>
-                <Table size="small" sx={{ minWidth: 480 }}>
+                <Table size="small" sx={{ minWidth: 480, '& .MuiTableCell-root': { px: 1.5 } }}>
                   <TableHead>
                     <TableRow>
                       {['Session', 'Date', 'Actions'].map((h) => (
@@ -400,14 +392,14 @@ export default function Sessions() {
                         <TableCell sx={{ py: 2, borderColor: t.lineStrong, whiteSpace: 'nowrap' }}>
                           <Button
                             size="small" startIcon={<OpenInNewIcon sx={{ fontSize: 15 }} />} onClick={() => navigate(`/Analysis?session=${s.id}`)}
-                            sx={{ color: modelAccent.quantum, minWidth: 84, justifyContent: 'flex-start' }}
+                            sx={{ color: modelAccent.quantum, minWidth: 72, justifyContent: 'flex-start' }}
                           >
                             Open
                           </Button>
                           {canVerify && (
                           <Button
                             size="small" startIcon={<DeleteOutlineIcon sx={{ fontSize: 15 }} />} onClick={() => setPendingDelete({ ...s, verified: false })}
-                            sx={{ color: t.label, minWidth: 84, justifyContent: 'flex-start' }}
+                            sx={{ color: t.label, minWidth: 72, justifyContent: 'flex-start' }}
                           >
                             Delete
                           </Button>
