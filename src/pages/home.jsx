@@ -49,7 +49,7 @@ const STEPS = [
   {
     title: 'Shared with the patient',
     body: 'Once reviewed, a session can be shared as a private no-login link, exported as a PDF, or shown straight from the clinician\'s screen.',
-    link: { label: 'Open result', action: true },
+    link: { label: 'Open Results from Link', action: true },
   },
 ];
 
@@ -184,8 +184,8 @@ function HeroActions({ onOpenResult }) {
     );
     secondary = <Button onClick={signOut} variant="outlined" sx={btnSx}>Sign out</Button>;
   } else {
-    primary = <Button component={RouterLink} to="/request-access" variant="contained" sx={btnSx}>Request clinician access</Button>;
-    secondary = <Button component={RouterLink} to="/login" variant="outlined" sx={btnSx}>Clinician sign-in</Button>;
+    primary = <Button component={RouterLink} to="/request-access" variant="contained" sx={btnSx}>Request Access</Button>;
+    secondary = <Button component={RouterLink} to="/login" variant="outlined" sx={btnSx}>Sign In</Button>;
   }
 
   return (
@@ -195,7 +195,7 @@ function HeroActions({ onOpenResult }) {
         {secondary}
         {!approved && (
           <Box sx={{ display: 'flex', alignItems: 'center', ml: { sm: 1.5 } }}>
-            <ArrowLink onClick={onOpenResult}>Patient? Open result</ArrowLink>
+            <ArrowLink onClick={onOpenResult}>Open Results from Link</ArrowLink>
           </Box>
         )}
       </Box>
@@ -911,7 +911,7 @@ function ContactSection() {
             <Typography sx={{ ...LEAD_SX, color: 'rgba(255,255,255,0.92)', mb: 4 }}>
               {approved
                 ? 'Open the dashboard to start a new session.'
-                : 'Clinicians can request access, and each request is reviewed by an administrator.'}
+                : 'Anyone can request an account, and each request is reviewed by an administrator.'}
             </Typography>
             <Button
               component={RouterLink}
@@ -923,7 +923,7 @@ function ContactSection() {
                 '&:focus-visible': { outline: '2px solid #FFFFFF', outlineOffset: 3 },
               }}
             >
-              {approved ? 'Launch Analysis Dashboard' : 'Request clinician access'}
+              {approved ? 'Launch Analysis Dashboard' : 'Request Access'}
             </Button>
           </Box>
         </Reveal>

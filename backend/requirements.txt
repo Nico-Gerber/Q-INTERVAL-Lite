@@ -1,19 +1,31 @@
+# CPU-only PyTorch wheels: much smaller than the default CUDA builds (matters on Railway).
 --extra-index-url https://download.pytorch.org/whl/cpu
-uvicorn
+
+# --- web framework ---
 fastapi
+uvicorn
+pydantic
+python-multipart       # file uploads
+httpx                  # OpenRouter + Supabase calls, model downloads
+python-dotenv          # reads backend/.env
 aiofiles
-Pillow
-python-multipart
-numpy
-joblib
-pennylane
-autoray<0.8.0
-scikit-learn
+
+# --- models / numerics ---
 torch
 torchvision
+numpy
+scipy                  # image filters in the future-risk feature extractor
+scikit-learn
+scikit-image          
+
+joblib
+pandas
+pennylane
+autoray<0.8.0
+
+# --- images / explainability ---
+Pillow
 opencv-python-headless
 grad-cam
 albumentations
-pandas
-httpx
-python-dotenv
+matplotlib

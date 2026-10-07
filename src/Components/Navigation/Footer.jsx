@@ -15,10 +15,10 @@ const LINK_GROUPS = [
     ],
   },
   {
-    title: 'Clinicians',
+    title: 'Account',
     links: [
-      { label: 'Request access', to: '/request-access' },
-      { label: 'Sign in', to: '/login' },
+      { label: 'Request Access', to: '/request-access' },
+      { label: 'Sign In', to: '/login' },
     ],
   },
 ];
