@@ -25,7 +25,8 @@ from routers.shared.Explain import (
 )
 
 logging.basicConfig(level=config.LOG_LEVEL, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
-for noisy in ("httpx", "httpcore", "asyncio"):   # their debug output includes request URLs and user ids
+
+for noisy in ("httpx", "httpcore", "asyncio", "pennylane", "urllib3", "PIL", "matplotlib", "numba"):
     logging.getLogger(noisy).setLevel(logging.WARNING)
 config.validate_for_production()
 logging.getLogger(__name__).info(

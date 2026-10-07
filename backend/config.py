@@ -36,7 +36,7 @@ REQUIRE_AUTH = os.getenv("REQUIRE_AUTH", "true").lower() != "false"
 # Analyses run one at a time by default: peak memory is ~450 MB on a 512 MB service.
 MAX_CONCURRENT_ANALYSES = int(os.getenv("MAX_CONCURRENT_ANALYSES", "1"))
 
-LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO" if IS_PRODUCTION else "DEBUG")
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()   # set LOG_LEVEL=DEBUG locally if you need it
 
 
 def validate_for_production():
