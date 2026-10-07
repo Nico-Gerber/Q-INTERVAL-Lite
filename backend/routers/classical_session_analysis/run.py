@@ -7,6 +7,9 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Optional
 
+import logging
+import time
+
 import cv2
 import numpy as np
 from PIL import Image
@@ -35,6 +38,11 @@ HEATMAP_ALPHA = 0.45
 # (36 passes per view) vs the default stride=32 which gives 11×11=121 passes.
 # Non-overlapping patches are still faithful occlusion — every pixel is occluded
 # exactly once — the heatmap is just coarser before the final upsample.
+logger = logging.getLogger(__name__)
+
+# Parallel heatmap renders. Each already uses many CPU threads, so more workers mostly adds memory use.
+HEATMAP_WORKERS = max(1, int(os.getenv("HEATMAP_WORKERS", "4")))
+
 OCC_PATCH = 64
 OCC_STRIDE = 64
 
@@ -80,7 +88,9 @@ def run(views: dict, age: Optional[float]) -> dict:
     Returns:
         Normalised model_result dict (see session_analysis/IMPLEMENTATION.md).
     """
+    t0 = time.perf_counter()
     engine = _get_engine()
+    logger.info("Classical: engine ready (%.1fs)", time.perf_counter() - t0)
     tmp_paths = []
 
     try:
@@ -104,8 +114,10 @@ def run(views: dict, age: Optional[float]) -> dict:
             images_with_metadata.append(meta)
             slot_meta[slot] = meta
 
+        t1 = time.perf_counter()
         engine_out = engine.analyze_patient(images_with_metadata, include_overlays=False)
         image_results = engine_out["image_level_results"]
+        logger.info("Classical: classification done (%.1fs)", time.perf_counter() - t1)
 
         def _heatmap_job(args):
             slot, result = args
@@ -117,8 +129,10 @@ def run(views: dict, age: Optional[float]) -> dict:
                 meta["view"], meta["laterality"], pred_idx,
             )
 
-        with ThreadPoolExecutor(max_workers=4) as pool:
+        t2 = time.perf_counter()
+        with ThreadPoolExecutor(max_workers=HEATMAP_WORKERS) as pool:
             cam_data = dict(pool.map(_heatmap_job, zip(SLOT_ORDER, image_results)))
+        logger.info("Classical: heatmaps done (%.1fs, %d workers)", time.perf_counter() - t2, HEATMAP_WORKERS)
 
         result_views = {}
         for slot, result in zip(SLOT_ORDER, image_results):

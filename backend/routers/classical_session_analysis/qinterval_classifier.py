@@ -73,6 +73,9 @@ PREPROC_MAX_SIDE = 1024
 # ----------------------------------------------------------------------------
 # model
 # ----------------------------------------------------------------------------
+# Occlusion forward-pass chunk size. Smaller = less peak memory (activations scale with it), slightly slower.
+OCC_BATCH = max(1, int(os.environ.get("OCC_BATCH", "8")))
+
 class CBAM(nn.Module):
     """Convolutional Block Attention Module - channel then spatial attention."""
 
@@ -457,8 +460,8 @@ class Classifier:
 
         a, v, l = self._meta_tensors(view, laterality, age, batch.shape[0])
         drops = []
-        for s in range(0, batch.shape[0], 64):      # cap peak memory
-            chunk = batch[s:s + 64]
+        for s in range(0, batch.shape[0], OCC_BATCH):      # cap peak memory
+            chunk = batch[s:s + OCC_BATCH]
             pr = F.softmax(model(chunk, a[:len(chunk)], v[:len(chunk)],
                                  l[:len(chunk)]).float() / T, 1)[:, cls]
             drops.append((ref - pr).cpu().numpy())

@@ -29,6 +29,10 @@ logging.basicConfig(level=config.LOG_LEVEL, format="%(asctime)s %(levelname)s %(
 for noisy in ("httpx", "httpcore", "asyncio", "pennylane", "urllib3", "PIL", "matplotlib", "numba"):
     logging.getLogger(noisy).setLevel(logging.WARNING)
 config.validate_for_production()
+if config.TORCH_NUM_THREADS > 0:
+    import torch
+    torch.set_num_threads(config.TORCH_NUM_THREADS)
+    logging.getLogger(__name__).info("PyTorch CPU threads: %d", config.TORCH_NUM_THREADS)
 logging.getLogger(__name__).info(
     "Explanation models: text=%s (fallbacks=%s) vlm=%s (fallbacks=%s)",
     config.OPENROUTER_TEXT_MODEL, config.OPENROUTER_TEXT_FALLBACKS,

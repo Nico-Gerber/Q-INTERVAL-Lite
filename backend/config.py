@@ -36,6 +36,13 @@ REQUIRE_AUTH = os.getenv("REQUIRE_AUTH", "true").lower() != "false"
 # Analyses run one at a time by default: peak memory is ~450 MB on a 512 MB service.
 MAX_CONCURRENT_ANALYSES = int(os.getenv("MAX_CONCURRENT_ANALYSES", "1"))
 
+# CPU threads PyTorch/BLAS may use. Cloud hosts expose many cores; by default every library grabs all of them,
+# which oversubscribes the CPU and is far slower. Set TORCH_NUM_THREADS (e.g. 4) on Railway. Unset = library default.
+TORCH_NUM_THREADS = int(os.getenv("TORCH_NUM_THREADS", "0"))
+if TORCH_NUM_THREADS > 0:
+    for _var in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "NUMEXPR_NUM_THREADS"):
+        os.environ.setdefault(_var, str(TORCH_NUM_THREADS))   # must happen before torch/numpy are imported
+
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()   # set LOG_LEVEL=DEBUG locally if you need it
 
 
