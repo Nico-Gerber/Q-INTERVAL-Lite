@@ -53,6 +53,7 @@ venvs/
 *.pth
 *.safetensors
 *.joblib
+*.tar
 
 # Generated training artifacts
 **/checkpoints/
