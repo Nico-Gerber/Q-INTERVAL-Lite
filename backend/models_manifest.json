@@ -8,6 +8,8 @@
     { "path": "routers/classical_session_analysis/models/birads_v2_explainable.pth",                   "hf": "birads_v2_explainable.pth" },
     { "path": "routers/quantum_session_analysis/models/qsvc/resnet18_finetuned.pth",                   "hf": "resnet18_finetuned.pth" },
     { "path": "routers/quantum_session_analysis/models/qsvc/sv_states.npy",                            "hf": "sv_states.npy" },
-    { "path": "routers/future_risk_classical/models/resnet50-11ad3fa6.pth",                            "url": "https://download.pytorch.org/models/resnet50-11ad3fa6.pth" }
+    { "path": "routers/future_risk_classical/models/resnet50-11ad3fa6.pth",                            "url": "https://download.pytorch.org/models/resnet50-11ad3fa6.pth" },
+    { "path": "routers/future_risk_classical/models/final_selected_v2d_mammoclip_b5.pt",              "hf": "final_selected_v2d_mammoclip_b5.pt" },
+    { "path": "routers/future_risk_classical/models/b5-model-best-epoch-7.tar",                        "hf": "b5-model-best-epoch-7.tar" }
   ]
 }
