@@ -4,6 +4,7 @@ from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 import config
+import model_store
 from guards import limit_analysis, require_approved_user
 
 # Session Analysis
@@ -33,6 +34,8 @@ logging.getLogger(__name__).info(
     config.OPENROUTER_VLM_MODEL, config.OPENROUTER_VLM_FALLBACKS,
 )
 
+model_store.start_background_download()   # fetch weights Git LFS can't provide; no-op locally
+
 app = FastAPI(
     title="Q-Interval Lite API",
     version="0.1.0",
@@ -51,7 +54,7 @@ app.add_middleware(
 )
 
 # Model inference: approved users only, and one analysis at a time (memory).
-inference = [Depends(require_approved_user), Depends(limit_analysis)]
+inference = [Depends(require_approved_user), Depends(model_store.require_models_ready), Depends(limit_analysis)]
 app.include_router(classical_session_router, dependencies=inference)
 app.include_router(quantum_session_router, dependencies=inference)
 app.include_router(classical_future_risk_router, dependencies=inference)

@@ -1,6 +1,7 @@
 """Shared FastAPI dependencies: caller authentication and the analysis concurrency limit."""
 import asyncio
 import hashlib
+import logging
 import time
 from typing import Optional
 
@@ -8,6 +9,8 @@ import httpx
 from fastapi import Header, HTTPException
 
 import config
+
+logger = logging.getLogger(__name__)
 
 _semaphore = asyncio.Semaphore(config.MAX_CONCURRENT_ANALYSES)
 _CACHE_TTL_SECONDS = 30
@@ -36,15 +39,22 @@ async def _load_caller(authorization: Optional[str]) -> dict:
             f"{config.SUPABASE_URL}/auth/v1/user",
             headers={"apikey": config.SUPABASE_SERVICE_ROLE_KEY, "Authorization": f"Bearer {token}"},
         )
-        if auth_res.status_code != 200:
+        if auth_res.status_code in (400, 401, 403):
             raise HTTPException(401, "Invalid or expired session.")
+        if auth_res.status_code != 200:   # Supabase hiccup (429/5xx): not the user's fault
+            logger.warning("Token check failed with HTTP %s", auth_res.status_code)
+            raise HTTPException(503, "Could not verify your session right now. Please try again.")
         user_id = auth_res.json().get("id")
         prof_res = await client.get(
             f"{config.SUPABASE_URL}/rest/v1/profiles",
             params={"id": f"eq.{user_id}", "select": "role,status"},
             headers=_service_headers(),
         )
-    rows = prof_res.json() if prof_res.status_code == 200 else []
+    # A failed lookup is a service problem, not "unapproved": never turn it into a 403 or cache it.
+    if prof_res.status_code != 200:
+        logger.warning("Profile lookup failed with HTTP %s", prof_res.status_code)
+        raise HTTPException(503, "Could not verify your account right now. Please try again.")
+    rows = prof_res.json()
     caller = {"id": user_id, "role": rows[0]["role"] if rows else None, "status": rows[0]["status"] if rows else None}
 
     if len(_cache) > 1000:
