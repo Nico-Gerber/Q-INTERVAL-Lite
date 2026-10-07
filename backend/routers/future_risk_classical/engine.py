@@ -14,7 +14,6 @@ ENGINE_ENVIRONMENT_VARIABLE = "FUTURE_RISK_ENGINE"
 _ENGINE_ALIASES = {
     "v2c": "v2c",
     "v2d": "v2d",
-    "mammoclip_v2d": "v2d",
 }
 
 _ENGINES = {
