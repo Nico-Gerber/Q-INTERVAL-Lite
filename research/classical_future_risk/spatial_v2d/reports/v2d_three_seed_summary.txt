@@ -5,9 +5,9 @@ model  seed   job_id  best_epoch  validation_nll  mean_auroc  mean_auprc  mean_b
   V2D  2026 17128302           7        0.048342    0.809936    0.542147    0.034293                      0.0
 
 FOUR-MODEL COMPARISON
-            validation_nll           mean_auroc           mean_auprc           mean_brier           monotonicity_violations     
+            validation_nll           mean_auroc           mean_auprc           mean_brier           monotonicity_violations
                       mean       std       mean       std       mean       std       mean       std                    mean  std
-model                                                                                                                           
+model
 CurrentExam       0.060766  0.000381   0.686030  0.013144   0.153033  0.004662   0.050750  0.000186                     0.0  0.0
 V2B               0.044110  0.001136   0.864825  0.010598   0.587807  0.009354   0.028278  0.000216                     0.0  0.0
 V2C               0.043614  0.000241   0.868135  0.017080   0.590747  0.006180   0.028735  0.000691                     0.0  0.0
