@@ -276,15 +276,40 @@ def _parse_model_input(model_input: Any) -> list[dict[str, Any]]:
     return parsed
 
 
+def _prepare_like_training(source: Image.Image) -> Image.Image:
+    """Prepare an uploaded mammogram exactly as the training images were made.
+
+    This mirrors normalise_and_resize() in the project's clean_pipeline.py, which produced the 500 x 500 PNGs the
+    model was trained on: take one grey channel, sub-sample very large images, min-max scale the WHOLE image to
+    0-255, store it as 8-bit, then bilinear-resize the whole frame to 500 x 500 (no cropping, no padding).
+    Keep this in step with that script: a mismatch does not raise an error, it just shifts the risk numbers.
+    """
+    array = np.asarray(source.convert("L"), dtype=np.float32)
+    height, width = array.shape
+    if height < 10 or width < 10 or height > 15000 or width > 15000:
+        raise ValueError(
+            f"A supplied mammogram has an unusable size ({width} x {height})."
+        )
+
+    step_y = max(1, height // (IMAGE_HEIGHT * 2))
+    step_x = max(1, width // (IMAGE_WIDTH * 2))
+    if step_y > 1 or step_x > 1:
+        array = array[::step_y, ::step_x]
+
+    array = array - array.min()
+    if array.max() > 0:
+        array = (array / array.max()) * 255.0
+
+    prepared = Image.fromarray(array.astype(np.uint8), mode="L")
+    return prepared.resize(
+        (IMAGE_WIDTH, IMAGE_HEIGHT), Image.Resampling.BILINEAR
+    )
+
+
 def _decode_and_normalize_image(payload: bytes) -> torch.Tensor:
     try:
         with Image.open(BytesIO(payload)) as source:
-            image = source.convert("RGB")
-            if image.size != (IMAGE_WIDTH, IMAGE_HEIGHT):
-                raise ValueError(
-                    "Mammo-CLIP V2D requires 500 x 500 pixel images; "
-                    f"received {image.size[0]} x {image.size[1]}."
-                )
+            image = _prepare_like_training(source).convert("RGB")
             array = np.asarray(image, dtype=np.float32)
     except ValueError:
         raise
