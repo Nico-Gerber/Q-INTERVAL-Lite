@@ -20,7 +20,7 @@ const MODES = [
     paletteKey: 'classification',
     features: [
       'Standard 4-view session (L-CC, L-MLO, R-CC, R-MLO)',
-      'Per-view classification & Grad-CAM',
+      'Per-view classification and occlusion maps',
       'Aggregated patient-level verdict',
       'Composite risk index',
     ],
@@ -29,14 +29,14 @@ const MODES = [
   {
     id: 'future-risk',
     title: 'Sequential Future Risk',
-    description: 'Upload sequential mammogram images over time to predict future breast cancer risk using temporal pattern analysis. (Coming Soon)',
+    description: 'Upload sequential mammogram images over time to predict future breast cancer risk using temporal pattern analysis.',
     icon: <RiskIcon sx={{ fontSize: 26 }} />,
     paletteKey: 'sequentialRisk',
     features: [
-      'Multi-image temporal analysis',
-      '5-year risk prediction',
-      'Density change tracking',
-      'Trend visualization',
+      'Up to five exams over time',
+      '1 to 5 year risk prediction',
+      'How much each exam contributed',
+      'Risk trend across the years',
     ],
   },
 ];

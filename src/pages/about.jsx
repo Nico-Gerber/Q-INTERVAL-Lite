@@ -79,7 +79,7 @@ const AUDIENCES = [
   {
     title: 'AI students',
     body: 'Study two model families on the same data, with results and evaluation status laid out openly.',
-    points: ['A CNN and a quantum-enhanced model, compared directly', 'Occlusion-based explanations of each prediction', 'Evaluation figures published only once validated'],
+    points: ['A CNN and a quantum-enhanced model, compared directly', 'Occlusion-based explanations of each prediction', 'Internal results published openly, with their limits'],
     image: 'A student working on a laptop',
     photo: laptopsPhoto,
     alt: 'A group of students working on laptops around a wooden table',
@@ -90,7 +90,7 @@ const AUDIENCES = [
 const STATUS = [
   { title: 'Free for education and research', body: 'There is no charge, and it is not a commercial product.' },
   { title: 'A research prototype', body: 'It is not a diagnostic device and is not for clinical use.' },
-  { title: 'Evaluation under way', body: 'How well each model performs is still being measured. Figures are published only once they have been validated.' },
+  { title: 'Tested internally', body: 'Results from our own testing are on the Models page. They have not yet been checked on data from other hospitals or screening programmes.' },
 ];
 
 const DATA_JOURNEY = [

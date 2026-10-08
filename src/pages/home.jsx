@@ -28,6 +28,10 @@ import NeuralCanvas from '../Components/Shared/NeuralCanvas';
 import { useAuth } from '../supabase/AuthContext';
 import logoDark from '../assets/logo-dark.svg';
 import logoLight from '../assets/logo-light.svg';
+import resultsVideo from '../assets/results.mp4';
+import resultsVideoWebm from '../assets/results.webm';
+import resultsPoster from '../assets/poster.webp';
+import supportPhoto from '../assets/support.webp';
 import {
   accent, ArrowLink, BAND, ImageSlot, HEADING_WRAP, LEAD_SX, PARAGRAPH_WRAP, Reveal, SECTION_HEADING_COMPACT_SX, SECTION_HEADING_SX, SectionMotif, SlideIn,
   SPLIT_SX, sectionCompact, sectionSx, sectionTall,
@@ -35,7 +39,12 @@ import {
 
 const NAV_H = 70;
 
-const EVALUATION_METRICS = ['Sensitivity', 'Specificity', 'AUC'];
+// Latest internal test results from the team's own testing, as set out on the Models page.
+const EVALUATION = [
+  { label: 'Classification accuracy', values: [{ model: 'Classical', value: '72.3%', family: 'classical' }, { model: 'Quantum', value: '67.1%', family: 'quantum' }] },
+  { label: 'Future risk AUROC', values: [{ model: 'Classical', value: '0.868', family: 'classical' }, { model: 'Quantum', value: '0.532', family: 'quantum' }] },
+  { label: 'Validation', note: 'Internal tests only. Not yet tested externally.' },
+];
 
 const STEPS = [
   {
@@ -265,34 +274,51 @@ function EvaluationStrip() {
           Model evaluation
         </Typography>
         <Box component="dl" sx={{ m: 0, display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)' } }}>
-          {EVALUATION_METRICS.map((label, i, arr) => (
+          {EVALUATION.map((item, i, arr) => (
             <Box
-              key={label}
+              key={item.label}
               sx={(theme) => ({
                 textAlign: 'center', py: { xs: 1.5, sm: 0.5 }, px: 2,
                 borderRight: { xs: 'none', sm: i < arr.length - 1 ? `2px solid ${theme.palette.background.heroStatsBorder}` : 'none' },
                 borderBottom: { xs: i < arr.length - 1 ? `1px solid ${theme.palette.background.heroStatsBorder}` : 'none', sm: 'none' },
               })}
             >
-              <Typography component="dt" sx={{ fontSize: '0.8rem', fontWeight: 600, color: 'rgba(255,255,255,0.9)', mb: 0.5 }}>
-                {label}
+              <Typography component="dt" sx={{ fontSize: '0.8rem', fontWeight: 600, color: 'rgba(255,255,255,0.9)', mb: 0.75 }}>
+                {item.label}
               </Typography>
-              <Typography component="dd" sx={{ m: 0, fontSize: '1rem', fontWeight: 700, lineHeight: 1.3 }}>
-                Evaluation in progress
-              </Typography>
+              {item.values ? (
+                <Box component="dd" sx={{ m: 0, display: 'flex', justifyContent: 'center', gap: 3 }}>
+                  {item.values.map((v) => (
+                    <Box key={v.model}>
+                      <Typography sx={{ fontSize: '1.35rem', fontWeight: 800, lineHeight: 1.1, letterSpacing: '-0.01em', fontVariantNumeric: 'tabular-nums' }}>{v.value}</Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.75, mt: 0.25 }}>
+                        <Box aria-hidden="true" sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: v.family === 'classical' ? '#5cc8f5' : '#E3B8F2' }} />
+                        <Typography sx={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.9)' }}>{v.model}</Typography>
+                      </Box>
+                    </Box>
+                  ))}
+                </Box>
+              ) : (
+                <Typography component="dd" sx={{ m: 0, fontSize: '0.95rem', fontWeight: 600, lineHeight: 1.4, maxWidth: '24ch', mx: 'auto' }}>
+                  {item.note}
+                </Typography>
+              )}
             </Box>
           ))}
         </Box>
-        <Typography sx={{ textAlign: 'center', mt: 2, fontSize: '0.8rem', color: 'rgba(255,255,255,0.9)' }}>
-          Both models are still being evaluated. Figures are published only once validated.
-        </Typography>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', columnGap: 3, rowGap: 1, mt: 2 }}>
+          <Typography sx={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.9)' }}>
+            Latest results from our own testing. Not clinically validated.
+          </Typography>
+          <ArrowLink to="/Models" onDark>See full results</ArrowLink>
+        </Box>
       </Container>
     </Box>
   );
 }
 
-// Placeholder until a recording exists: pass `src` (and `poster`) to render the video.
-function ResultsSection({ src, poster }) {
+// Pass `src` (MP4), optionally `webm`, and `poster`; without `src` a placeholder is shown.
+function ResultsSection({ src, webm, poster }) {
   const reduce = useReducedMotion();
   return (
     <Box component="section" aria-labelledby="result-heading" sx={sectionCompact}>
@@ -314,14 +340,13 @@ function ResultsSection({ src, poster }) {
             <Box
               sx={{
                 position: 'relative', width: '100%', aspectRatio: '16 / 9', borderRadius: 2, overflow: 'hidden',
-                border: '2px dashed', backgroundColor: 'background.paper',
-                borderColor: (theme) => (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(14,116,144,0.55)'),
+                border: src ? '1px solid' : '2px dashed', backgroundColor: 'background.paper',
+                borderColor: src ? 'divider' : (theme) => (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(14,116,144,0.55)'),
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}
             >
               {src ? (
                 <video
-                  src={src}
                   poster={poster}
                   controls
                   muted
@@ -331,7 +356,10 @@ function ResultsSection({ src, poster }) {
                   preload="metadata"
                   aria-label="Looped clip of a result being scrolled through and verified"
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
+                >
+                  {webm && <source src={webm} type="video/webm" />}
+                  <source src={src} type="video/mp4" />
+                </video>
               ) : (
                 <Box sx={{ textAlign: 'center', px: 2 }}>
                   <PlayIcon sx={{ fontSize: 44, color: 'text.secondary', mb: 1 }} aria-hidden="true" />
@@ -459,7 +487,7 @@ function ResourcesSection() {
               Whether you are navigating a diagnosis, supporting a loved one, or looking for guidance, these
               organisations provide trusted support, information, and free screening services across Australia.
             </Typography>
-            <ImageSlot label="A calm, supportive consultation scene" />
+            <ImageSlot label="A calm, supportive consultation scene" src={supportPhoto} alt="A doctor holding a patient's hand across a desk in a quiet, supportive moment" />
           </Reveal>
           <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0, display: 'grid', gridTemplateColumns: '1fr', gap: 2 }}>
             {SUPPORT_ORGS.map((org) => (
@@ -1036,7 +1064,7 @@ export default function Home() {
 
       <WorkflowSection />
       <StepsSection onOpenResult={openResult} />
-      <ResultsSection />
+      <ResultsSection src={resultsVideo} webm={resultsVideoWebm} poster={resultsPoster} />
       <SecureSection />
       <AssistSection />
       <WhySection />
