@@ -13,6 +13,7 @@ aiofiles
 # --- models / numerics ---
 torch
 torchvision
+timm                   # ConvNeXt V2 encoder
 numpy
 scipy                  # image filters in the future-risk feature extractor
 scikit-learn

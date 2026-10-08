@@ -1,27 +1,45 @@
 {
-  "_comment": "Model weights that must exist on disk at runtime. Git LFS files are NOT available on Railway, so anything missing (or still a tiny LFS pointer stub) is downloaded at startup. 'path' is relative to backend/. Use 'hf' (file name inside the Hugging Face repo set by HF_MODEL_REPO) or 'url' (public). Optional 'when_env' conditions limit an artifact to a selected runtime configuration.",
+  "_comment": "Model weights that must exist on disk at runtime. Git LFS files are NOT available on Railway, so anything missing (or still a tiny LFS pointer stub) is downloaded at startup. 'path' is relative to backend/. Use 'hf' (file name inside the Hugging Face repo set by HF_MODEL_REPO) or 'url' (public).",
   "files": [
-    { "path": "routers/classical_session_analysis/models/Classical-ConvNext.pth",                "hf": "final_v12_ensemble_bundle.pth" },
-    { "path": "routers/classical_session_analysis/models/final_v9_effnetv2_mt-none_dro_ce_bundle.pth", "hf": "final_v9_effnetv2_mt-none_dro_ce_bundle.pth" },
-    { "path": "routers/classical_session_analysis/models/final_v8_resnet101_nosrc_ce_bundle.pth",      "hf": "final_v8_resnet101_nosrc_ce_bundle.pth" },
-    { "path": "routers/classical_session_analysis/models/density_v2_explainable.pth",                  "hf": "density_v2_explainable.pth" },
-    { "path": "routers/classical_session_analysis/models/birads_v2_explainable.pth",                   "hf": "birads_v2_explainable.pth" },
-    { "path": "routers/quantum_session_analysis/models/qsvc/resnet18_finetuned.pth",                   "hf": "resnet18_finetuned.pth" },
-    { "path": "routers/quantum_session_analysis/models/qsvc/sv_states.npy",                            "hf": "sv_states.npy" },
-    { "path": "routers/future_risk_classical/models/resnet50-11ad3fa6.pth",                            "url": "https://download.pytorch.org/models/resnet50-11ad3fa6.pth" },
     {
-      "path": "routers/future_risk_classical/models/final_selected_v2d_mammoclip_b5.pt",
-      "hf": "final_selected_v2d_mammoclip_b5.pt",
-      "when_env": {
-        "FUTURE_RISK_ENGINE": "v2d"
-      }
+      "path": "routers/classical_session_analysis/models/final_v12_ensemble_bundle.pth",
+      "hf": "final_v12_ensemble_bundle.pth"
     },
     {
-      "path": "routers/future_risk_classical/models/b5-model-best-epoch-7.tar",
-      "hf": "b5-model-best-epoch-7.tar",
-      "when_env": {
-        "FUTURE_RISK_ENGINE": "v2d"
-      }
+      "path": "routers/classical_session_analysis/models/final_v9_effnetv2_mt-none_dro_ce_bundle.pth",
+      "hf": "final_v9_effnetv2_mt-none_dro_ce_bundle.pth"
+    },
+    {
+      "path": "routers/classical_session_analysis/models/final_v8_resnet101_nosrc_ce_bundle.pth",
+      "hf": "final_v8_resnet101_nosrc_ce_bundle.pth"
+    },
+    {
+      "path": "routers/classical_session_analysis/models/density_v2_explainable.pth",
+      "hf": "density_v2_explainable.pth"
+    },
+    {
+      "path": "routers/classical_session_analysis/models/birads_v2_explainable.pth",
+      "hf": "birads_v2_explainable.pth"
+    },
+    {
+      "path": "routers/quantum_session_analysis/models/qsvc/resnet18_finetuned.pth",
+      "hf": "resnet18_finetuned.pth"
+    },
+    {
+      "path": "routers/quantum_session_analysis/models/qsvc/sv_states.npy",
+      "hf": "sv_states.npy"
+    },
+    {
+      "path": "routers/future_risk_classical/models/resnet50-11ad3fa6.pth",
+      "url": "https://download.pytorch.org/models/resnet50-11ad3fa6.pth"
+    },
+    {
+      "path": "routers/classical_session_analysis/models/convnextv2h_model_bundle.pth",
+      "hf": "convnextv2h_model_bundle.pth"
+    },
+    {
+      "path": "routers/classical_session_analysis/models/model_input_v3.py",
+      "hf": "convnextv2h_model_input_v3.py"
     }
   ]
 }
