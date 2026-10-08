@@ -1,4 +1,5 @@
 import logging
+import os
 
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -53,6 +54,8 @@ def _startup_checks():
                 "cv2": "opencv-python-headless", "torch": "torch", "torchvision": "torchvision",
                 "pennylane": "pennylane", "joblib": "joblib", "pandas": "pandas",
                 "albumentations": "albumentations", "pytorch_grad_cam": "grad-cam"}
+    if os.getenv("FUTURE_RISK_ENGINE", "v2c").strip().lower() == "v2d":
+        required["omegaconf"] = "omegaconf"   # the V2D checkpoint cannot be unpickled without it
     missing = []
     for module, package in required.items():
         try:

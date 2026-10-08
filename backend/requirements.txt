@@ -23,6 +23,11 @@ pandas
 pennylane
 autoray<0.8.0
 
+# --- needed to LOAD the Mammo-CLIP V2D checkpoint (FUTURE_RISK_ENGINE=v2d) ---
+# The checkpoint was saved with OmegaConf objects inside it, so unpickling it imports omegaconf even though no
+# code does. A static scan of imports cannot find dependencies like this.
+omegaconf
+
 # --- images / explainability ---
 Pillow
 opencv-python-headless
