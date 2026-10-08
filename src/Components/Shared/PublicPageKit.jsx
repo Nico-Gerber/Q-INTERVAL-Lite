@@ -42,7 +42,7 @@ export function Reveal({ children, delay = 0 }) {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.2 }}
+      viewport={{ once: true, amount: 0.1 }}
       transition={{ duration: 0.5, ease: 'easeOut', delay }}
     >
       {children}
@@ -150,3 +150,14 @@ export function ImageSlot({ src, alt = '', label, ratio = '4 / 3', kind = 'Stock
 export function AccentWord({ children, onDark }) {
   return <Box component="span" sx={{ fontStyle: 'italic', color: onDark ? '#A5F3FC' : accent }}>{children}</Box>;
 }
+
+// Gentle lift-and-grow for cards worth exploring. Use on plain boxes; framer-motion elements use whileHover instead.
+export const HOVER_LIFT = {
+  transition: 'transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease',
+  '&:hover': {
+    transform: 'translateY(-4px) scale(1.01)',
+    borderColor: accent,
+    boxShadow: (theme) => (theme.palette.mode === 'dark' ? '0 16px 36px rgba(0,0,0,0.4)' : '0 16px 36px rgba(14,116,144,0.2)'),
+  },
+  '@media (prefers-reduced-motion: reduce)': { transition: 'none', '&:hover': { transform: 'none' } },
+};

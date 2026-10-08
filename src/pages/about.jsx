@@ -15,7 +15,7 @@ import {
 } from '@mui/icons-material';
 import { animate, motion, useInView, useReducedMotion } from 'framer-motion';
 import {
-  accent, AccentWord, BAND, HEADING_WRAP, ImageSlot, LEAD_SX, PARAGRAPH_WRAP, Reveal, SECTION_HEADING_SX, SectionMotif, SlideIn,
+  accent, AccentWord, BAND, HEADING_WRAP, HOVER_LIFT, ImageSlot, LEAD_SX, PARAGRAPH_WRAP, Reveal, SECTION_HEADING_SX, SectionMotif, SlideIn,
   SPLIT_SX, sectionSx, sectionTall,
 } from '../Components/Shared/PublicPageKit';
 import logoDark from '../assets/logo-dark.svg';
@@ -174,7 +174,7 @@ function StatsSection() {
             <Box
               component="li"
               key={stat.label}
-              sx={{ p: 3, borderRadius: 3, backgroundColor: 'background.paper', border: '1px solid', borderColor: 'divider', display: 'flex', flexDirection: 'column' }}
+              sx={{ p: 3, borderRadius: 3, backgroundColor: 'background.paper', border: '1px solid', borderColor: 'divider', display: 'flex', flexDirection: 'column', ...HOVER_LIFT }}
             >
               <Box
                 aria-hidden="true"
@@ -375,6 +375,7 @@ function AudienceSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.15 }}
               transition={{ duration: 0.55, ease: 'easeOut', delay: (i % 2) * 0.12 }}
+              whileHover={reduce ? undefined : { y: -4, scale: 1.01, transition: { duration: 0.25, delay: 0 } }}
               sx={{ borderRadius: 4, overflow: 'hidden', backgroundColor: 'background.paper', border: '1px solid', borderColor: 'divider', display: 'flex', flexDirection: 'column' }}
             >
               <ImageSlot label={item.image} ratio="16 / 8" sx={{ borderRadius: 0, border: 0, borderBottom: '2px dashed', borderColor: 'divider' }} />
@@ -467,7 +468,7 @@ function ResponsibleSection() {
                   />
                 </Box>
               )}
-              <Box sx={{ borderRadius: 3, backgroundColor: 'background.paper', border: '1px solid', borderColor: 'divider', overflow: 'hidden', display: 'flex', flexDirection: 'column', flex: 1, color: 'text.primary' }}>
+              <Box sx={{ borderRadius: 3, backgroundColor: 'background.paper', border: '1px solid', borderColor: 'divider', overflow: 'hidden', display: 'flex', flexDirection: 'column', flex: 1, color: 'text.primary', ...HOVER_LIFT }}>
                 <Box sx={{ p: 2.5, flex: 1 }}>
                   <Typography component="h3" sx={{ fontSize: '1.15rem', fontWeight: 700, color: 'text.primary', mb: 1 }}>{step.title}</Typography>
                   <Typography sx={{ color: 'text.secondary', fontSize: '0.92rem', lineHeight: 1.7, ...PARAGRAPH_WRAP }}>{step.moves}</Typography>
@@ -543,7 +544,7 @@ function OriginSection() {
 }
 
 const About = () => (
-  <Box component="main" sx={{ backgroundColor: 'background.default' }}>
+  <Box component="main" sx={{ backgroundColor: 'background.default', '& > section + section': { borderTop: '1px solid', borderColor: 'divider' } }}>
     <IntroSection />
     <StatsSection />
     <ProblemSection />
