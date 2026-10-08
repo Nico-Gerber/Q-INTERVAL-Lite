@@ -20,6 +20,11 @@ import {
 } from '../Components/Shared/PublicPageKit';
 import logoDark from '../assets/logo-dark.svg';
 import logoLight from '../assets/logo-light.svg';
+import resultsScreenshot from '../assets/results.webp';
+import cliniciansPhoto from '../assets/clinician.webp';
+import patientsPhoto from '../assets/patient.webp';
+import doctorPhoto from '../assets/doctor.webp';
+import laptopsPhoto from '../assets/laptops.webp';
 
 // Figures supplied by the project team from the AIHW BreastScreen Australia Monitoring Report (2025) and Cancer Australia.
 const STATS = [
@@ -48,6 +53,9 @@ const AUDIENCES = [
     points: ['Compare two models on every view', 'See which regions influenced a result', 'Verify each view, then publish a private link or export a PDF'],
     note: 'Access is granted by an administrator after a request is reviewed.',
     image: 'A clinician reviewing images on a screen',
+    photo: cliniciansPhoto,
+    alt: 'A clinician in a white coat explaining something to a patient beside a mammography machine',
+    focus: 'center 30%',
   },
   {
     title: 'Patients',
@@ -55,18 +63,27 @@ const AUDIENCES = [
     points: ['Opens in any web browser', 'Shows the final, reviewed result', 'Includes a written explanation in plain language'],
     note: 'No link yet? Your clinic can send one once your result is ready.',
     image: 'A calm, supportive consultation',
+    photo: patientsPhoto,
+    alt: 'A patient standing at a mammography machine while a radiographer smiles and reassures her',
+    focus: 'center 25%',
   },
   {
     title: 'Medical students',
     body: 'See how an AI system reaches a result, and learn to question it rather than take it on trust.',
     points: ['Occlusion maps show what the model focused on', 'Classical and quantum results sit side by side', 'Every decision on a result is recorded'],
     image: 'Students studying together',
+    photo: doctorPhoto,
+    alt: 'A doctor in a white coat with a stethoscope sitting at a desk in a clinic office',
+    focus: 'center 25%',
   },
   {
     title: 'AI students',
     body: 'Study two model families on the same data, with results and evaluation status laid out openly.',
     points: ['A CNN and a quantum-enhanced model, compared directly', 'Occlusion-based explanations of each prediction', 'Evaluation figures published only once validated'],
     image: 'A student working on a laptop',
+    photo: laptopsPhoto,
+    alt: 'A group of students working on laptops around a wooden table',
+    focus: 'center 12%',
   },
 ];
 
@@ -248,6 +265,8 @@ function ProblemSection() {
               <ImageSlot
                 kind="Screenshot"
                 label="A results page, captured with test data"
+                src={resultsScreenshot}
+                alt="The Q-INTERVAL-Lite+ results page for a test case, showing the four mammogram views, the classical model's classification with its confidence, an occlusion heatmap over the selected view and a written explanation"
                 ratio="16 / 10"
                 sx={{ boxShadow: (theme) => (theme.palette.mode === 'dark' ? '0 24px 60px rgba(0,0,0,0.5)' : '0 24px 60px rgba(14,116,144,0.2)') }}
               />
@@ -378,7 +397,15 @@ function AudienceSection() {
               whileHover={reduce ? undefined : { y: -4, scale: 1.01, transition: { duration: 0.25, delay: 0 } }}
               sx={{ borderRadius: 4, overflow: 'hidden', backgroundColor: 'background.paper', border: '1px solid', borderColor: 'divider', display: 'flex', flexDirection: 'column' }}
             >
-              <ImageSlot label={item.image} ratio="16 / 8" sx={{ borderRadius: 0, border: 0, borderBottom: '2px dashed', borderColor: 'divider' }} />
+              <ImageSlot
+                label={item.image}
+                src={item.photo}
+                alt={item.alt}
+                ratio="16 / 8"
+                sx={item.photo
+                  ? { borderRadius: 0, objectPosition: item.focus || 'center' }
+                  : { borderRadius: 0, border: 0, borderBottom: '2px dashed', borderColor: 'divider' }}
+              />
               <Box sx={{ p: { xs: 3, md: 4 }, display: 'flex', flexDirection: 'column', flex: 1 }}>
                 <Typography component="h3" sx={{ fontSize: { xs: '1.5rem', md: '1.8rem' }, fontWeight: 700, letterSpacing: '-0.02em', color: 'text.primary', mb: 1 }}>{item.title}</Typography>
                 <Typography sx={{ color: 'text.secondary', fontSize: '0.98rem', lineHeight: 1.7, mb: 2, ...PARAGRAPH_WRAP }}>{item.body}</Typography>
