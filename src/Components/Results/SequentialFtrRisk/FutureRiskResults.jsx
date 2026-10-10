@@ -24,7 +24,7 @@ const RECENCY_WEIGHTS = {
     5: [0.41, 0.25, 0.15, 0.09, 0.06],
 };
 
-function buildExamHistory(uploadedFiles, imageResults) {
+function buildExamHistory(uploadedFiles, imageResults, useReal) {
     if (!uploadedFiles || uploadedFiles.length === 0) return [];
     const sorted = [...uploadedFiles].sort((a, b) => new Date(b.scanDate) - new Date(a.scanDate));
 
@@ -38,7 +38,7 @@ function buildExamHistory(uploadedFiles, imageResults) {
             year: new Date(f.scanDate).getFullYear(),
             scanDate: f.scanDate,
             filename: f.file.name,
-            weight: (weights[i] ?? 0) * 100,
+            weight: (useReal ? contribution : null) ?? (weights[i] ?? 0) * 100,
             isCurrent: i === 0,
         };
     });
@@ -201,10 +201,10 @@ export default function FutureRiskResults({
     const cnnImageResults = cnnData?.image_level_results ?? [];
     const qmlImageResults = qmlData?.image_level_results ?? [];
     const examHistory = useMemo(
-        () => buildExamHistory(uploadedFiles, currentModel === 'Quantum' ? qmlImageResults : cnnImageResults),
+        () => buildExamHistory(uploadedFiles, currentModel === 'Quantum' ? qmlImageResults : cnnImageResults, currentModel === 'Quantum'),
         [uploadedFiles, currentModel, cnnData, qmlData],
     );
-    const qmlExamHistory = useMemo(() => buildExamHistory(uploadedFiles, qmlImageResults), [uploadedFiles, qmlData]);
+    const qmlExamHistory = useMemo(() => buildExamHistory(uploadedFiles, qmlImageResults, true), [uploadedFiles, qmlData]);
 
     const riskDiff = Math.abs(cnnRisk5y - qmlRisk5y);
     const verdictText = riskDiff < 2 ? 'Agree' : riskDiff < 5 ? 'Partially agree' : 'Disagree';
@@ -326,7 +326,8 @@ export default function FutureRiskResults({
                         <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', gap: 1, overflowY: 'auto' }}>
                             {examHistory.map((e, i) => {
                                 const q = qmlExamHistory.find((x) => x.filename === e.filename);
-                                const isMaxWeight = !isBoth && examHistory.length > 1 && e.weight === maxWeight;
+                                const isMaxWeight = !isBoth && examHistory.length > 1 && e.weight === maxWeight
+                                    && examHistory.filter((x) => x.weight === maxWeight).length === 1;
                                 return (
                                     <Box key={e.filename} sx={{ flex: '1 1 auto', maxHeight: 150, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 0.4 }}>
                                         <Box sx={{
@@ -452,7 +453,7 @@ export default function FutureRiskResults({
                             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
                                 {[
                                     { k: '5-year risk', v: `${activeRisk.toFixed(2)}%`, c: riskColor(activeRisk) },
-                                    { k: 'Band', v: riskBand(activeRisk), c: t.text },
+                                    { k: 'Band', v: (currentModel === 'Quantum' ? qmlSource?.risk_level : null) ?? riskBand(activeRisk), c: t.text },
                                 ].map(({ k, v, c }) => (
                                     <Box key={k} sx={{ display: 'flex', flexDirection: 'column', gap: 0.4 }}>
                                         <Label sx={{ color: t.muted }}>{k}</Label>
