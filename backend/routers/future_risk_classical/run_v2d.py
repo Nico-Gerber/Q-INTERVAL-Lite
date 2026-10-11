@@ -284,7 +284,13 @@ def _prepare_like_training(source: Image.Image) -> Image.Image:
     0-255, store it as 8-bit, then bilinear-resize the whole frame to 500 x 500 (no cropping, no padding).
     Keep this in step with that script: a mismatch does not raise an error, it just shifts the risk numbers.
     """
-    array = np.asarray(source.convert("L"), dtype=np.float32)
+    if source.mode in ("I;16", "I;16L", "I;16B", "I", "F"):
+        # 12/16-bit exports: read the real values. Converting these to 8-bit with PIL would clip everything above 255.
+        array = np.asarray(source, dtype=np.float32)
+    else:
+        array = np.asarray(source.convert("L"), dtype=np.float32)
+    if array.ndim != 2:
+        raise ValueError("A supplied mammogram has an unsupported image format.")
     height, width = array.shape
     if height < 10 or width < 10 or height > 15000 or width > 15000:
         raise ValueError(

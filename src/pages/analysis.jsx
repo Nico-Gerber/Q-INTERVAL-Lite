@@ -74,8 +74,9 @@ export default function Analysis() {
   const { user, profile } = useAuth();
   // Only clinicians and admins may verify classification results (also enforced in the database).
   const canVerify = profile?.role === 'clinician' || profile?.role === 'admin';
-  // Clinicians can link a new analysis to one of their assigned patients (optional).
-  const { patients: assignedPatients } = useAssignedPatients();
+  // Clinicians must pick one of their assigned patients before running; the analysis is stored under that
+  // patient, so it appears in their history exactly as if they had run it themselves.
+  const { patients: assignedPatients, loading: patientsLoading } = useAssignedPatients();
   const [selectedPatientId, setSelectedPatientId] = useState('');
   // Opt-in to using this classification session for model improvement (off by default).
   const [trainingConsent, setTrainingConsent] = useState(false);
@@ -473,6 +474,10 @@ export default function Analysis() {
       ? validateFutureRisk(sessions, patientAge)
       : validateSessionAnalysis(views);
     if (!inputCheck.isValid) return;
+    if (profile?.role === 'clinician' && !selectedPatientId) {
+      setAnalysisError('Select the patient this analysis is for before running it.');
+      return;
+    }
 
     setLoading(true);
     setStatus(null);
@@ -760,6 +765,24 @@ export default function Analysis() {
       setLLMLoading(false);
     }
   };
+
+  // Required patient picker for clinicians (both analysis modes). Stored sessions are owned by that patient.
+  const patientSelector = profile?.role === 'clinician' ? (
+    <TextField
+      select required fullWidth size="small" label="Patient"
+      value={selectedPatientId} onChange={(e) => { setSelectedPatientId(e.target.value); setAnalysisError(null); }}
+      error={!!analysisError && !selectedPatientId}
+      disabled={patientsLoading || !assignedPatients.length}
+      helperText={patientsLoading
+        ? 'Loading your patients…'
+        : assignedPatients.length
+          ? undefined
+          : 'No patients are assigned to you. Ask an admin to assign a patient before running an analysis.'}
+      sx={{ mb: 2 }}
+    >
+      {assignedPatients.map((p) => <MuiMenuItem key={p.id} value={p.id}>{p.full_name || 'Unnamed patient'}</MuiMenuItem>)}
+    </TextField>
+  ) : null;
 
   // ── Restore a stored session (?session=<uuid>) without rerunning the models ──
   const [searchParams] = useSearchParams();
@@ -1082,19 +1105,7 @@ export default function Analysis() {
               {activeStep === 1 && (
                 analysisMode === 'classification' ? (
                   <Container maxWidth="md" sx={{ mt: { xs: 3, md: 4.5 } }}>
-                    {profile?.role === 'clinician' && (
-                      <TextField
-                        select fullWidth size="small" label="Patient (optional)"
-                        value={selectedPatientId} onChange={(e) => setSelectedPatientId(e.target.value)}
-                        helperText={assignedPatients.length
-                          ? 'Link this analysis to one of your assigned patients so it appears in their history.'
-                          : 'No patients are assigned to you, so this analysis will not be linked to a patient.'}
-                        sx={{ mb: 2 }}
-                      >
-                        <MuiMenuItem value="">No patient (scratch analysis)</MuiMenuItem>
-                        {assignedPatients.map((p) => <MuiMenuItem key={p.id} value={p.id}>{p.full_name || 'Unnamed patient'}</MuiMenuItem>)}
-                      </TextField>
-                    )}
+                    {patientSelector}
                     <MultiViewUpload
                       views={views} setViews={setViews}
                       setActiveStep={setActiveStep}
@@ -1111,6 +1122,7 @@ export default function Analysis() {
 
 
 
+                    {patientSelector}
                     <MultiImageUploadDated
                       sessions={sessions}
                       setSessions={setSessions}
