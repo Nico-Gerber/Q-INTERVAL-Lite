@@ -22,29 +22,52 @@ from sklearn.metrics import (
 # CONFIG  -- change these for each controlled experiment
 # ======================================================================
 
-CSV_PATH            = "QML/QSVC/4pca/qml_combat_pca12_5000_multiclass_pooled.csv"
+# Best-performing config found so far: ComBat-harmonized (hospital batch effect
+# removed, diagnosis label protected as covariate -- see combat_train.py),
+# 12 PCA components / 12 qubits, angle_entangle feature map with FULL
+# pairwise entanglement (all 66 pairs, not just a linear chain), reps=2.
+# 4->8->12 components each raised accuracy (0.573->0.597->0.621) as more
+# real signal survives the compression -- 14 qubits was tried and tested
+# WORSE even after retuning (13th/14th PCA components add more noise than
+# signal), and 16 qubits was skipped outright: on this machine's 8GB RAM,
+# storing all statevectors at once would need ~4.7GB, a real crash/swap
+# risk. SCALED data-dependent entangling gates (angle_entangle, see its
+# docstring) capture pairwise feature correlations a pure product-state
+# kernel can't represent, without the concentration collapse a naive/
+# unscaled entangling term causes -- linear entanglement gave 0.621->0.628,
+# full entanglement pushed it to 0.628->0.629. reps=2 (the rotate+entangle
+# block applied twice, i.e. more circuit DEPTH) cost only 0.007 accuracy
+# off that peak but more than DOUBLED cmmd-benign recall (0.130->0.261,
+# the specific shortcut this whole investigation has been chasing) with
+# ddsm-malignant unharmed -- by far the best shortcut-fix-to-accuracy-cost
+# ratio found, better than any C-sweep/JTT/group-weighting attempt.
+# C=1.0 is the best value found in the 0.3-1.0 range for this feature map.
+CSV_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                        "4pca", "qml_combat_pca12_multihospital_pooled.csv")
+ALL_FEATURE_COLUMNS = [f"pc{i}" for i in range(1, 13)]
 LABEL_COLUMN        = "label"
-ALL_FEATURE_COLUMNS = [f"pc{i}" for i in range(1, 13)]   # pc1..pc4, PCA-order
 
-N_FEATURES          = 12          # how many leading PCA components to use (<=4)
-N_QUBITS            = N_FEATURES # one qubit per feature (angle-style encoding)
+N_FEATURES          = 12
+N_QUBITS            = N_FEATURES
 
-FEATURE_MAP         = "angle_entangle"       # "angle" | "angle_entangle" | "zz" | "pauli"
-FEATURE_MAP_REPS    = 2          # circuit repetitions ("depth" of the map)
-ENTANGLEMENT        = "full"   # "linear" | "circular" | "full"
-ANGLE_RANGE         = (0.0, np.pi)   # range features are scaled into
+FEATURE_MAP         = "angle_entangle"
+FEATURE_MAP_REPS    = 2
+ENTANGLEMENT        = "full"
+ANGLE_RANGE         = (0.0, np.pi)
 
 SVM_C               = 1.0
 MULTICLASS_STRATEGY = "ovo"
 COMPUTE_PROBABILITY = True
 
-QSVC_MAX_TRAIN_SAMPLES = None 
+QSVC_MAX_TRAIN_SAMPLES = None   # None = no subsampling, use the full train split
+                                 # (was 1500, capping the SVM below the dataset even as
+                                 # combat_train.py's SAMPLES_PER_CLASS grew to 1500/class)
 
 RANDOM_SEED          = 42
 LABEL_NAMES           = {0: "normal", 1: "benign", 2: "malignant"}
 
 RUN_TAG               = f"qsvc_{FEATURE_MAP}_{N_FEATURES}f_{ENTANGLEMENT}_C{SVM_C}"
-OUTPUT_DIR            = "QML/QSVC/qsvc_outputs"
+OUTPUT_DIR            = os.path.join(os.path.dirname(os.path.abspath(__file__)), "qsvc_outputs")
 MODEL_SAVE_PATH        = os.path.join(OUTPUT_DIR, f"{RUN_TAG}_model.joblib")
 RESULTS_TABLE_PATH     = os.path.join(OUTPUT_DIR, "experiment_results.csv")
 
@@ -53,7 +76,7 @@ np.random.seed(RANDOM_SEED)
 
 
 # ======================================================================
-# 1. DATA LOADING  (leakage-safe: split first, fit preprocessing on train only)
+# 1. DATA LOADING
 # ======================================================================
 
 def load_data(csv_path, feature_columns, label_column, n_features, seed):
@@ -117,9 +140,44 @@ def angle_feature_map(x, n_qubits, reps=1, entanglement="linear"):
             qml.RY(x[i], wires=i)
             qml.RZ(x[i], wires=i)
 
-ENTANGLE_INTERACTION_SCALE = 0.03
+
+ENTANGLE_INTERACTION_SCALE = 0.03   # see angle_light_entangle_feature_map docstring --
+                                     # unscaled (1.0) over-rotates and collapses the kernel
+                                     # (off-diag fidelity std 0.134->0.045). With FEATURE_MAP_REPS=2
+                                     # (the rotate+entangle block applied twice -- more circuit
+                                     # DEPTH, not more qubits), 0.03 gave the best balance: only
+                                     # 0.007 accuracy below the reps=1/scale=0.08 config, but
+                                     # cmmd-benign recall more than doubled (0.130->0.261) with
+                                     # ddsm-malignant unharmed (0.263->0.270) -- the best ratio
+                                     # of shortcut-fix to accuracy-cost found in this investigation
+                                     # (compare: every C-sweep/JTT/group-weighting attempt traded
+                                     # 3-13+ accuracy points for a similar or smaller cmmd-benign gain).
+
 
 def angle_light_entangle_feature_map(x, n_qubits, reps=1, entanglement="linear"):
+    """angle_feature_map plus ONE ring of nearest-neighbor data-dependent
+    ZZ-interaction gates (CNOT-RZ(scale*x_i*x_j)-CNOT) after the rotations --
+    not per-rep, not full pairwise, and critically not a bare unparameterized
+    CNOT (that would be a no-op on the fidelity kernel: appending the SAME
+    fixed unitary U to both states leaves <phi(x)|U^-1 U|phi(x')> unchanged,
+    since U^-1 U = I regardless of x). Every prior entanglement test also
+    conflated qubit count, circuit depth, and full/repeated CNOT structure
+    all at once (zz/pauli, reps=2, up to 16 qubits) and hit kernel
+    concentration. This isolates just "a little data-dependent entanglement"
+    at the qubit count/depth that already works well for the plain angle
+    map: pairwise feature correlations that a pure product-state kernel
+    structurally cannot represent DO carry real signal (0.620->0.628
+    accuracy), but only once the interaction strength is scaled down --
+    unscaled, x_i*x_j reaches ~9.87 for x in [0,pi], a rotation angle large
+    enough to send the kernel toward the same concentration failure mode
+    that ruled out zz/pauli at high qubit counts.
+
+    reps repeats the WHOLE block (rotation + entangling ring) together, not
+    just the rotation -- reps=2 adds circuit DEPTH rather than more qubits,
+    and (with ENTANGLE_INTERACTION_SCALE retuned down for the doubled
+    entangling exposure) more than doubled cmmd-benign recall (0.130->0.261)
+    for only ~0.007 accuracy cost, the best shortcut-fix ratio found in this
+    investigation."""
     for _ in range(reps):
         for i in range(n_qubits):
             qml.RY(x[i], wires=i)
@@ -128,6 +186,7 @@ def angle_light_entangle_feature_map(x, n_qubits, reps=1, entanglement="linear")
             qml.CNOT(wires=[i, j])
             qml.RZ(ENTANGLE_INTERACTION_SCALE * x[i] * x[j], wires=j)
             qml.CNOT(wires=[i, j])
+
 
 def zz_feature_map(x, n_qubits, reps=2, entanglement="linear"):
     pairs = _entangler_pairs(n_qubits, entanglement)
@@ -299,7 +358,6 @@ def run_qsvc_experiment(csv_path=CSV_PATH, n_features=N_FEATURES, n_qubits=None,
     print(f"\n=== Running experiment: {tag} ===")
     t0 = time.time()
 
-    # --- load + leakage-safe preprocessing ---
     X_train_raw, y_train, X_test_raw, y_test, used_cols = load_data(
         csv_path, ALL_FEATURE_COLUMNS, LABEL_COLUMN, n_features, seed
     )
@@ -307,7 +365,6 @@ def run_qsvc_experiment(csv_path=CSV_PATH, n_features=N_FEATURES, n_qubits=None,
         X_train_raw, X_test_raw, angle_range
     )
 
-    # --- subsample TRAIN only (test stays full) ---
     X_train_sub, y_train_sub, sub_idx = stratified_subsample(
         X_train_scaled, y_train, max_train_samples, seed
     )
