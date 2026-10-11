@@ -52,7 +52,7 @@ spec.loader.exec_module(dann_module)
 # =========================================================
 # CONFIG 
 # =========================================================
-SAMPLES_PER_CLASS = 1500   
+SAMPLES_PER_CLASS = 5000   
 N_COMPONENTS = 12  
 TEST_SIZE = 0.2
 RANDOM_SEED = 42
@@ -61,7 +61,7 @@ MIN_BATCH_SIZE_WARNING = 30
 
 REPO_ROOT = os.path.dirname(THIS_DIR)
 OUTPUT_DIR = os.path.join(REPO_ROOT, "4pca")
-POOLED_OUTPUT_CSV = os.path.join(OUTPUT_DIR, f"qml_combat_pca{N_COMPONENTS}_multiclass_pooled.csv")
+POOLED_OUTPUT_CSV = os.path.join(OUTPUT_DIR, f"qml_combat_pca{N_COMPONENTS}_5000_multiclass_pooled.csv")
 BASELINE_POOLED_CSV = os.path.join(OUTPUT_DIR, "qml_cnn_pca4_multiclass_pooled.csv")
 QSVC_MODULE_PATH = os.path.join(os.path.dirname(THIS_DIR), "qsvc.py")
 
@@ -200,6 +200,25 @@ def domain_leakage_probe(csv_path, tag):
           f"{test_acc:.3f}  (chance ~= {1/n_domains:.3f} with {n_domains} domains)")
     return test_acc
 
+def extract_embeddings_chunked(sample_df, model, transform, device, chunk_size=200):
+    """Load and embed images a chunk at a time, so only chunk_size tensors are in memory."""
+    Z_parts, labels, files, srcs = [], [], [], []
+    n = len(sample_df)
+    for start in range(0, n, chunk_size):
+        chunk = sample_df.iloc[start:start + chunk_size]
+        X, y, f, s = dann_module.load_image_tensors(
+            chunk, dann_module.IMAGE_BASE_FOLDER, transform
+        )
+        if len(y) == 0:
+            continue
+        Z_parts.append(extract_raw_embeddings(model, X, device))
+        labels.append(y)
+        files.append(f)
+        srcs.append(s)
+        del X
+        print(f"    embedded {min(start + chunk_size, n)}/{n} images...")
+    return (np.concatenate(Z_parts), np.concatenate(labels),
+            np.concatenate(files), np.concatenate(srcs))
 
 # =========================================================
 # MAIN
@@ -232,16 +251,12 @@ def main():
         print(f"Source breakdown: {sample_df[dann_module.SOURCE_COLUMN].value_counts().to_dict()}")
 
         transform = dann_module.build_preprocess_transform()
-        print("\nPreloading image tensors...")
-        X, y_label, filenames, sources = dann_module.load_image_tensors(
-            sample_df, dann_module.IMAGE_BASE_FOLDER, transform
+        print("\nExtracting raw 512-dim frozen ResNet18 embeddings in chunks (pre-PCA, for ComBat)...")
+        extractor = build_frozen_extractor(device)
+        Z, y_label, filenames, sources = extract_embeddings_chunked(
+            sample_df, extractor, transform, device
         )
         print(f"Loaded {len(y_label)} images successfully.")
-
-        print("\nExtracting raw 512-dim frozen ResNet18 embeddings (pre-PCA, for ComBat)...")
-        extractor = build_frozen_extractor(device)
-        Z = extract_raw_embeddings(extractor, X, device)
-        del X
         print(f"Embedding shape: {Z.shape}")
 
         print("\n" + "=" * 70)

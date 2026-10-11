@@ -22,23 +22,23 @@ from sklearn.metrics import (
 # CONFIG  -- change these for each controlled experiment
 # ======================================================================
 
-CSV_PATH            = "QML/4pca/qml_cnn_pca4_multiclass_pooled.csv"
+CSV_PATH            = "QML/QSVC/4pca/qml_combat_pca12_5000_multiclass_pooled.csv"
 LABEL_COLUMN        = "label"
-ALL_FEATURE_COLUMNS = [f"pc{i}" for i in range(1, 5)]   # pc1..pc4, PCA-order
+ALL_FEATURE_COLUMNS = [f"pc{i}" for i in range(1, 13)]   # pc1..pc4, PCA-order
 
-N_FEATURES          = 4          # how many leading PCA components to use (<=4)
+N_FEATURES          = 12          # how many leading PCA components to use (<=4)
 N_QUBITS            = N_FEATURES # one qubit per feature (angle-style encoding)
 
-FEATURE_MAP         = "zz"       # "angle" | "zz" | "pauli"
+FEATURE_MAP         = "angle_entangle"       # "angle" | "angle_entangle" | "zz" | "pauli"
 FEATURE_MAP_REPS    = 2          # circuit repetitions ("depth" of the map)
-ENTANGLEMENT        = "linear"   # "linear" | "circular" | "full"
+ENTANGLEMENT        = "full"   # "linear" | "circular" | "full"
 ANGLE_RANGE         = (0.0, np.pi)   # range features are scaled into
 
 SVM_C               = 1.0
 MULTICLASS_STRATEGY = "ovo"
 COMPUTE_PROBABILITY = True
 
-QSVC_MAX_TRAIN_SAMPLES = 3600    # stratified cap on TRAIN set for the quantum kernel
+QSVC_MAX_TRAIN_SAMPLES = None 
 
 RANDOM_SEED          = 42
 LABEL_NAMES           = {0: "normal", 1: "benign", 2: "malignant"}
@@ -117,6 +117,17 @@ def angle_feature_map(x, n_qubits, reps=1, entanglement="linear"):
             qml.RY(x[i], wires=i)
             qml.RZ(x[i], wires=i)
 
+ENTANGLE_INTERACTION_SCALE = 0.03
+
+def angle_light_entangle_feature_map(x, n_qubits, reps=1, entanglement="linear"):
+    for _ in range(reps):
+        for i in range(n_qubits):
+            qml.RY(x[i], wires=i)
+            qml.RZ(x[i], wires=i)
+        for (i, j) in _entangler_pairs(n_qubits, entanglement):
+            qml.CNOT(wires=[i, j])
+            qml.RZ(ENTANGLE_INTERACTION_SCALE * x[i] * x[j], wires=j)
+            qml.CNOT(wires=[i, j])
 
 def zz_feature_map(x, n_qubits, reps=2, entanglement="linear"):
     pairs = _entangler_pairs(n_qubits, entanglement)
@@ -148,6 +159,7 @@ def pauli_feature_map(x, n_qubits, reps=2, entanglement="linear"):
 
 FEATURE_MAPS = {
     "angle": angle_feature_map,
+    "angle_entangle": angle_light_entangle_feature_map,
     "zz": zz_feature_map,
     "pauli": pauli_feature_map,
 }
