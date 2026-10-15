@@ -1,0 +1,1284 @@
+{
+  "trial_id": "P1_long_noaug__long_noaug__seed42__20bacba3c8",
+  "spec": {
+    "seed": 42,
+    "augment": "none",
+    "schedule": "plateau",
+    "loss": "cross_entropy",
+    "head_dropout": 0.0,
+    "weight_decay": 0.05,
+    "betas": [
+      0.9,
+      0.999
+    ],
+    "eps": 1e-08,
+    "probe_epochs": 10,
+    "probe_patience": 3,
+    "probe_head_lr": 0.001,
+    "ft_epochs": 60,
+    "ft_encoder_lr": 2e-05,
+    "ft_head_lr": 0.0001,
+    "ft_patience": 12,
+    "ft_min_delta": 0.001,
+    "ft_min_epochs": 20,
+    "warmup_mode": "epochs",
+    "warmup_value": 3,
+    "cosine_final_frac": 0.01,
+    "plateau_factor": 0.5,
+    "plateau_patience": 3,
+    "plateau_threshold": 0.001,
+    "bn_stats_trainable": false,
+    "encoder_arch": "convnextv2_huge.fcmae_ft_in22k_in1k_512",
+    "encoder_params": 657472640,
+    "encoder_sha256": "27837607ccb960cc3acd11bddc37faa1c15f88617f99acbfde4547d5cc89531c",
+    "drop_path_rate": 0.5,
+    "llrd_decay": 0.8,
+    "llrd_buckets": 13,
+    "act_checkpointing": true,
+    "model_input_version": "model-input/3",
+    "name": "long_noaug"
+  },
+  "selection": {
+    "retained_trial_ids": [
+      "P1_long_noaug__long_noaug__seed42__20bacba3c8"
+    ],
+    "superseded_trial_ids": [],
+    "checkpoint_source": "the deduplicated seed_rows table, restricted to this recipe and the declared seeds",
+    "recipe_hash": "20bacba3c84276f7343afb1375ea55ce4c0841bbf309b38b2d36d4eef5de81b2",
+    "config_hash": "b2695e3fad8daee94b48b9efd3f471bfba72392d79f8e6242a6779ce8351d8cb",
+    "name": "long_noaug",
+    "judged_on": "mean over the declared seeds [42]",
+    "declared_seeds": [
+      42
+    ],
+    "n_seeds": 1,
+    "seeds": [
+      42
+    ],
+    "mean_metric": 0.7345504009628153,
+    "mean_all_seeds": 0.7345504009628153,
+    "std_metric": 0.0,
+    "spread": 0.0,
+    "chosen_run_metric": 0.7345504009628153,
+    "chosen_run_seed": 42,
+    "shortlist_size": 1,
+    "configurations_with_all_seeds": 1,
+    "shortlist": [
+      {
+        "name": "long_noaug",
+        "recipe_hash": "20bacba3c8",
+        "mean": 0.7345504009628153,
+        "seeds": [
+          42
+        ]
+      }
+    ],
+    "selection_policy_deviation": {
+      "declared_seeds": [
+        42,
+        2026,
+        3407
+      ],
+      "shortlist_size": 2,
+      "relaxed_on": "2026-10-07",
+      "reason": "single-seed pilot; 6 runs x ~43-115 h not reachable",
+      "amendment": "R10b_SELECTION_DEVIATION.md"
+    },
+    "note": "selected over the declared seeds [42]. A single declared seed means this figure is ONE draw from the training procedure, not a mean over measured run-to-run variance: no seed-to-seed spread has been measured for it, and it is not comparable to a multi-seed mean reported for another arm. See R10b_SELECTION_DEVIATION.md."
+  },
+  "model_input_contract": {
+    "version": "model-input/3",
+    "name": "convnextv2h-classical-2048x1024",
+    "model_h": 2048,
+    "model_w": 1024,
+    "channels": 3,
+    "channel_construction": "single grayscale plane replicated to 3 identical channels",
+    "norm_mean": [
+      0.485,
+      0.456,
+      0.406
+    ],
+    "norm_std": [
+      0.229,
+      0.224,
+      0.225
+    ],
+    "normalisation": "x/255 then (x - mean) / std, applied exactly once",
+    "geometry_adapter": "passthrough-v2",
+    "geometry_adapter_doc": "verify the decoded prepared image is already model_h x model_w and pass it through unchanged; any other size is a hard error. No resize, no pad, no crop, no upscaling.",
+    "accepts": "prepared prep-v1 export images only, at their native stored resolution",
+    "export_variant": "baseline",
+    "export_variant_doc": "the prepare session writes several variants of every image; this contract consumes exactly one of them, and the others are never extracted",
+    "export_variants_refused": [
+      "clahe"
+    ],
+    "refuses": [
+      "raw uploads (breast cropping would be a second preprocessing pass)",
+      "DICOM (no decoder is implemented or tested here)",
+      "any prepared image whose dimensions differ from model_h x model_w",
+      "any export variant other than 'baseline'"
+    ],
+    "class_mapping": {
+      "Normal": 0,
+      "Benign": 1,
+      "Malignant": 2
+    },
+    "preprocessing_provenance_sha256": "3c2259f535e34c6cbffd1a3a42c63d8bdf1f48f7c8eb7653d9bc75d50673a160",
+    "preprocessing_recorded_target": [
+      2048,
+      1024
+    ],
+    "supersedes": "model-input/1 at 760x456, used by the demo run",
+    "hash": "a26a0591d4cd3eae61e3c071979f1e8fd4007735db9a7af9d18969fd847b6e6f"
+  },
+  "preprocessing_provenance": {
+    "role": "HOW THE PREPARED FILES WERE PRODUCED - not the model input specification",
+    "module_file": "preprocessing.py",
+    "module_sha256": "3c2259f535e34c6cbffd1a3a42c63d8bdf1f48f7c8eb7653d9bc75d50673a160",
+    "contract": {
+      "channels": 3,
+      "clahe": false,
+      "clahe_settings_if_used": {
+        "clip": 2.0,
+        "grid": [
+          8,
+          8
+        ]
+      },
+      "crop": {
+        "margin_frac": 0.03,
+        "bg_percentile": 1.0,
+        "abs_margin": 0.02,
+        "rel_frac": 0.05,
+        "min_area_frac": 0.02,
+        "rival_ratio": 0.5,
+        "faint_factor": 0.5,
+        "faint_tol": 0.005,
+        "tight_frac": 0.98,
+        "detect_max_side": 1024,
+        "annot_sat": 0.98,
+        "annot_max_area": 0.02
+      },
+      "generated_from": "the export's own reports/config.json",
+      "interpolation": "INTER_AREA when shrinking, INTER_LINEAR when enlarging",
+      "name": "prepared-baseline",
+      "native_upscale_limit": 1.0,
+      "orientation": "stored orientation retained; no flips are applied",
+      "pad_value": 0,
+      "prep_version": "prep-v2",
+      "seed": 42,
+      "strict_native": false,
+      "supported_input_formats": [
+        "PNG",
+        "JPEG"
+      ],
+      "target_h": 2048,
+      "target_w": 1024,
+      "unsupported": [
+        "DICOM"
+      ],
+      "variant": "baseline"
+    },
+    "recorded_target_h": 2048,
+    "recorded_target_w": 1024,
+    "clahe": false,
+    "orientation": "stored orientation retained; no flips are applied",
+    "crop": {
+      "margin_frac": 0.03,
+      "bg_percentile": 1.0,
+      "abs_margin": 0.02,
+      "rel_frac": 0.05,
+      "min_area_frac": 0.02,
+      "rival_ratio": 0.5,
+      "faint_factor": 0.5,
+      "faint_tol": 0.005,
+      "tight_frac": 0.98,
+      "detect_max_side": 1024,
+      "annot_sat": 0.98,
+      "annot_max_area": 0.02
+    },
+    "entry_points_available": [
+      "decode_bytes",
+      "prepare_raw",
+      "prepare_baseline"
+    ],
+    "entry_points_used_here": [
+      "decode_bytes"
+    ],
+    "why": "prepare_baseline() asserts the module's own recorded target, and prepare_raw() would re-run breast cropping on an already-cropped file. Only decoding is reused; geometry and normalisation come from the model-input contract below."
+  },
+  "dimension_audit": {
+    "declared": [
+      2048,
+      1024
+    ],
+    "model_input_version": "model-input/3",
+    "provenance_recorded_target": [
+      2048,
+      1024
+    ],
+    "images_audited": 19443,
+    "distinct_sizes": 1,
+    "size_table": [
+      {
+        "prep_h": 2048,
+        "prep_w": 1024,
+        "images": 19443,
+        "matches_contract": true
+      }
+    ],
+    "by_source": {
+      "2048x1024": {
+        "cdd-cesm": 999,
+        "cmmd": 5193,
+        "ddsm": 10362,
+        "dmid": 389,
+        "inbreast": 367,
+        "kau-bcmd": 2133
+      }
+    },
+    "unreadable": 0,
+    "off_contract": 0,
+    "all_match": true
+  },
+  "hashes": {
+    "config": "b2695e3fad8daee94b48b9efd3f471bfba72392d79f8e6242a6779ce8351d8cb",
+    "recipe": "20bacba3c84276f7343afb1375ea55ce4c0841bbf309b38b2d36d4eef5de81b2",
+    "dataset": "ff05d5eb920d7577bf20b75a962654c6b80d2b97c6c0787e687785967cab3001",
+    "model_input": "a26a0591d4cd3eae61e3c071979f1e8fd4007735db9a7af9d18969fd847b6e6f",
+    "split": "85011c167f4db3c672ba2406dd23a7249ee70e966c716c48ed37ab704366c777",
+    "split_file": "da4e115581c05522e5ebb69ebc946054a7dad0c6d4061679ee42393f308fa260",
+    "auxiliary_assignment_files": {
+      "calibration_split.json": "25d9af258d904361a3fe36eb9c8a9773a1698cb8375687a05599c0be1fefadb7",
+      "new_patient_allocation.json": "113217e170aff3cf2e463379d7289783a4e67c84013bed32275398a29951045b"
+    },
+    "data": "ff05d5eb920d7577bf20b75a962654c6b80d2b97c6c0787e687785967cab3001",
+    "preprocessing_module": "3c2259f535e34c6cbffd1a3a42c63d8bdf1f48f7c8eb7653d9bc75d50673a160",
+    "encoder_weights_sha256": "27837607ccb960cc3acd11bddc37faa1c15f88617f99acbfde4547d5cc89531c",
+    "inference_module": "ec13e655ee8a34e658e771093532e04268276b5ecae851624947fc405727ed79"
+  },
+  "calibration": {
+    "temperature": 2.783446788787842,
+    "nll_before": 0.8123396635055542,
+    "nll_after": 0.5855520367622375,
+    "converged": true,
+    "near_bound": false,
+    "init": "log T = 0, i.e. T = 1",
+    "method": "L-BFGS on log T, strong-Wolfe line search, 200 iterations max",
+    "reference": "Guo et al., ICML 2017",
+    "rows": 920,
+    "patients": 255,
+    "ece_on_fit_set_before": 0.14925457181785395,
+    "ece_on_fit_set_after": 0.03413916066006399,
+    "fit_set_caveat": "both fit-set ECE figures are measured on the SAME rows the temperature was fitted on and are therefore optimistic; the held-out figures below are the ones to quote"
+  },
+  "validation": {
+    "n_images": 2015,
+    "accuracy": 0.7364764267990075,
+    "macro_f1": 0.735692751676142,
+    "cross_entropy": 0.5764090731701971,
+    "per_class": {
+      "Normal": {
+        "precision": 0.7718120805369127,
+        "recall": 0.8712121212121212,
+        "f1": 0.8185053380782918,
+        "support": 528
+      },
+      "Benign": {
+        "precision": 0.6336633663366337,
+        "recall": 0.6233766233766234,
+        "f1": 0.6284779050736498,
+        "support": 616
+      },
+      "Malignant": {
+        "precision": 0.7872078720787208,
+        "recall": 0.7347876004592423,
+        "f1": 0.7600950118764845,
+        "support": 871
+      }
+    },
+    "confusion_matrix": [
+      [
+        460,
+        54,
+        14
+      ],
+      [
+        73,
+        384,
+        159
+      ],
+      [
+        63,
+        168,
+        640
+      ]
+    ],
+    "malignant_vs_rest": {
+      "roc_auc": 0.882960968423081,
+      "average_precision": 0.8466912930065514,
+      "prevalence": 0.432258064516129
+    },
+    "temperature_applied": 2.783446788787842,
+    "benign_f1": 0.6284779050736498,
+    "by_source": {
+      "cdd-cesm": {
+        "n_images": 120,
+        "classes_present": [
+          "Normal",
+          "Benign",
+          "Malignant"
+        ],
+        "accuracy": 0.7333333333333333,
+        "macro_f1": 0.731755796204215,
+        "malignant_vs_rest": {
+          "roc_auc": 0.9685087990120408,
+          "average_precision": 0.9303314265324647,
+          "prevalence": 0.3416666666666667
+        }
+      },
+      "cmmd": {
+        "n_images": 540,
+        "classes_present": [
+          "Benign",
+          "Malignant"
+        ],
+        "accuracy": 0.8018518518518518,
+        "macro_f1": 0.6480070179286146,
+        "malignant_vs_rest": {
+          "roc_auc": 0.765453834115806,
+          "average_precision": 0.9219459570603622,
+          "prevalence": 0.7888888888888889
+        }
+      },
+      "ddsm": {
+        "n_images": 1063,
+        "classes_present": [
+          "Normal",
+          "Benign",
+          "Malignant"
+        ],
+        "accuracy": 0.6641580432737535,
+        "macro_f1": 0.6674502826989813,
+        "malignant_vs_rest": {
+          "roc_auc": 0.776426442410049,
+          "average_precision": 0.6836989973036239,
+          "prevalence": 0.36876763875823143
+        }
+      },
+      "dmid": {
+        "n_images": 40,
+        "classes_present": [
+          "Normal",
+          "Benign",
+          "Malignant"
+        ],
+        "accuracy": 0.7,
+        "macro_f1": 0.6947712418300652,
+        "malignant_vs_rest": {
+          "roc_auc": 1.0,
+          "average_precision": 1.0,
+          "prevalence": 0.075
+        }
+      },
+      "inbreast": {
+        "n_images": 45,
+        "classes_present": [
+          "Normal",
+          "Benign",
+          "Malignant"
+        ],
+        "accuracy": 0.8444444444444444,
+        "macro_f1": 0.8132297551789076,
+        "malignant_vs_rest": {
+          "roc_auc": 0.9962406015037595,
+          "average_precision": 0.982142857142857,
+          "prevalence": 0.15555555555555556
+        }
+      },
+      "kau-bcmd": {
+        "n_images": 207,
+        "classes_present": [
+          "Normal",
+          "Benign",
+          "Malignant"
+        ],
+        "accuracy": 0.9227053140096618,
+        "macro_f1": 0.6543209876543209,
+        "malignant_vs_rest": {
+          "roc_auc": 0.9975609756097561,
+          "average_precision": 0.8333333333333333,
+          "prevalence": 0.00966183574879227
+        }
+      }
+    }
+  },
+  "final_evaluation_raw": {
+    "n_images": 2937,
+    "accuracy": 0.7228464419475655,
+    "macro_f1": 0.7209088657218499,
+    "cross_entropy": 0.7780001553920742,
+    "per_class": {
+      "Normal": {
+        "precision": 0.7672018348623854,
+        "recall": 0.867704280155642,
+        "f1": 0.8143639683505782,
+        "support": 771
+      },
+      "Benign": {
+        "precision": 0.6135831381733021,
+        "recall": 0.58157602663707,
+        "f1": 0.5971509971509972,
+        "support": 901
+      },
+      "Malignant": {
+        "precision": 0.7679603633360859,
+        "recall": 0.7351778656126482,
+        "f1": 0.7512116316639742,
+        "support": 1265
+      }
+    },
+    "confusion_matrix": [
+      [
+        669,
+        75,
+        27
+      ],
+      [
+        123,
+        524,
+        254
+      ],
+      [
+        80,
+        255,
+        930
+      ]
+    ],
+    "malignant_vs_rest": {
+      "roc_auc": 0.8803924674244,
+      "average_precision": 0.8426028077284733,
+      "prevalence": 0.4307116104868914
+    },
+    "temperature_applied": 1.0,
+    "benign_f1": 0.5971509971509972,
+    "by_source": {
+      "cdd-cesm": {
+        "n_images": 160,
+        "classes_present": [
+          "Normal",
+          "Benign",
+          "Malignant"
+        ],
+        "accuracy": 0.625,
+        "macro_f1": 0.6083234978255553,
+        "malignant_vs_rest": {
+          "roc_auc": 0.8949090909090909,
+          "average_precision": 0.8388056691686229,
+          "prevalence": 0.3125
+        }
+      },
+      "cmmd": {
+        "n_images": 824,
+        "classes_present": [
+          "Benign",
+          "Malignant"
+        ],
+        "accuracy": 0.7827669902912622,
+        "macro_f1": 0.5950748788623355,
+        "malignant_vs_rest": {
+          "roc_auc": 0.7210048272357724,
+          "average_precision": 0.9091921883565877,
+          "prevalence": 0.7961165048543689
+        }
+      },
+      "ddsm": {
+        "n_images": 1523,
+        "classes_present": [
+          "Normal",
+          "Benign",
+          "Malignant"
+        ],
+        "accuracy": 0.6585686145764937,
+        "macro_f1": 0.6627843310196252,
+        "malignant_vs_rest": {
+          "roc_auc": 0.7884680996247014,
+          "average_precision": 0.703086385656007,
+          "prevalence": 0.3585029546946816
+        }
+      },
+      "dmid": {
+        "n_images": 58,
+        "classes_present": [
+          "Normal",
+          "Benign",
+          "Malignant"
+        ],
+        "accuracy": 0.7758620689655172,
+        "macro_f1": 0.7704994192799072,
+        "malignant_vs_rest": {
+          "roc_auc": 0.9393939393939393,
+          "average_precision": 0.7435897435897436,
+          "prevalence": 0.05172413793103448
+        }
+      },
+      "inbreast": {
+        "n_images": 54,
+        "classes_present": [
+          "Normal",
+          "Benign",
+          "Malignant"
+        ],
+        "accuracy": 0.8888888888888888,
+        "macro_f1": 0.8572322322322323,
+        "malignant_vs_rest": {
+          "roc_auc": 0.9972826086956522,
+          "average_precision": 0.9861111111111112,
+          "prevalence": 0.14814814814814814
+        }
+      },
+      "kau-bcmd": {
+        "n_images": 318,
+        "classes_present": [
+          "Normal",
+          "Benign",
+          "Malignant"
+        ],
+        "accuracy": 0.8867924528301887,
+        "macro_f1": 0.47748997841504776,
+        "malignant_vs_rest": {
+          "roc_auc": 0.9778481012658228,
+          "average_precision": 0.31666666666666665,
+          "prevalence": 0.006289308176100629
+        }
+      }
+    }
+  },
+  "final_evaluation_calibrated": {
+    "n_images": 2937,
+    "accuracy": 0.7228464419475655,
+    "macro_f1": 0.7209088657218499,
+    "cross_entropy": 0.5827009672986944,
+    "per_class": {
+      "Normal": {
+        "precision": 0.7672018348623854,
+        "recall": 0.867704280155642,
+        "f1": 0.8143639683505782,
+        "support": 771
+      },
+      "Benign": {
+        "precision": 0.6135831381733021,
+        "recall": 0.58157602663707,
+        "f1": 0.5971509971509972,
+        "support": 901
+      },
+      "Malignant": {
+        "precision": 0.7679603633360859,
+        "recall": 0.7351778656126482,
+        "f1": 0.7512116316639742,
+        "support": 1265
+      }
+    },
+    "confusion_matrix": [
+      [
+        669,
+        75,
+        27
+      ],
+      [
+        123,
+        524,
+        254
+      ],
+      [
+        80,
+        255,
+        930
+      ]
+    ],
+    "malignant_vs_rest": {
+      "roc_auc": 0.8828699150859542,
+      "average_precision": 0.8456510418328808,
+      "prevalence": 0.4307116104868914
+    },
+    "temperature_applied": 2.783446788787842,
+    "benign_f1": 0.5971509971509972,
+    "by_source": {
+      "cdd-cesm": {
+        "n_images": 160,
+        "classes_present": [
+          "Normal",
+          "Benign",
+          "Malignant"
+        ],
+        "accuracy": 0.625,
+        "macro_f1": 0.6083234978255553,
+        "malignant_vs_rest": {
+          "roc_auc": 0.8945454545454545,
+          "average_precision": 0.8376931483674311,
+          "prevalence": 0.3125
+        }
+      },
+      "cmmd": {
+        "n_images": 824,
+        "classes_present": [
+          "Benign",
+          "Malignant"
+        ],
+        "accuracy": 0.7827669902912622,
+        "macro_f1": 0.5950748788623355,
+        "malignant_vs_rest": {
+          "roc_auc": 0.7206237296747966,
+          "average_precision": 0.9092022910060273,
+          "prevalence": 0.7961165048543689
+        }
+      },
+      "ddsm": {
+        "n_images": 1523,
+        "classes_present": [
+          "Normal",
+          "Benign",
+          "Malignant"
+        ],
+        "accuracy": 0.6585686145764937,
+        "macro_f1": 0.6627843310196252,
+        "malignant_vs_rest": {
+          "roc_auc": 0.7927441033889345,
+          "average_precision": 0.7082574761547836,
+          "prevalence": 0.3585029546946816
+        }
+      },
+      "dmid": {
+        "n_images": 58,
+        "classes_present": [
+          "Normal",
+          "Benign",
+          "Malignant"
+        ],
+        "accuracy": 0.7758620689655172,
+        "macro_f1": 0.7704994192799072,
+        "malignant_vs_rest": {
+          "roc_auc": 0.9454545454545455,
+          "average_precision": 0.75,
+          "prevalence": 0.05172413793103448
+        }
+      },
+      "inbreast": {
+        "n_images": 54,
+        "classes_present": [
+          "Normal",
+          "Benign",
+          "Malignant"
+        ],
+        "accuracy": 0.8888888888888888,
+        "macro_f1": 0.8572322322322323,
+        "malignant_vs_rest": {
+          "roc_auc": 0.9972826086956522,
+          "average_precision": 0.9861111111111112,
+          "prevalence": 0.14814814814814814
+        }
+      },
+      "kau-bcmd": {
+        "n_images": 318,
+        "classes_present": [
+          "Normal",
+          "Benign",
+          "Malignant"
+        ],
+        "accuracy": 0.8867924528301887,
+        "macro_f1": 0.47748997841504776,
+        "malignant_vs_rest": {
+          "roc_auc": 0.9794303797468354,
+          "average_precision": 0.3214285714285714,
+          "prevalence": 0.006289308176100629
+        }
+      }
+    }
+  },
+  "final_evaluation_ece": {
+    "ece_raw": 0.14138889697831408,
+    "ece_calibrated": 0.013302394987921344,
+    "measured_on": "the final evaluation partition, separate from the calibration fit"
+  },
+  "patient_clustered_bootstrap": {
+    "n_draws": 2000,
+    "n_patients": 853,
+    "n_images": 2937,
+    "cluster_unit": "patient",
+    "multiplicities_preserved": true,
+    "undefined_auc_draws": 0,
+    "accuracy": {
+      "estimate": 0.7225978765712502,
+      "ci_lower": 0.7007651873700681,
+      "ci_upper": 0.7446841087936987,
+      "width": 0.04391892142363063
+    },
+    "macro_f1": {
+      "estimate": 0.7202445799504616,
+      "ci_lower": 0.6987497184386711,
+      "ci_upper": 0.7423640665777999,
+      "width": 0.04361434813912879
+    },
+    "benign_f1": {
+      "estimate": 0.5960455034690489,
+      "ci_lower": 0.5567092344726758,
+      "ci_upper": 0.6347173385342856,
+      "width": 0.07800810406160974
+    },
+    "malignant_roc_auc": {
+      "estimate": 0.8827400841999077,
+      "ci_lower": 0.8656153730881141,
+      "ci_upper": 0.8986720481476976,
+      "width": 0.03305667505958354
+    },
+    "cross_entropy": {
+      "estimate": 0.5828367701420577,
+      "ci_lower": 0.5515623822025578,
+      "ci_upper": 0.615316915275767,
+      "width": 0.06375453307320922
+    }
+  },
+  "seed_variability": {
+    "selection": {
+      "retained_trial_ids": [
+        "P1_long_noaug__long_noaug__seed42__20bacba3c8"
+      ],
+      "superseded_trial_ids": [],
+      "checkpoint_source": "the deduplicated seed_rows table, restricted to this recipe and the declared seeds",
+      "recipe_hash": "20bacba3c84276f7343afb1375ea55ce4c0841bbf309b38b2d36d4eef5de81b2",
+      "config_hash": "b2695e3fad8daee94b48b9efd3f471bfba72392d79f8e6242a6779ce8351d8cb",
+      "name": "long_noaug",
+      "judged_on": "mean over the declared seeds [42]",
+      "declared_seeds": [
+        42
+      ],
+      "n_seeds": 1,
+      "seeds": [
+        42
+      ],
+      "mean_metric": 0.7345504009628153,
+      "mean_all_seeds": 0.7345504009628153,
+      "std_metric": 0.0,
+      "spread": 0.0,
+      "chosen_run_metric": 0.7345504009628153,
+      "chosen_run_seed": 42,
+      "shortlist_size": 1,
+      "configurations_with_all_seeds": 1,
+      "shortlist": [
+        {
+          "name": "long_noaug",
+          "recipe_hash": "20bacba3c8",
+          "mean": 0.7345504009628153,
+          "seeds": [
+            42
+          ]
+        }
+      ],
+      "selection_policy_deviation": {
+        "declared_seeds": [
+          42,
+          2026,
+          3407
+        ],
+        "shortlist_size": 2,
+        "relaxed_on": "2026-10-07",
+        "reason": "single-seed pilot; 6 runs x ~43-115 h not reachable",
+        "amendment": "R10b_SELECTION_DEVIATION.md"
+      },
+      "note": "selected over the declared seeds [42]. A single declared seed means this figure is ONE draw from the training procedure, not a mean over measured run-to-run variance: no seed-to-seed spread has been measured for it, and it is not comparable to a multi-seed mean reported for another arm. See R10b_SELECTION_DEVIATION.md."
+    },
+    "per_config": [
+      {
+        "recipe_hash": "20bacba3c84276f7343afb1375ea55ce4c0841bbf309b38b2d36d4eef5de81b2",
+        "name": "long_noaug",
+        "n_seeds": 1,
+        "seeds": [
+          42
+        ],
+        "mean_metric": 0.7345504009628153,
+        "std_metric": 0.0,
+        "min_metric": 0.7345504009628153,
+        "max_metric": 0.7345504009628153,
+        "best_trial": "P1_long_noaug__long_noaug__seed42__20bacba3c8",
+        "spread": 0.0,
+        "missing_seeds": [],
+        "declared_seeds_complete": true,
+        "mean_declared_seeds": 0.7345504009628153,
+        "other_seeds": [],
+        "n_records_deduplicated": 0
+      }
+    ],
+    "declared_seeds": [
+      42
+    ],
+    "shortlist_size": 1
+  },
+  "reload_check": {
+    "samples": 4,
+    "image_ids": [
+      "002d4567dc37e443",
+      "0081825ace6d5068",
+      "008a7a48853b3e87",
+      "008af5c5294bf8d4"
+    ],
+    "input_shape": [
+      4,
+      3,
+      2048,
+      1024
+    ],
+    "tolerance": 1e-05,
+    "max_abs_logit_difference": 0.0,
+    "max_abs_calibrated_probability_difference": 0.0,
+    "argmax_identical": true,
+    "within_tolerance": true,
+    "emitted_module_input_max_difference": 0.0,
+    "emitted_module_matches_notebook": true,
+    "emitted_module_refuses_raw_uploads": true,
+    "mode": "both models in eval mode via set_training_modes"
+  },
+  "preflight": {
+    "wrote_checkpoint": false,
+    "wrote_result": false,
+    "input": {
+      "shape": [
+        3,
+        2048,
+        1024
+      ],
+      "dtype": "torch.float32",
+      "value_range": [
+        -2.1179,
+        2.518
+      ],
+      "label": 1,
+      "label_name": "Benign",
+      "channels_identical": true,
+      "geometry_adapter": "passthrough-v2",
+      "model_input_version": "model-input/3"
+    },
+    "checkpoint": {
+      "encoder_sha256": "27837607ccb960cc3acd11bddc37faa1c15f88617f99acbfde4547d5cc89531c",
+      "encoder_arch": "convnextv2_huge.fcmae_ft_in22k_in1k_512",
+      "encoder_params": 657472640,
+      "drop_path_rate": 0.5,
+      "llrd_decay": 0.8,
+      "llrd_buckets": 13,
+      "feat_dim": 2816,
+      "state_dict_entries": 380,
+      "trainable_probe": 8451,
+      "trainable_finetune": 657481091,
+      "forward_pass_logits": [
+        -1.26541,
+        -0.95481,
+        -0.57455
+      ],
+      "head_bias_from_prevalence": [
+        -1.3184,
+        -1.16122,
+        -0.86908
+      ],
+      "batchnorm_stats_unchanged_in_eval": true
+    },
+    "memory": {
+      "micro_batch": 2,
+      "measured": true,
+      "attempts": [
+        {
+          "micro_batch": 32,
+          "peak_gb": null,
+          "accumulation": 1,
+          "fits_with_headroom": false,
+          "note": "out of memory"
+        },
+        {
+          "micro_batch": 16,
+          "peak_gb": null,
+          "accumulation": 2,
+          "fits_with_headroom": false,
+          "note": "out of memory"
+        },
+        {
+          "micro_batch": 8,
+          "peak_gb": null,
+          "accumulation": 4,
+          "fits_with_headroom": false,
+          "note": "out of memory"
+        },
+        {
+          "micro_batch": 4,
+          "peak_gb": 35.27,
+          "accumulation": 8,
+          "fits_with_headroom": false
+        },
+        {
+          "micro_batch": 2,
+          "peak_gb": 20.12,
+          "accumulation": 16,
+          "fits_with_headroom": true
+        }
+      ],
+      "resolution": [
+        2048,
+        1024
+      ],
+      "total_gb": 42.4,
+      "headroom_frac": 0.8,
+      "choices": [
+        32,
+        16,
+        8,
+        4,
+        2,
+        1
+      ]
+    },
+    "micro_batch": 2,
+    "accum_steps": 16,
+    "val_batch": 2,
+    "reinitialised_after_memory_check": {
+      "cuda_cache_released": true,
+      "seeds_reset_to": 42,
+      "note": "every model and optimiser built above has been discarded; run_trial builds a fresh model from the original pretrained encoder and re-seeds per trial"
+    }
+  },
+  "gates": [
+    {
+      "gate": "primary split roles selection and test are disjoint",
+      "status": "PASS",
+      "detail": "0 shared ids",
+      "overridable_by": null
+    },
+    {
+      "gate": "primary split roles selection and train are disjoint",
+      "status": "PASS",
+      "detail": "0 shared ids",
+      "overridable_by": null
+    },
+    {
+      "gate": "primary split roles selection and val are disjoint",
+      "status": "PASS",
+      "detail": "0 shared ids",
+      "overridable_by": null
+    },
+    {
+      "gate": "primary split roles test and train are disjoint",
+      "status": "PASS",
+      "detail": "0 shared ids",
+      "overridable_by": null
+    },
+    {
+      "gate": "primary split roles test and val are disjoint",
+      "status": "PASS",
+      "detail": "0 shared ids",
+      "overridable_by": null
+    },
+    {
+      "gate": "primary split roles train and val are disjoint",
+      "status": "PASS",
+      "detail": "0 shared ids",
+      "overridable_by": null
+    },
+    {
+      "gate": "auxiliary assignment files do not contradict each other",
+      "status": "PASS",
+      "detail": "0 conflicting reassignments; layered in the declared order ['derived_validation_split.json', 'new_patient_allocation.json', 'calibration_split.json']",
+      "overridable_by": null
+    },
+    {
+      "gate": "every manifest calibration patient is reserved by the assignment file",
+      "status": "PASS",
+      "detail": "0 manifest calibration patients are absent from calibration_split.json; every calibration row traces back to the file",
+      "overridable_by": null
+    },
+    {
+      "gate": "no reserved calibration patient carries rows in another partition",
+      "status": "PASS",
+      "detail": "0 reserved calibration patients hold rows under a different role; the reservation is respected",
+      "overridable_by": null
+    },
+    {
+      "gate": "every manifest patient appears in a frozen assignment file",
+      "status": "PASS",
+      "detail": "0 patients absent from the primary and auxiliary files",
+      "overridable_by": null
+    },
+    {
+      "gate": "manifest roles agree with the frozen assignment files",
+      "status": "PASS",
+      "detail": "0 disagreements; every role compared exactly, with no calibration inference",
+      "overridable_by": null
+    },
+    {
+      "gate": "no patient spans partitions",
+      "status": "PASS",
+      "detail": "0 patients in more than one partition",
+      "overridable_by": null
+    },
+    {
+      "gate": "image_id is unique",
+      "status": "PASS",
+      "detail": "0 duplicated image_id values",
+      "overridable_by": null
+    },
+    {
+      "gate": "no identical image content spans partitions",
+      "status": "PASS",
+      "detail": "0 content hashes still spanning partitions after excluding 4 duplicate images",
+      "overridable_by": null
+    },
+    {
+      "gate": "a raw subject id shared across sources is not collapsed into one patient",
+      "status": "PASS",
+      "detail": "0 raw ids appear under more than one source; 0 of them share a single patient key",
+      "overridable_by": null
+    },
+    {
+      "gate": "labels are 0/1/2 only",
+      "status": "PASS",
+      "detail": "observed [np.int64(0), np.int64(1), np.int64(2)]",
+      "overridable_by": null
+    },
+    {
+      "gate": "label text matches label index",
+      "status": "PASS",
+      "detail": "Normal=0, Benign=1, Malignant=2 consistent throughout",
+      "overridable_by": null
+    },
+    {
+      "gate": "no unassigned partition present",
+      "status": "PASS",
+      "detail": "partitions present: ['calibration', 'selection', 'test', 'train', 'val']",
+      "overridable_by": null
+    },
+    {
+      "gate": "unused partitions stay unused",
+      "status": "PASS",
+      "detail": "['selection'] present and deliberately not read by any trial",
+      "overridable_by": null
+    },
+    {
+      "gate": "no sealed RSNA holdout rows",
+      "status": "PASS",
+      "detail": "0 rows carrying an rsna: patient key",
+      "overridable_by": null
+    }
+  ],
+  "transfers": [
+    {
+      "src": "/content/convnextv2h_full/export_reports/reports/manifest.csv",
+      "dst": "/content/convnextv2h_full/reports/manifest.csv",
+      "bytes": 15099135,
+      "sha256": "fab8667f3faa1eb3f0289dcb0a38a19100b883ed22da63911f18e82a5f0891dc",
+      "action": "copied in 0s"
+    },
+    {
+      "src": "/content/convnextv2h_full/export_reports/reports/preprocessing.py",
+      "dst": "/content/convnextv2h_full/pkg/classical_session_analysis/preprocessing.py",
+      "bytes": 2325,
+      "sha256": "3c2259f535e34c6cbffd1a3a42c63d8bdf1f48f7c8eb7653d9bc75d50673a160",
+      "action": "copied in 0s"
+    },
+    {
+      "src": "/content/drive/MyDrive/mamobench-dataset/sprint4_audit/frozen_split.json",
+      "dst": "/content/convnextv2h_full/reports/frozen_split.json",
+      "bytes": 69842,
+      "sha256": "da4e115581c05522e5ebb69ebc946054a7dad0c6d4061679ee42393f308fa260",
+      "action": "copied in 1s"
+    },
+    {
+      "src": "/content/drive/MyDrive/mamobench-dataset/runs_allsources/calibration_split.json",
+      "dst": "/content/convnextv2h_full/reports/aux_calibration_split.json",
+      "bytes": 3849,
+      "sha256": "25d9af258d904361a3fe36eb9c8a9773a1698cb8375687a05599c0be1fefadb7",
+      "action": "copied in 1s"
+    },
+    {
+      "src": "/content/drive/MyDrive/mamobench-dataset/runs_allsources/new_patient_allocation.json",
+      "dst": "/content/convnextv2h_full/reports/aux_new_patient_allocation.json",
+      "bytes": 3528,
+      "sha256": "113217e170aff3cf2e463379d7289783a4e67c84013bed32275398a29951045b",
+      "action": "copied in 1s"
+    }
+  ],
+  "observed_counts": {
+    "manifest_rows_eligible": 19731,
+    "processed": 19447,
+    "review_required": 36,
+    "excluded_total": 53,
+    "excluded_by_prepare_session": 49,
+    "excluded_duplicate_content_here": 4,
+    "images_after_exclusions": 19443,
+    "partitions": {
+      "calibration": {
+        "images": 920,
+        "patients": 255
+      },
+      "selection": {
+        "images": 1955,
+        "patients": 558
+      },
+      "test": {
+        "images": 2937,
+        "patients": 853
+      },
+      "train": {
+        "images": 11616,
+        "patients": 3421
+      },
+      "val": {
+        "images": 2015,
+        "patients": 598
+      }
+    }
+  },
+  "count_differences_vs_last_verified": [
+    [
+      "manifest_rows_eligible",
+      19731,
+      19496
+    ],
+    [
+      "processed",
+      19447,
+      19460
+    ],
+    [
+      "excluded_total",
+      53,
+      41
+    ],
+    [
+      "selection.patients",
+      558,
+      557
+    ],
+    [
+      "test.images",
+      2937,
+      2938
+    ],
+    [
+      "train.images",
+      11616,
+      11624
+    ],
+    [
+      "val.images",
+      2015,
+      2018
+    ]
+  ],
+  "counts_acknowledgement": {
+    "acknowledged": true,
+    "on": "2026-10-07",
+    "reference": "R10b_SELECTION_DEVIATION.md section 7",
+    "covers": {
+      "manifest_rows_eligible": [
+        19731,
+        19496
+      ],
+      "processed": [
+        19447,
+        19460
+      ],
+      "excluded_total": [
+        53,
+        41
+      ],
+      "selection.patients": [
+        558,
+        557
+      ],
+      "test.images": [
+        2937,
+        2938
+      ],
+      "train.images": [
+        11616,
+        11624
+      ],
+      "val.images": [
+        2015,
+        2018
+      ]
+    },
+    "observed": {
+      "manifest_rows_eligible": [
+        19731,
+        19496
+      ],
+      "processed": [
+        19447,
+        19460
+      ],
+      "excluded_total": [
+        53,
+        41
+      ],
+      "selection.patients": [
+        558,
+        557
+      ],
+      "test.images": [
+        2937,
+        2938
+      ],
+      "train.images": [
+        11616,
+        11624
+      ],
+      "val.images": [
+        2015,
+        2018
+      ]
+    }
+  },
+  "class_weight_record": {
+    "formula": "w[c] = sqrt(N / (3 * count[c])), then normalised to mean 1",
+    "training_counts": [
+      3108,
+      3637,
+      4871
+    ],
+    "weights": {
+      "Normal": 1.1016423672284181,
+      "Benign": 1.018379115277112,
+      "Malignant": 0.8799785174944693
+    },
+    "note": "training-only counts; never combined with class oversampling; source-balanced sampling and Group DRO are separate experiments and are not implemented here"
+  },
+  "deviations": {
+    "selection_policy": {
+      "declared_seeds": [
+        42,
+        2026,
+        3407
+      ],
+      "shortlist_size": 2,
+      "relaxed_on": "2026-10-07",
+      "reason": "single-seed pilot; 6 runs x ~43-115 h not reachable",
+      "amendment": "R10b_SELECTION_DEVIATION.md"
+    },
+    "declared_seeds_used": [
+      42
+    ],
+    "time_budget_epochs": 21,
+    "stop_reasons": {
+      "probe": "early_stopping",
+      "finetune": "time_budget"
+    },
+    "note": "a stage recorded as 'time_budget' was stopped by the clock, not by its stopping rule: patience had not fired and the declared epoch cap was not reached. Its metrics are the best-epoch metrics measured up to that point and are a lower bound on what the recipe reaches."
+  },
+  "versions": {
+    "python": "3.13.15",
+    "torch": "2.11.0+cu130",
+    "numpy": "2.1.3",
+    "pandas": "2.2.3",
+    "opencv": "4.14.0",
+    "platform": "Linux-6.6.122+-x86_64-with-glibc2.39",
+    "cuda": "13.0",
+    "gpu": "NVIDIA A100-SXM4-40GB"
+  },
+  "intended_use": "Research demonstration on Mammo-Bench at 2048x1024. The encoder is ImageNet-pretrained, NOT mammography-pretrained. Not validated for screening use and not a clinical device. Every partition comes from the same collection, so external screening performance has NOT been established. The sealed RSNA holdout was not used for training, tuning or evaluation here."
+}
