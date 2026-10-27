@@ -1,5 +1,5 @@
 """Central backend settings. Everything environment-specific lives here and comes from env vars
-(Railway Variables in production, backend/.env locally). See docs/DEPLOYMENT.md for the full list."""
+(Railway Variables in production, backend/.env locally). See backend/models_manifest.json and railway.json for deployment settings."""
 import os
 
 from dotenv import load_dotenv
