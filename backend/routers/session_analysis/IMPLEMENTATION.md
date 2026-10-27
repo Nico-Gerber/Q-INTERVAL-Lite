@@ -104,16 +104,25 @@ Use any string that identifies your engine to the frontend.
 
 ---
 
-## Register in `main.py`
+## Register in `main.py` (security: do not skip the dependencies)
+
+Add the import next to the other routers, then include it **with the `inference` dependencies**:
 
 ```python
-from routers.my_engine_session_analysis.router import router as my_session_router
+from routers.my_engine_session_analysis.router import router as my_router
 
-app.include_router(my_session_router)
+app.include_router(my_router, dependencies=inference)
 ```
 
-That is the entire integration surface. The frontend receives the same
-`SessionAnalysisResponse` shape regardless of which engine produced it.
+`inference` is defined in `main.py` and enforces an approved login, that the model files are ready, and one analysis
+at a time (memory). A router included without it is **open to anyone and has no concurrency limit**.
+
+## Frontend
+
+Add the new path to `ENDPOINTS` in `src/config/api.js` and call it from the matching upload/analysis page.
+Only replacing the `run.py` of an existing engine needs no frontend change.
+
+The frontend receives the same `SessionAnalysisResponse` shape regardless of which engine produced it.
 
 ---
 

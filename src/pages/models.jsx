@@ -10,6 +10,8 @@ import {
 // Every figure on this page comes from the team's own testing, recorded in the Q-INTERVAL-LITE+ Technical Specification Document.
 
 const MAMMO_BENCH_URL = 'https://www.medrxiv.org/content/10.1101/2025.01.31.25321510v1';
+const LAISHRAM_URL = 'https://doi.org/10.1016/j.compeleceng.2024.109488';
+const MAMMO_BENCH_V2_URL = 'https://www.medrxiv.org/content/10.1101/2025.01.31.25321510v2';
 const EMBED_URL = 'https://registry.opendata.aws/emory-breast-imaging-dataset-embed/';
 
 function ExtLink({ href, children }) {
@@ -35,12 +37,12 @@ const MODES = {
       {
         family: 'classical',
         name: 'Classical deep learning',
-        status: 'In the app: v12 ensemble. Latest candidate: ConvNeXt V2-Huge, export verified, app integration pending.',
+        status: 'In the app: ConvNeXt V2-Huge supplies the Normal, Benign and Malignant probabilities (integration complete). The v12 ensemble is kept for occlusion heatmaps.',
         reads: 'The whole mammogram image, one view at a time. The network learns visual patterns directly from the pixels.',
-        output: 'Probabilities for Normal, Benign and Malignant, calibrated so they can be read as likelihoods.',
-        steps: ['Crop to the breast and resize', 'A convolutional network reads the image', 'Calibrated class probabilities'],
+        output: 'Temperature-scaled probabilities for Normal, Benign and Malignant, with improved calibration measured on the internal test set. Breast density and BI-RADS come from separate models, unchanged.',
+        steps: ['Crop to the breast and resize', 'A convolutional network reads the image', 'Temperature-scaled class probabilities'],
         params: [
-          ['Latest candidate', 'ConvNeXt V2-Huge, ImageNet pretrained'],
+          ['Classification model', 'ConvNeXt V2-Huge, full precision, ImageNet pretrained'],
           ['Input size', '2048 × 1024, greyscale copied to 3 channels'],
           ['Trainable parameters', '657,481,091 (657,472,640 encoder, 8,451 head)'],
           ['Optimiser', 'AdamW, weight decay 0.05'],
@@ -49,7 +51,8 @@ const MODES = {
           ['Batch and precision', 'Effective batch 32, bf16, gradient clipping 1.0'],
           ['Training run', 'Seed 42, 21 of 60 epochs run, epoch 13 selected on validation macro-F1'],
           ['Calibration', 'Temperature scaling, T = 2.7834, fitted on a separate set'],
-          ['In the app today', 'v12 ensemble: EfficientNetV2-S with CBAM (Group DRO) plus ResNet-101, source input removed'],
+          ['Heatmaps', 'v12 ensemble (EfficientNetV2-S with CBAM (Group DRO) plus ResNet-101, source input removed) draws the occlusion heatmaps. They explain v12, not ConvNeXt.'],
+          ['Hosting', 'Model weights are on Hugging Face and the backend is deployed on Railway. Whether the hosted service is available at any moment is separate from the integration being complete.'],
         ],
       },
       {
@@ -93,17 +96,25 @@ const MODES = {
       notes: [
         '235 records labelled Suspicious Malignant were left out of the three-class task rather than quietly reassigned. After preparation exclusions, 19,443 images remained.',
         'Patients are never split between training and test. 11,616 images from 3,421 patients trained the model, and 2,937 images from 853 patients tested it.',
-        'The six sources differ, and a model can partly guess a diagnosis from the source alone. A classifier that only knew the source scored 55.8%. Both models were rebuilt so they do not rely on it, and neither is given the source as an input.',
+        'The six sources differ, and a model can partly guess a diagnosis from the source alone. A classifier that only knew the source scored 55.8%. Source identity is not supplied to either model as an input, but image appearance can still reveal the source, so removing that input does not prove the shortcut is gone.',
       ],
     },
     results: {
       lead: 'Measured on images the models had never seen.',
       caution: 'The two models were tested on different held-out sets, so these figures are not a controlled head-to-head.',
+      context: {
+        title: 'Reading the accuracy figures',
+        body: <>
+          Our classifier distinguishes Normal, Benign and Malignant images. Published accuracy figures must be interpreted alongside their classification task, image selection and evaluation protocol. Binary cancer detection and three-class classification measure different requirements. Some published three-class models also exceed 90%, so class count alone does not explain this model&apos;s performance. Results from detected lesions, individual datasets and different test populations are not directly comparable with our whole-image, multi-source evaluation.
+          {' '}For context, <ExtLink href={LAISHRAM_URL}>Laishram and Rabidas (2024)</ExtLink> reported 95.74% binary and 88.15% three-class accuracy on DDSM using detected mass candidates, and 93.61% three-class accuracy on mini-MIAS. The <ExtLink href={MAMMO_BENCH_V2_URL}>Mammo-Bench v2</ExtLink> abstract reports 77.8% accuracy without augmentation and 78.8% with it.
+          {' '}These provide context, not proof that our model should reach a particular accuracy. The external RSNA result measures binary malignant discrimination, so the three-class explanation does not account for it.
+        </>,
+      },
       cards: [
         {
           family: 'classical',
           title: 'Classical, ConvNeXt V2-Huge',
-          cohort: 'Internal test: 2,937 images from 853 patients, calibrated.',
+          cohort: 'Internal test, image-level: 2,937 images from 853 patients, temperature-scaled.',
           metrics: [
             { label: 'Accuracy', value: 0.7228, text: '72.3%', ci: '95% interval 70.1% to 74.5%' },
             { label: 'Macro-F1', value: 0.7209, text: '0.721', ci: '95% interval 0.699 to 0.742' },
@@ -112,8 +123,10 @@ const MODES = {
           ],
           notes: [
             'Recall by class: Normal 86.8%, Benign 58.2%, Malignant 73.5%. These are image-level results, not patient-level detection rates.',
-            'Calibration cut the expected calibration error from 0.141 to 0.013.',
-            'The earlier v12 ensemble, which is the version in the app, scored a macro-F1 of 0.706 on its own internal test.',
+            'Malignant ROC-AUC measures how well malignant images are ranked above the others. It is not an accuracy.',
+            'Temperature scaling cut the expected calibration error from 0.141 to 0.013 on this test set. That does not make the probabilities reliable for every uploaded image.',
+            'External check on an RSNA development subset (2,000 images from 1,423 patients, no processing failures): image-level malignant ROC-AUC 0.6430, 95% patient-clustered interval 0.6103 to 0.6757.',
+            'The earlier v12 ensemble, now used for heatmaps only, scored a macro-F1 of 0.706 on its own internal test.',
           ],
         },
         {
@@ -257,7 +270,7 @@ const MODES = {
 };
 
 const LIMITS = [
-  ['No external validation yet', 'Every result above comes from the same collections the models were developed on. An earlier version of the classical classifier scored 0.867 internally but 0.586 on an external RSNA cohort. The latest candidates have not yet been tested externally.'],
+  ['External validation is limited', 'The ConvNeXt classifier was evaluated externally on an RSNA development subset of 2,000 images from 1,423 patients, with no processing failures. Its image-level malignant ROC-AUC was 0.6430 (95% patient-clustered interval 0.6103 to 0.6757), well below the internal 0.883. The protected 2,663-patient holdout remains unopened, so this is an external development evaluation, not the final sealed-holdout assessment. An earlier classifier version scored 0.867 internally but 0.586 on RSNA. The other models have no external validation.'],
   ['Few cancers in some tests', 'The future-risk tests have 21 or fewer cancers per horizon in the classical test set. Several sources in the classification data have only a handful of malignant images.'],
   ['One training run', 'The ConvNeXt classifier was trained once, with seed 42, and stopped at a time limit, so run-to-run variation was not measured.'],
   ['Resolution is not always real detail', 'Many source images were small and were enlarged to 2048 × 1024, which cannot add detail that was never captured.'],
@@ -266,7 +279,7 @@ const LIMITS = [
 ];
 
 const STATUS_ROWS = [
-  ['Classical classifier, ConvNeXt V2-Huge', 'Trained, calibrated and tested internally', 'App integration unconfirmed, external validation pending'],
+  ['Classical classifier, ConvNeXt V2-Huge', 'Integrated in the app, tested internally, and evaluated on an external RSNA development subset', 'Final sealed-holdout assessment not yet run'],
   ['Quantum kernel classifier', 'Fine-tuned and in the app', 'Below its accuracy targets'],
   ['Classical future risk, Mammo-CLIP V2D', 'Internal test complete, explanations produced for selected cases', 'External validation not done'],
   ['Quantum future risk, QeSFRP', 'Engine verified against training output', 'Discrimination close to chance'],
@@ -585,6 +598,12 @@ function ResultsSection({ mode }) {
           <Typography sx={{ color: 'text.secondary', fontSize: '0.85rem', lineHeight: 1.65 }}>
             {results.caution} The tick on a bar marks 0.5, the score a model would get by guessing, where that applies.
           </Typography>
+          {results.context && (
+            <Box sx={{ mt: 4, maxWidth: '78ch' }}>
+              <Typography component="h3" sx={{ fontSize: '1.1rem', fontWeight: 700, color: 'text.primary', mb: 1 }}>{results.context.title}</Typography>
+              <Typography sx={{ color: 'text.secondary', fontSize: '0.92rem', lineHeight: 1.7, ...PARAGRAPH_WRAP }}>{results.context.body}</Typography>
+            </Box>
+          )}
         </ModeContent>
       </Container>
     </Box>

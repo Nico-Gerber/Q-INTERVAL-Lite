@@ -1,5 +1,5 @@
 // Single place that knows where the backend lives and which endpoints exist.
-// Docs: docs/DEPLOYMENT.md ("Endpoint registry"). Add new endpoints here, never as inline URLs.
+// Add new endpoints here, never as inline URLs.
 import { supabase } from '../supabase/supabase';
 
 // Local dev uses the local backend; the deployed frontend sets REACT_APP_API_BASE to the Railway URL.

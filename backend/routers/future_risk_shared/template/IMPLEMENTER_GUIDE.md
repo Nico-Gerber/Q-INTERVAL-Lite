@@ -100,6 +100,9 @@ If omitted, the generic router still returns a basic health response.
 
 ## Router
 
+The live classical package routes through `future_risk_classical/engine.py`, which picks `run.py` (v2c, default) or
+`run_v2d.py` via the `FUTURE_RISK_ENGINE` env var. The quantum package uses its `run.py` directly, as below.
+
 The model-specific router should contain no model logic.
 
 Example:
@@ -115,6 +118,24 @@ router = create_future_risk_router(
     tag="future-risk-classical",
 )
 ```
+
+## Register in `main.py` (security: do not skip the dependencies)
+
+Add the import next to the other routers, then include it **with the `inference` dependencies**:
+
+```python
+from routers.my_future_risk.router import router as my_router
+
+app.include_router(my_router, dependencies=inference)
+```
+
+`inference` is defined in `main.py` and enforces an approved login, that the model files are ready, and one analysis
+at a time (memory). A router included without it is **open to anyone and has no concurrency limit**.
+
+## Frontend
+
+Add the new path to `ENDPOINTS` in `src/config/api.js` and call it from the matching upload/analysis page.
+Only replacing the `run.py` of an existing engine needs no frontend change.
 
 ## Why `initialise()` always exists
 
