@@ -18,7 +18,16 @@ IS_PRODUCTION = APP_ENV == "production"
 ALLOWED_ORIGINS = _csv("ALLOWED_ORIGINS", "http://localhost:3000")
 
 SUPABASE_URL = (os.getenv("SUPABASE_URL") or "").rstrip("/")
-SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")   # legacy service_role JWT or a new sb_secret_... key
+
+
+def supabase_service_headers() -> dict:
+    """Headers for server-side Supabase calls. Only the legacy JWT key may also go in Authorization;
+    new sb_secret_... keys are not JWTs and are sent as apikey alone."""
+    headers = {"apikey": SUPABASE_SERVICE_ROLE_KEY}
+    if SUPABASE_SERVICE_ROLE_KEY and SUPABASE_SERVICE_ROLE_KEY.startswith("eyJ"):
+        headers["Authorization"] = f"Bearer {SUPABASE_SERVICE_ROLE_KEY}"
+    return headers
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"

@@ -18,7 +18,7 @@ _cache: dict[str, tuple[float, dict]] = {}   # token hash -> (expiry, {"id","rol
 
 
 def _service_headers() -> dict:
-    return {"apikey": config.SUPABASE_SERVICE_ROLE_KEY, "Authorization": f"Bearer {config.SUPABASE_SERVICE_ROLE_KEY}"}
+    return config.supabase_service_headers()
 
 
 async def _load_caller(authorization: Optional[str]) -> dict:

@@ -11,9 +11,7 @@ export default function NeuralCanvas() {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     let raf;
-    const resize = () => { canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight; };
-    resize();
-    window.addEventListener('resize', resize);
+    canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight;
     const NODE_COUNT = 48;
     const CONNECT_DIST = 160;
     const nodes = Array.from({ length: NODE_COUNT }, () => ({
@@ -24,6 +22,17 @@ export default function NeuralCanvas() {
     // Dark mode keeps the original light cyan (pops against navy). Light mode
     // swaps to a darker, more saturated teal at higher opacity — the pastel
     // cyan was nearly invisible against the pale page background.
+    // The container can grow after mount (e.g. a long list loads in), so watch the canvas itself rather than
+    // the window; a bitmap left at its first size gets stretched by the CSS size and the nodes smear.
+    const resize = () => {
+      const w = canvas.offsetWidth, h = canvas.offsetHeight;
+      if (!w || !h || (w === canvas.width && h === canvas.height)) return;
+      const sx = w / canvas.width, sy = h / canvas.height;
+      nodes.forEach((n) => { n.x *= sx; n.y *= sy; });
+      canvas.width = w; canvas.height = h;
+    };
+    const observer = new ResizeObserver(resize);
+    observer.observe(canvas);
     const rgb = isDark ? '34,211,238' : '11,90,112';
     const lineAlphaMax = isDark ? 0.12 : 0.22;
     const nodeAlpha = isDark ? 0.28 : 0.5;
@@ -50,7 +59,7 @@ export default function NeuralCanvas() {
       raf = requestAnimationFrame(draw);
     };
     draw();
-    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); };
+    return () => { cancelAnimationFrame(raf); observer.disconnect(); };
   }, [isDark]);
   return <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 0 }} />;
 }

@@ -12,7 +12,7 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from config import SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY as SERVICE_KEY
+from config import SUPABASE_URL, supabase_service_headers
 from guards import require_admin
 
 ASSIGNABLE_ROLES = ("clinician", "patient")  # admins are never created via the API
@@ -30,11 +30,7 @@ class AssignBody(BaseModel):
 
 
 def _service_headers() -> dict:
-    return {
-        "apikey": SERVICE_KEY,
-        "Authorization": f"Bearer {SERVICE_KEY}",
-        "Content-Type": "application/json",
-    }
+    return {**supabase_service_headers(), "Content-Type": "application/json"}
 
 
 async def _get_profile(client: httpx.AsyncClient, user_id: str) -> dict:
