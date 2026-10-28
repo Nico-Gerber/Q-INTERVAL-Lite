@@ -1145,7 +1145,10 @@ export default function Analysis() {
                     }}>
                       <ScanningLoader
                         message={loadingText}
-                        expectedDurationMs={analysisMode === 'classification' ? 38000 : 16000}
+                        expectedDurationMs={analysisMode === 'classification' ? 240000 : 16000}
+                        note={analysisMode === 'classification'
+                          ? 'This can take 3 to 4 minutes on the current hosting. Please keep this page open.'
+                          : undefined}
                       />
                     </Box>
                   ) : (

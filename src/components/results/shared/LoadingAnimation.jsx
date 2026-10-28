@@ -38,7 +38,7 @@ function useEstimatedProgress(expectedDurationMs) {
     return progress;
 }
 
-export default function ScanningLoader({ message, size = 108, expectedDurationMs = 15000 }) {
+export default function ScanningLoader({ message, note, size = 108, expectedDurationMs = 15000 }) {
     const theme = useTheme();
     const color = useStage(message, theme);
     const progress = useEstimatedProgress(expectedDurationMs);
@@ -67,6 +67,15 @@ export default function ScanningLoader({ message, size = 108, expectedDurationMs
             }}>
                 {message}
             </Typography>
+
+            {note && (
+                <Typography sx={{
+                    fontSize: 12, color: theme.palette.text.secondary, textAlign: 'center',
+                    maxWidth: size * 3.2, mt: -1,
+                }}>
+                    {note}
+                </Typography>
+            )}
 
             <Box sx={{ width: size * 1.8, height: 4, borderRadius: 2, overflow: 'hidden',
                 background: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
