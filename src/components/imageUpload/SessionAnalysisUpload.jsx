@@ -261,8 +261,7 @@ export default function MultiViewUpload({ views, setViews, setActiveStep, handle
   const showSummary = attempted && !validation.isValid;
   const runAnalysis = () => {
     if (!validation.isValid) { setAttempted(true); return; }
-    setActiveStep((p) => p + 1);
-    handleAnalyse();
+    handleAnalyse();   // moves to the results step itself once its own checks (e.g. patient picked) pass
   };
 
   return (

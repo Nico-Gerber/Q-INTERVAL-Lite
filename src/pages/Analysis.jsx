@@ -78,6 +78,7 @@ export default function Analysis() {
   // patient, so it appears in their history exactly as if they had run it themselves.
   const { patients: assignedPatients, loading: patientsLoading } = useAssignedPatients();
   const [selectedPatientId, setSelectedPatientId] = useState('');
+  const [patientError, setPatientError] = useState(false);
   // Opt-in to using this classification session for model improvement (off by default).
   const [trainingConsent, setTrainingConsent] = useState(false);
   const theme = useTheme();
@@ -475,7 +476,8 @@ export default function Analysis() {
       : validateSessionAnalysis(views);
     if (!inputCheck.isValid) return;
     if (profile?.role === 'clinician' && !selectedPatientId) {
-      setAnalysisError('Select the patient this analysis is for before running it.');
+      setPatientError(true);
+      document.getElementById('analysis-patient')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
 
@@ -769,14 +771,14 @@ export default function Analysis() {
   // Required patient picker for clinicians (both analysis modes). Stored sessions are owned by that patient.
   const patientSelector = profile?.role === 'clinician' ? (
     <TextField
-      select required fullWidth size="small" label="Patient"
-      value={selectedPatientId} onChange={(e) => { setSelectedPatientId(e.target.value); setAnalysisError(null); }}
-      error={!!analysisError && !selectedPatientId}
+      select required fullWidth size="small" label="Patient" id="analysis-patient"
+      value={selectedPatientId} onChange={(e) => { setSelectedPatientId(e.target.value); setPatientError(false); setAnalysisError(null); }}
+      error={patientError && !selectedPatientId}
       disabled={patientsLoading || !assignedPatients.length}
       helperText={patientsLoading
         ? 'Loading your patients…'
         : assignedPatients.length
-          ? undefined
+          ? (patientError && !selectedPatientId ? 'Select the patient this analysis is for before running it.' : undefined)
           : 'No patients are assigned to you. Ask an admin to assign a patient before running an analysis.'}
       sx={{ mb: 2 }}
     >
@@ -1147,7 +1149,7 @@ export default function Analysis() {
                         message={loadingText}
                         expectedDurationMs={analysisMode === 'classification' ? 240000 : 16000}
                         note={analysisMode === 'classification'
-                          ? 'This can take 3 to 4 minutes on the current hosting. Please keep this page open.'
+                          ? 'This takes about 3 to 4 minutes. Please keep this page open.'
                           : undefined}
                       />
                     </Box>
