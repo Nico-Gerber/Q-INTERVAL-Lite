@@ -55,7 +55,7 @@ cp backend/.env.example backend/.env    # backend: Supabase service-role key, Op
 
 Supabase values are in **Project Settings > API**. Each variable is explained in the example files.
 
-**c. Model weights.** Most weights come with `git lfs pull`, but the 2.6 GB `convnextv2h_model_bundle.pth` does not. Set `HF_MODEL_REPO` (and `HF_TOKEN` if the repo is private) in `backend/.env` and the backend downloads anything missing on first start. Or download that file yourself into `backend/routers/classical_session_analysis/models/`. Until all weights are present, analysis requests return 503 "still loading".
+**c. Model weights.** Most weights come with `git lfs pull`, but the 2.6 GB `convnextv2h_model_bundle.pth` does not. Set `HF_MODEL_REPO` (and `HF_TOKEN` if the repo is private) in `backend/.env` and the backend downloads anything missing on first start. Or download that file yourself into `backend/routers/session_analysis_classical/models/`. Until all weights are present, analysis requests return 503 "still loading".
 
 **d. First admin.** Run the app (steps 3-4), click **Request Access** to sign up, then promote yourself in the Supabase SQL Editor:
 
@@ -137,7 +137,7 @@ npm install                               # if package.json changed
 
 Each analysis type has its own package under `backend/routers/`. To swap a model, replace its `run.py` and `models/`; to add a new engine, follow the guides:
 
-- Session analysis (four views): [`backend/routers/session_analysis/IMPLEMENTATION.md`](backend/routers/session_analysis/IMPLEMENTATION.md)
+- Session analysis (four views): [`backend/routers/session_analysis_shared/IMPLEMENTATION.md`](backend/routers/session_analysis_shared/IMPLEMENTATION.md)
 - Future risk (sequential exams): [`backend/routers/future_risk_shared/template/IMPLEMENTER_GUIDE.md`](backend/routers/future_risk_shared/template/IMPLEMENTER_GUIDE.md)
 
 New weights that are not in git must also be added to `backend/models_manifest.json`.

@@ -1,0 +1,1699 @@
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Box, Chip, CircularProgress, Container, MenuItem as MuiMenuItem, Typography, Alert, Button, Drawer, TextField, Dialog, DialogTitle, DialogContent, DialogActions, Snackbar, useTheme, alpha } from '@mui/material';
+import { useSearchParams } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Sidebar, Menu, MenuItem, SubMenu } from 'react-pro-sidebar';
+import exportSessionPDF from '../components/results/shared/ExportSession';
+import NeuralCanvas from '../components/shared/NeuralCanvas';
+import DownloadIcon from '@mui/icons-material/Download';
+
+
+import AnalysisStepper from '../components/analysisTool/AnalysisStepper';
+import ModeSelect from '../components/analysisTool/AnalysisModeSelect';
+import ResultFocusNavigator, { focusElement } from '../components/analysisTool/ResultFocusNavigator';
+
+
+import ClassificationResults from '../components/results/sessionAnalysis/ClassificationResults';
+import FutureRiskResults from '../components/results/futureRisk/FutureRiskResults';
+import MammoRiskResults from '../components/results/sessionAnalysis/RiskAssessment';
+import ScanningLoader from '../components/results/shared/LoadingAnimation';
+import MultiImageUploadDated from '../components/imageUpload/FutureRiskUpload';
+import MultiViewUpload from '../components/imageUpload/SessionAnalysisUpload';
+import { validateSessionAnalysis, validateFutureRisk } from '../components/analysisTool/analysisValidation';
+import { postAnalysis, describeAnalysisFailure } from '../components/analysisTool/analysisErrors';
+
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import AssistantIcon from '@mui/icons-material/Assistant';
+import { ThreeDot } from 'react-loading-indicators';
+
+import { supabase } from '../supabase/supabase';
+import { ENDPOINTS, apiFetch } from '../config/api';
+import { useAuth } from '../supabase/AuthContext';
+import { TRAINING_TERMS_VERSION } from '../components/imageUpload/TrainingConsent';
+import { useAssignedPatients } from '../supabase/useAssignedPatients';
+import { buildSnapshot, saveSessionImages, loadSessionResult, saveExplanations } from '../supabase/sessionArtifacts';
+
+
+// Shared fade+slide up variant for step transitions
+const stepVariants = {
+  hidden: { opacity: 0, y: 18 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' } },
+  exit: { opacity: 0, y: -12, transition: { duration: 0.2, ease: 'easeIn' } },
+};
+
+
+const LOADING_MESSAGES = [
+  { text: "Analysing mammogram views...", duration: 4000 },
+  { text: "Running classification models...", duration: 8000 },
+  { text: "Generating explainability heatmaps...", duration: 12000 },
+  { text: "Calculating composite risk scores...", duration: 5000 },
+  { text: "Finalising results...", duration: 4000 },
+];
+// Once the scripted timeline runs out (real inference can outlast it, e.g. on
+// CPU without a GPU), hold on the last message instead of cycling back —
+// the progress bar keeps moving so it never reads as frozen.
+const LOADING_MESSAGES_TAIL_LOOP = 1;
+
+// Session identifier: QIL-MA-YYYYMMDD-HHMM-XXXX (date/time + random tiebreaker).
+// Used in the results header and the exported PDF's filename/footer.
+const genSessionId = () => {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  const date = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
+  const time = `${pad(d.getHours())}${pad(d.getMinutes())}`;
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let hash = '';
+  for (let i = 0; i < 4; i++) hash += chars[Math.floor(Math.random() * chars.length)];
+  return `QIL-MA-${date}-${time}-${hash}`;
+};
+
+
+export default function Analysis() {
+
+  const { user, profile } = useAuth();
+  // Only clinicians and admins may verify classification results (also enforced in the database).
+  const canVerify = profile?.role === 'clinician' || profile?.role === 'admin';
+  // Clinicians must pick one of their assigned patients before running; the analysis is stored under that
+  // patient, so it appears in their history exactly as if they had run it themselves.
+  const { patients: assignedPatients, loading: patientsLoading } = useAssignedPatients();
+  const [selectedPatientId, setSelectedPatientId] = useState('');
+  // Opt-in to using this classification session for model improvement (off by default).
+  const [trainingConsent, setTrainingConsent] = useState(false);
+  const theme = useTheme();
+  // Result-area colours (frame, session bar, status banner, export buttons) — App.js resultsPalette.
+  const rp = theme.palette.results;
+  const { reportStatus, tint } = theme.palette;
+
+  const [files, setFiles] = useState([]);
+  const [preview, setPreview] = useState(null);
+  const [status, setStatus] = useState(null);
+  // Failure from the last analysis run, shown on the upload step: { kind, message }
+  const [analysisError, setAnalysisError] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const [LLMloading, setLLMLoading] = useState(false);
+
+  const [VLMloading, setVLMLoading] = useState(null); // view key currently generating, or null
+
+
+  const [viewData, setViewData] = useState({
+    'L-CC': {
+      explanation: null,
+      generated: false,
+    },
+    'L-MLO': {
+      explanation: null,
+      generated: false,
+    },
+    'R-CC': {
+      explanation: null,
+      generated: false,
+    },
+    'R-MLO': {
+      explanation: null,
+      generated: false,
+    },
+  });
+
+
+  const emptySession = () => ({
+    id: crypto.randomUUID(),
+    scanDate: '',
+    views: { 'L-CC': null, 'R-CC': null, 'L-MLO': null, 'R-MLO': null },
+  });
+
+
+  const [sessions, setSessions] = useState([emptySession(), emptySession()]);
+
+
+  const [loadingText, setLoadingText] = useState(LOADING_MESSAGES[0].text);
+  const [msgIndex, setMsgIndex] = useState(0);
+
+  const [result, setResult] = useState(null);
+  const [sessionId, setSessionId] = useState(null);
+  // Supabase `sessions.id` (uuid) for the current session — distinct from the
+  // human-readable sessionId code above. Used to target ai_results updates.
+  const [dbSessionId, setDbSessionId] = useState(null);
+  // sessions.access_token — the shareable patient-link credential, returned
+  // by the insert. sessionFinalized mirrors sessions.verified once published.
+  const [accessToken, setAccessToken] = useState(null);
+  const [sessionFinalized, setSessionFinalized] = useState(false);
+  const [finalizing, setFinalizing] = useState(false);
+
+  const [selectedView, setSelectedView] = useState('L-CC')
+
+
+
+
+
+
+
+  // Per-view clinician verification for the classification results.
+  // Report-level "verified" status is derived from these, not a standalone flag.
+  const emptyVerifications = () => ({
+    'L-CC': { status: 'pending', clinicianResult: null, note: '' },
+    'L-MLO': { status: 'pending', clinicianResult: null, note: '' },
+    'R-CC': { status: 'pending', clinicianResult: null, note: '' },
+    'R-MLO': { status: 'pending', clinicianResult: null, note: '' },
+  });
+  const [verifications, setVerifications] = useState(emptyVerifications());
+
+  const handleVerifyView = (viewId, update) => {
+    if (!canVerify) return;
+    setVerifications((prev) => ({ ...prev, [viewId]: { ...prev[viewId], ...update } }));
+
+    if (!dbSessionId) return;
+
+    // Verification is per-view (covers both the Classical and Quantum reads
+    // for that view), so this updates both matching ai_results rows.
+    const verificationStatus = update.status === 'confirmed' ? 'approved'
+      : update.status === 'edited' ? 'overridden'
+        : 'pending';
+
+    supabase
+      .from('ai_results')
+      .update({
+        verification_status: verificationStatus,
+        verified_result: update.status === 'pending' ? null : update.clinicianResult,
+        verified_at: update.status === 'pending' ? null : new Date().toISOString(),
+        verified_by: update.status === 'pending' ? null : (user?.email ?? null),
+      })
+      .eq('session_id', dbSessionId)
+      .eq('view', viewId)
+      .then(({ error }) => {
+        if (error) console.error('Failed to update ai_results verification:', error);
+      });
+  };
+
+  const verifiedViewCount = Object.values(verifications).filter((v) => v.status !== 'pending').length;
+  const reportVerified = verifiedViewCount === 4;
+  const bannerState = verifiedViewCount === 0 ? 'pending' : reportVerified ? 'verified' : 'partial';
+  const bannerColor = bannerState === 'verified'
+    ? reportStatus.verified
+    : bannerState === 'partial'
+      ? reportStatus.partial
+      : reportStatus.pending;
+  const bannerText = bannerState === 'verified'
+    ? 'CLINICIAN-VERIFIED REPORT'
+    : bannerState === 'partial'
+      ? `PARTIALLY REVIEWED — ${verifiedViewCount}/4 VIEWS`
+      : 'AI-GENERATED — AWAITING CLINICAL VERIFICATION';
+
+
+  const [summary, setSummary] = useState(null);
+
+
+  const [collapsed, setCollapsed] = useState(true);
+  const [sidebarWidth, setSidebarWidth] = useState(360);
+  const draggingRef = useRef(false);
+  const [dragging, setDragging] = useState(false);
+
+  useEffect(() => {
+    const onMove = (e) => {
+      if (!draggingRef.current) return;
+      const next = Math.min(640, Math.max(300, window.innerWidth - e.clientX));
+      setSidebarWidth(next);
+    };
+    const onUp = () => {
+      draggingRef.current = false;
+      setDragging(false);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+  }, []);
+
+  const startSidebarDrag = (e) => {
+    e.preventDefault();
+    draggingRef.current = true;
+    setDragging(true);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  };
+  const [pdfConfirmOpen, setPdfConfirmOpen] = useState(false);
+  const [pendingCopyType, setPendingCopyType] = useState('clinician');
+  const [pdfGateToast, setPdfGateToast] = useState(false);
+
+
+  const [audience, setAudience] = useState("clinician")
+
+  const [patientAge, setPatientAge] = useState('');
+
+
+
+  const [analysisMode, setAnalysisMode] = useState(null);
+  const [modelMode, setModelMode] = useState('Classical');
+  const [activeStep, setActiveStep] = useState(0);
+
+
+
+  const [views, setViews] = useState({
+    "L-CC": null, "L-MLO": null,
+    "R-CC": null, "R-MLO": null,
+  })
+
+
+
+
+
+  useEffect(() => {
+    if (!loading) {
+      setMsgIndex(0);
+      setLoadingText(LOADING_MESSAGES[0].text);
+      return;
+    }
+
+    let cancelled = false;
+    let timeoutId;
+
+    const advance = (index) => {
+      if (cancelled) return;
+      // Past the end of the scripted timeline, loop over the tail messages
+      // (e.g. the occlusion-heatmap steps) so the text keeps moving instead
+      // of sitting frozen on "Almost there..." while the real request
+      // finishes.
+      const loopStart = LOADING_MESSAGES.length - LOADING_MESSAGES_TAIL_LOOP;
+      const i = index >= LOADING_MESSAGES.length
+        ? loopStart + ((index - LOADING_MESSAGES.length) % LOADING_MESSAGES_TAIL_LOOP)
+        : index;
+      setLoadingText(LOADING_MESSAGES[i].text);
+      setMsgIndex(i);
+      timeoutId = setTimeout(() => advance(index + 1), LOADING_MESSAGES[i].duration);
+    };
+
+    advance(0);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
+  }, [loading]);
+
+  // Once past step 0 the hero/stepper are compact, so a plain scroll-to-top
+  // is enough to bring each new step into view — no centering math needed.
+  useEffect(() => {
+    if (activeStep === 0) return;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [activeStep]);
+
+  // Result components the focus navigator can bring into view.
+  const classificationRef = useRef(null);
+  const mammoRiskRef = useRef(null);
+  const futureRiskRef = useRef(null);
+  const focusTargets = useMemo(() => (analysisMode === 'future-risk'
+    ? [{ ref: futureRiskRef, label: 'Focus future risk results' }]
+    : [
+      { ref: classificationRef, label: 'Focus classification results' },
+      { ref: mammoRiskRef, label: 'Focus mammogram risk results' },
+    ]), [analysisMode]);
+
+  // Bring the main result into view once per completed analysis. `result` is
+  // only set after both models succeed (failures return to the upload step with
+  // it still null), so errors never trigger this. Keyed on the result object so
+  // later re-renders never pull the user back.
+  const autoFocusedResult = useRef(null);
+  useEffect(() => {
+    if (activeStep !== 2 || loading || !result || autoFocusedResult.current === result) return;
+    const target = focusTargets[0].ref;
+    const id = setTimeout(() => {
+      if (!target.current) return; // result component didn't render — nothing to focus
+      autoFocusedResult.current = result;
+      focusElement(target.current);
+    }, 350); // let the results' mount transition settle so the measured size is final
+    return () => clearTimeout(id);
+  }, [activeStep, loading, result, focusTargets]);
+
+
+
+
+  // Who owns a new session: patients via patient_id, clinicians/admins via clinician_id (+ optional chosen patient).
+  const sessionOwnerFields = () => ({
+    clinician_id: profile?.role === 'patient' ? null : (user?.id ?? null),
+    patient_id: profile?.role === 'patient' ? (user?.id ?? null) : (selectedPatientId || null),
+  });
+
+  const persistFutureRiskSession = async ({ sessionCode, cnnData, qmlData, datedSessions }) => {
+    if (!supabase) return;
+    try {
+      const exams = datedSessions.map((s, i) => ({ examId: `exam_${i + 1}`, examDate: s.scanDate, views: s.views }));
+      const { data: sessionRow, error: sessionError } = await supabase
+        .from('sessions')
+        .insert({
+          session_code: sessionCode,
+          analysis_mode: 'future-risk',
+          ...sessionOwnerFields(),
+          result_snapshot: buildSnapshot(cnnData, qmlData, {
+            patient_age: patientAge ? Number(patientAge) : null,
+            exams: exams.map((e) => ({ exam_id: e.examId, exam_date: e.examDate })),
+          }),
+        })
+        .select()
+        .single();
+      if (sessionError) throw sessionError;
+      setDbSessionId(sessionRow.id);
+
+      await saveSessionImages({
+        sessionId: sessionRow.id,
+        exams: exams.map((e) => ({ examId: e.examId, views: e.views })),
+        cnnData, qmlData,
+      });
+    } catch (err) {
+      console.error('Failed to persist future-risk session to Supabase:', err);
+    }
+  };
+
+  const persistClassificationSession = async ({ sessionCode, cnnData, qmlData, uploadedViews }) => {
+    if (!supabase) return;
+    try {
+      const { data: sessionRow, error: sessionError } = await supabase
+        .from('sessions')
+        .insert({
+          session_code: sessionCode,
+          analysis_mode: 'classification',
+          ...sessionOwnerFields(),
+          result_snapshot: buildSnapshot(cnnData, qmlData),
+          training_consent: trainingConsent,
+          training_consent_at: trainingConsent ? new Date().toISOString() : null,
+          training_consent_version: trainingConsent ? TRAINING_TERMS_VERSION : null,
+        })
+        .select()
+        .single();
+      if (sessionError) throw sessionError;
+
+      setDbSessionId(sessionRow.id);
+      setAccessToken(sessionRow.access_token);
+
+      const VIEW_KEYS = ['L-CC', 'L-MLO', 'R-CC', 'R-MLO'];
+      const aiResultRows = VIEW_KEYS.flatMap((view) => ([
+        cnnData?.views?.[view] && {
+          session_id: sessionRow.id, view, model: 'Classical',
+          ai_result: cnnData.views[view].result, ai_confidence: cnnData.views[view].score,
+        },
+        qmlData?.views?.[view] && {
+          session_id: sessionRow.id, view, model: 'Quantum',
+          ai_result: qmlData.views[view].result, ai_confidence: qmlData.views[view].score,
+        },
+      ])).filter(Boolean);
+
+      if (aiResultRows.length) {
+        const { error: aiResultsError } = await supabase.from('ai_results').insert(aiResultRows);
+        if (aiResultsError) throw aiResultsError;
+      }
+
+      const riskRows = [
+        cnnData?.mammo_risk && {
+          session_id: sessionRow.id,
+          model: 'Classical',
+          composite_score: cnnData.mammo_risk.score,
+          risk_level: cnnData.mammo_risk.level,
+          highest_density: cnnData.mammo_risk.density,
+          highest_birads: cnnData.mammo_risk.birads,
+        },
+
+        qmlData?.mammo_risk && {
+          session_id: sessionRow.id,
+          model: 'Quantum',
+          composite_score: qmlData.mammo_risk.score,
+          risk_level: qmlData.mammo_risk.level,
+          highest_density: qmlData.mammo_risk.density,
+          highest_birads: qmlData.mammo_risk.birads,
+        },
+      ].filter(Boolean);
+
+      if (riskRows.length) {
+        const { error: riskError } = await supabase.from('risk_assessments').insert(riskRows);
+        if (riskError) throw riskError;
+      }
+
+      // Originals + model images go to private storage so the session can be restored later.
+      await saveSessionImages({ sessionId: sessionRow.id, views: uploadedViews, cnnData, qmlData });
+    } catch (err) {
+      console.error('Failed to persist session to Supabase:', err);
+    }
+  };
+
+  // Explicit clinician action — sessions.verified only flips once all 4 views
+  // are individually verified AND the clinician deliberately publishes, so a
+  // patient link is never live without a clinician actively choosing to share it.
+  const handleFinalizeSession = async () => {
+    if (!canVerify || !supabase || !dbSessionId || !reportVerified) return;
+    setFinalizing(true);
+    try {
+      const { error } = await supabase
+        .from('sessions')
+        .update({ verified: true, verified_at: new Date().toISOString(), verified_by: user?.email ?? null })
+        .eq('id', dbSessionId);
+      if (error) throw error;
+      setSessionFinalized(true);
+    } catch (err) {
+      console.error('Failed to finalize session:', err);
+      setStatus({ ok: false, msg: 'Failed to publish results. Please try again.' });
+    } finally {
+      setFinalizing(false);
+    }
+  };
+
+  // Failed runs return to the upload step with every input kept. A failure the
+  // backend pins to one image is flagged on that slot instead of a banner.
+  const withViewError = (viewMap, viewKey, message) => ({
+    ...viewMap,
+    [viewKey]: { ...viewMap[viewKey], error: message },
+  });
+
+  const handleAnalyse = async () => {
+
+
+    // Same rules the upload step uses to explain what is missing.
+    const inputCheck = analysisMode === 'future-risk'
+      ? validateFutureRisk(sessions, patientAge)
+      : validateSessionAnalysis(views);
+    if (!inputCheck.isValid) return;
+    if (profile?.role === 'clinician' && !selectedPatientId) {
+      setAnalysisError('Select the patient this analysis is for before running it.');
+      return;
+    }
+
+    setLoading(true);
+    setStatus(null);
+    setAnalysisError(null);
+
+    if (analysisMode === 'future-risk') {
+      // sessions that have a date AND at least one uploaded image
+      const datedSessions = sessions.filter(
+        s => s.scanDate && Object.values(s.views).some(v => (v?.file ?? v) instanceof File)
+      );
+
+      setActiveStep(2);
+      const futureSessionCode = genSessionId();
+      setSessionId(futureSessionCode);
+      setDbSessionId(null);
+
+
+      const buildFutureRiskFormData = () => {
+        const viewKeys = ['L-CC', 'R-CC', 'L-MLO', 'R-MLO'];
+
+        const formData = new FormData();
+
+        const metadata = {
+          patient_age: patientAge ? Number(patientAge) : null,
+          exams: datedSessions.map((session, index) => {
+            const examId = `exam_${index + 1}`;
+
+            const views = {};
+
+            viewKeys.forEach((viewKey) => {
+              const uploaded = session.views?.[viewKey];
+              const file = uploaded?.file ?? (uploaded instanceof File ? uploaded : null);
+
+              if (!file) return;
+
+              const safeName =
+                file.name?.replace(/[^A-Za-z0-9._-]/g, '_') ?? `${viewKey}.png`;
+
+              const transportName = `${examId}_${viewKey}_${safeName}`;
+
+              views[viewKey] = transportName;
+              formData.append('files', file, transportName);
+            });
+
+            return {
+              exam_id: examId,
+              exam_date: session.scanDate,
+              views,
+            };
+          }),
+        };
+
+        formData.append('metadata_json', JSON.stringify(metadata));
+
+        return formData;
+      };
+
+      try {
+        const [cnnApi, qmlApi] = await Promise.all([
+          postAnalysis(ENDPOINTS.futureRiskClassical, buildFutureRiskFormData()),
+          postAnalysis(ENDPOINTS.futureRiskQuantum, buildFutureRiskFormData()),
+        ]);
+
+        setResult({
+          resultFile: {
+            cnn: cnnApi,
+            qml: qmlApi,
+          },
+        });
+
+        persistFutureRiskSession({
+          sessionCode: futureSessionCode,
+          cnnData: cnnApi,
+          qmlData: qmlApi,
+          datedSessions,
+        });
+
+      } catch (err) {
+        console.error(err);
+        const failure = describeAnalysisFailure(err, { subject: 'Future risk analysis', kept: 'inputs' });
+        const failedSession = failure.examNumber ? datedSessions[failure.examNumber - 1] : null;
+        if (failure.slotMessage && failure.viewKey && failedSession?.views[failure.viewKey]) {
+          setSessions(prev => prev.map(s => s.id === failedSession.id
+            ? { ...s, views: withViewError(s.views, failure.viewKey, failure.slotMessage) }
+            : s));
+        } else {
+          setAnalysisError(failure);
+        }
+        setActiveStep(1);
+      } finally {
+        setLoading(false);
+      }
+      return;
+    } else {
+      setActiveStep(2);
+      const newSessionCode = genSessionId();
+      setSessionId(newSessionCode);
+      setDbSessionId(null);
+      setAccessToken(null);
+      setSessionFinalized(false);
+
+      const formData = new FormData();
+      formData.append('l_cc', views['L-CC'].file);
+      formData.append('l_mlo', views['L-MLO'].file);
+      formData.append('r_cc', views['R-CC'].file);
+      formData.append('r_mlo', views['R-MLO'].file);
+
+
+
+      try {
+        const [qmlData, cnnData] = await Promise.all([
+          postAnalysis(ENDPOINTS.sessionAnalysisQuantum, formData),
+          postAnalysis(ENDPOINTS.sessionAnalysisClassical, formData),
+        ]);
+
+        setResult({
+          resultFile: {
+            qml: qmlData,
+            cnn: cnnData,
+          },
+        });
+
+        persistClassificationSession({
+          sessionCode: newSessionCode,
+          cnnData: cnnData,
+          qmlData: qmlData,
+          uploadedViews: views,
+        });
+
+      } catch (err) {
+        console.error(err);
+        const failure = describeAnalysisFailure(err, { subject: 'The analysis', kept: 'images' });
+        if (failure.slotMessage && failure.viewKey && views[failure.viewKey]) {
+          setViews(prev => withViewError(prev, failure.viewKey, failure.slotMessage));
+        } else {
+          setAnalysisError(failure);
+        }
+        setActiveStep(1);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleReset = () => {
+
+    setFiles([]);
+    setPreview(null);
+    setStatus(null);
+    setAnalysisError(null);
+    setResult(null);
+    setSessionId(null);
+    setDbSessionId(null);
+    setAccessToken(null);
+    setSessionFinalized(false);
+    setActiveStep(0);
+    setViews({ "L-CC": null, "L-MLO": null, "R-CC": null, "R-MLO": null });
+    setSummary("")
+    setCollapsed(true)
+    setSessions([emptySession(), emptySession()]);
+    setVerifications(emptyVerifications());
+    setTrainingConsent(false);
+
+  };
+
+
+  const handleExplain = async () => {
+
+    setLLMLoading(true);
+    setSummary("")
+
+    try {
+      const llmRes = await apiFetch(ENDPOINTS.explain, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },  // ← must set this manually
+        body: JSON.stringify({
+          audience: audience,
+
+          // Classical
+          overall_classification:
+            result.resultFile.cnn.classification.overall,
+
+          patient_malignant_score:
+            result.resultFile.cnn.classification.patient_malignant_score,
+
+          malignant_detected:
+            result.resultFile.cnn.classification.malignant_detected,
+
+          views:
+            result.resultFile.cnn.views,
+
+          composite_risk_score:
+            result.resultFile.cnn.mammo_risk.score,
+
+          composite_risk_level:
+            result.resultFile.cnn.mammo_risk.level,
+
+          highest_density:
+            result.resultFile.cnn.mammo_risk.density,
+
+          highest_birads:
+            result.resultFile.cnn.mammo_risk.birads,
+
+
+          // Quantum
+          qml_overall_classification:
+            result.resultFile.qml.classification.overall,
+
+          qml_patient_malignant_score:
+            result.resultFile.qml.classification.patient_malignant_score,
+
+          qml_views:
+            result.resultFile.qml.views,
+
+          qml_composite_risk_score:
+            result.resultFile.qml.mammo_risk.score,
+
+          qml_composite_risk_level:
+            result.resultFile.qml.mammo_risk.level,
+
+          qml_highest_density:
+            result.resultFile.qml.mammo_risk.density,
+
+          qml_highest_birads:
+            result.resultFile.qml.mammo_risk.birads,
+        })
+
+      });
+
+      const data = await llmRes.json()
+      setSummary(data)
+
+
+    } catch {
+
+    } finally {
+      setLLMLoading(false);
+    }
+
+  }
+
+  const handleExplainFutureRisk = async () => {
+    setLLMLoading(true);
+    setSummary("");
+    try {
+      const cnnRaw = result.resultFile.cnn;
+      const qmlRaw = result.resultFile.qml;
+      const cnn = cnnRaw?.patient_summary ?? cnnRaw;
+      const qml = qmlRaw?.patient_summary ?? qmlRaw;
+
+      const datedSessions = sessions
+        .filter(s => s.scanDate)
+        .sort((a, b) => new Date(a.scanDate) - new Date(b.scanDate));
+
+      const contribsOf = (raw) =>
+        (raw?.image_level_results ?? []).map((r, i) => ({
+          label: datedSessions[i]
+            ? new Date(datedSessions[i].scanDate).getFullYear().toString()
+            : r.filename,
+          percent: r.image_contribution_percent,
+        }));
+      const llmRes = await apiFetch(ENDPOINTS.explainFutureRisk, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          audience: audience,
+          patient_age: patientAge ? Number(patientAge) : null,
+          num_exams: sessions.filter(s => s.scanDate).length,
+          // Classical — primary
+          cnn_yearly_risk: cnn?.final_patient_yearly_future_risk ?? null,
+          cnn_five_year_risk: cnn?.final_patient_5_year_risk_score ?? null,
+          cnn_exam_contributions: contribsOf(cnnRaw),
+          // Quantum — secondary
+          qml_yearly_risk: qml?.final_patient_yearly_future_risk ?? null,
+          qml_five_year_risk: qml?.final_patient_5_year_risk_score ?? null,
+          qml_exam_contributions: contribsOf(qmlRaw),
+        }),
+      });
+      const data = await llmRes.json();
+      setSummary(data);
+    } catch (err) {
+      console.error("Future-risk explain failed:", err);
+      setStatus({ ok: false, msg: 'Explanation failed. Is Ollama running?' });
+    } finally {
+      setLLMLoading(false);
+    }
+  };
+
+  // Required patient picker for clinicians (both analysis modes). Stored sessions are owned by that patient.
+  const patientSelector = profile?.role === 'clinician' ? (
+    <TextField
+      select required fullWidth size="small" label="Patient"
+      value={selectedPatientId} onChange={(e) => { setSelectedPatientId(e.target.value); setAnalysisError(null); }}
+      error={!!analysisError && !selectedPatientId}
+      disabled={patientsLoading || !assignedPatients.length}
+      helperText={patientsLoading
+        ? 'Loading your patients…'
+        : assignedPatients.length
+          ? undefined
+          : 'No patients are assigned to you. Ask an admin to assign a patient before running an analysis.'}
+      sx={{ mb: 2 }}
+    >
+      {assignedPatients.map((p) => <MuiMenuItem key={p.id} value={p.id}>{p.full_name || 'Unnamed patient'}</MuiMenuItem>)}
+    </TextField>
+  ) : null;
+
+  // ── Restore a stored session (?session=<uuid>) without rerunning the models ──
+  const [searchParams] = useSearchParams();
+  const restoreId = searchParams.get('session');
+  const [restoring, setRestoring] = useState(!!restoreId);
+  const [restoreError, setRestoreError] = useState(null);
+
+  useEffect(() => {
+    if (!restoreId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { session, result: restored, meta, verifications: restoredVerifications } = await loadSessionResult(restoreId);
+        if (cancelled) return;
+        const mode = session.analysis_mode === 'future-risk' ? 'future-risk' : 'classification';
+        setAnalysisMode(mode);
+        if (mode === 'future-risk') {
+          // The results screen only needs the exam dates and age; the images stay in storage.
+          setSessions((meta?.exams ?? []).map((e) => ({ ...emptySession(), scanDate: e.exam_date })));
+          setPatientAge(meta?.patient_age != null ? String(meta.patient_age) : '');
+        }
+        setResult(restored);
+        setSessionId(session.session_code);
+        setDbSessionId(session.id);
+        setAccessToken(session.access_token);
+        setSessionFinalized(!!session.verified);
+        setVerifications(restoredVerifications);
+        if (session.explanations?.viewData) setViewData(session.explanations.viewData);
+        if (session.explanations?.summary) setSummary(session.explanations.summary);
+        setActiveStep(2);
+      } catch (err) {
+        console.error('Failed to restore session:', err);
+        if (!cancelled) setRestoreError(err.message || 'Could not load this session.');
+      } finally {
+        if (!cancelled) setRestoring(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [restoreId]);
+
+  // Keep generated explanations with the stored session so they're restored too.
+  useEffect(() => {
+    if (!dbSessionId || !supabase) return;
+    if (!summary && !Object.values(viewData).some((v) => v.generated)) return;
+    const t = setTimeout(() => {
+      saveExplanations(dbSessionId, { summary, viewData, audience }).then(({ error }) => {
+        if (error) console.error('Failed to save explanations:', error);
+      });
+    }, 500);
+    return () => clearTimeout(t);
+  }, [dbSessionId, summary, viewData, audience]);
+
+  const viewKey = selectedView.replace('_', '-');
+
+  const currentViewData = viewData[selectedView];
+  const handleExplainView = async () => {
+    const explainedView = selectedView;
+    setVLMLoading(explainedView);   // which view is generating, so other views don't show a spinner
+    setViewData(prev => ({ ...prev, [explainedView]: { ...prev[explainedView], error: null } }));
+
+
+
+    try {
+      const view = result.resultFile.cnn.views[selectedView];
+      const qmlView = result.resultFile.qml.views[selectedView];
+
+      const vlmResponse = await apiFetch(ENDPOINTS.explainView, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          base_image: view.explainability.base_image_base64,
+
+          classical_heatmap: view.explainability.overlay_base64,
+
+          classical_verdict: view.result,
+
+          quantum_heatmap: qmlView.explainability.overlay_base64,
+
+          quantum_verdict: qmlView.result,
+
+          view: selectedView,
+          audience: audience,
+        }),
+      });
+
+      const data = await vlmResponse.json();
+
+      if (!vlmResponse.ok) {
+        throw new Error(data?.error || 'Failed to generate explanation');
+      }
+
+      setViewData(prev => ({
+        ...prev,
+        [selectedView]: {
+          explanation: data.explanation,
+          generated: true,
+        },
+      }));
+
+    } catch (err) {
+      console.error("VLM error:", err);
+      const message = err instanceof TypeError
+        ? 'Could not reach the server. Please try again.'
+        : (err.message || 'Could not generate the explanation. Please try again.');
+      setViewData(prev => ({ ...prev, [explainedView]: { ...prev[explainedView], explanation: null, generated: false, error: message } }));
+    } finally {
+      setVLMLoading(null);
+    }
+  };
+
+
+
+  // Fast path if an explanation was already generated; otherwise confirm first
+  // so the PDF doesn't silently ship without one.
+  //
+  // Gated on `reportVerified` as a defense-in-depth check — the calling
+  // buttons are already visually gated, this just guards the export itself.
+  //
+  // `copyType`: 'clinician' includes the AI-vs-reviewed audit trail + notes;
+  // 'patient' shows only the final verified result per view. NOTE:
+  // exportSessionPDF (components/results/shared/ExportSession) still needs to
+  // branch on `copyType`/`verifications` to actually produce the two variants.
+  const handleDownloadPdfClick = (copyType) => {
+    if (!reportVerified) { setPdfGateToast(true); return; }
+    setPendingCopyType(copyType);
+    if (summary?.explanation) {
+      exportSessionPDF({ sessionId, analysisMode, currentModel: modelMode, result, summary, patientAge, sessions, verifications, copyType });
+    } else {
+      setPdfConfirmOpen(true);
+    }
+  };
+
+  const confirmDownloadWithoutExplanation = () => {
+    setPdfConfirmOpen(false);
+    exportSessionPDF({ sessionId, analysisMode, currentModel: modelMode, result, summary, patientAge, sessions, verifications, copyType: pendingCopyType });
+  };
+
+
+
+
+
+  const stepPb = {
+    0: { xs: 4, md: 5 },
+    1: { xs: 4, md: 5 },
+    2: { xs: 4, md: 5 },
+  };
+
+
+  //mock data
+
+  const dated = sessions.filter(s => s.scanDate);
+  const examFiles = (dated.length ? dated : [
+    { scanDate: '2024-01-01' },
+    { scanDate: '2025-01-01' },
+    { scanDate: '2026-01-01' },
+  ]).map((s, i) => ({ scanDate: s.scanDate, file: { name: `exam_${i + 1}` } }));
+
+  if (restoring || restoreError) {
+    return (
+      <Box sx={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center', justifyContent: 'center', px: 2 }}>
+        {restoreError ? (
+          <>
+            <Alert severity="error">{restoreError}</Alert>
+            <Button variant="contained" href="/Analysis">Start a new analysis</Button>
+          </>
+        ) : (
+          <>
+            <CircularProgress size={28} />
+            <Typography color="text.secondary">Loading saved session…</Typography>
+          </>
+        )}
+      </Box>
+    );
+  }
+
+  return (
+
+    <Box sx={{ display: 'flex', minHeight: '100vh', alignItems: 'flex-start' }}>
+
+      <Box sx={{
+        backgroundColor: 'background.default',
+        minHeight: '100vh',
+        flex: 1,
+        minWidth: 0,
+        position: 'relative',
+        overflow: 'clip',
+        background: (theme) => theme.palette.background.hero,
+      }}>
+        <NeuralCanvas />
+
+
+
+
+        {/* Radial glow */}
+        <Box sx={{
+          position: 'absolute', top: '-40%', left: '50%',
+          transform: 'translateX(-50%)', width: '500px', height: '500px',
+          borderRadius: '50%',
+          background: (theme) => `radial-gradient(circle, ${theme.palette.primary.main}0F 0%, transparent 70%)`,
+          pointerEvents: 'none', zIndex: 0,
+        }} />
+
+        {/* Grid overlay */}
+        <Box sx={{
+          position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0,
+          backgroundImage: (theme) =>
+            `linear-gradient(${theme.palette.primary.main}${theme.palette.mode === 'dark' ? '07' : '14'} 1px, transparent 1px),
+           linear-gradient(90deg, ${theme.palette.primary.main}${theme.palette.mode === 'dark' ? '07' : '14'} 1px, transparent 1px)`,
+          backgroundSize: '60px 60px',
+        }} />
+
+
+
+        {/* ── Hero — one persistent element that smoothly shrinks past step 0, ──
+             instead of swapping between two separate trees (which read as a
+             jump-cut rather than an actual shrink). Chip + title stay put;
+             only the descriptive subtitle collapses away. */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
+          style={{ position: 'relative', zIndex: 1 }}
+        >
+          <Box sx={{
+            pt: activeStep === 0 ? { xs: 5, md: 8 } : { xs: 3.5, md: 4.5 },
+            pb: 0, px: 2, textAlign: 'center',
+            transition: 'padding-top 0.45s cubic-bezier(0.4,0,0.2,1)',
+          }}>
+            <Chip
+              label="RESEARCH PROTOTYPE · NOT FOR CLINICAL USE"
+              size="small"
+              sx={{
+                mb: activeStep === 0 ? 2.5 : 1.5,
+                bgcolor: (theme) => `${theme.palette.error.main}18`,
+                color: 'error.main',
+                letterSpacing: '0.08em', fontSize: '0.65rem', fontWeight: 700,
+                border: '1px solid',
+                borderColor: (theme) => `${theme.palette.error.main}35`,
+                borderRadius: '999px',
+                transition: 'margin-bottom 0.45s cubic-bezier(0.4,0,0.2,1)',
+              }}
+            />
+            <Typography variant="h3" sx={{
+              fontWeight: 700, letterSpacing: '-0.02em', color: 'text.primary',
+              mb: activeStep === 0 ? 1.5 : 0.5,
+              fontSize: activeStep === 0 ? { xs: '2rem', md: '2.75rem' } : { xs: '1.6rem', md: '2.1rem' },
+              transition: 'font-size 0.45s cubic-bezier(0.4,0,0.2,1), margin-bottom 0.45s cubic-bezier(0.4,0,0.2,1)',
+            }}>
+              Mammo
+              <Box component="span" sx={{
+                color: 'primary.main',
+                fontStyle: 'italic',
+              }}>
+                Analysis
+              </Box>
+            </Typography>
+
+            <AnimatePresence initial={false}>
+              {activeStep === 0 && (
+                <motion.div
+                  key="hero-subtitle"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.4, ease: 'easeInOut' }}
+                  style={{ overflow: 'hidden' }}
+                >
+                  <Typography variant="body1" sx={{
+                    color: 'text.secondary', fontWeight: 400,
+                    maxWidth: 680, mx: 'auto', lineHeight: 1.7,
+                    fontSize: '0.95rem', pb: 0.5,
+                  }}>
+                    Upload mammogram imaging for automated classification, composite risk scoring, and side-by-side classical vs quantum model comparison.
+                  </Typography>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {status && !status.ok && (
+              <Container maxWidth="sm" sx={{ mt: 2 }}>
+                <Alert severity="error">{status.msg}</Alert>
+              </Container>
+            )}
+          </Box>
+        </motion.div>
+
+
+
+
+        {/* ── Stepper — fades in slightly after hero ── */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.4, delay: 0.15, ease: 'easeOut' }}
+          style={{ position: 'relative', zIndex: 1 }}
+        >
+          <AnalysisStepper activeStep={activeStep} />
+        </motion.div>
+
+        {/* ── Step content — AnimatePresence swaps between steps ── */}
+        <Box sx={{ position: 'relative', zIndex: 1, pb: stepPb[activeStep], px: { xs: 0.5, sm: 2 } }}>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeStep}
+              variants={stepVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+            >
+              {activeStep === 0 && (
+                <Container maxWidth="md" sx={{ mt: { xs: 3, md: 4.5 } }}>
+                  <ModeSelect
+                    selectedMode={analysisMode}
+                    onModeSelect={setAnalysisMode}
+                    setActiveStep={setActiveStep}
+                  />
+                </Container>
+              )}
+
+              {activeStep === 1 && (
+                analysisMode === 'classification' ? (
+                  <Container maxWidth="md" sx={{ mt: { xs: 3, md: 4.5 } }}>
+                    {patientSelector}
+                    <MultiViewUpload
+                      views={views} setViews={setViews}
+                      setActiveStep={setActiveStep}
+                      handleAnalyse={handleAnalyse}
+                      analysisError={analysisError}
+                      trainingConsent={trainingConsent}
+                      setTrainingConsent={setTrainingConsent}
+                    />
+
+                  </Container>
+
+                ) : analysisMode === 'future-risk' ? (
+                  <Container maxWidth="md" sx={{ mt: { xs: 3, md: 4.5 } }}>
+
+
+
+                    {patientSelector}
+                    <MultiImageUploadDated
+                      sessions={sessions}
+                      setSessions={setSessions}
+                      setActiveStep={setActiveStep}
+                      handleAnalyse={handleAnalyse}
+                      patientAge={patientAge}
+                      setPatientAge={setPatientAge}
+                      analysisError={analysisError}
+                    />
+                  </Container>
+                ) : null
+              )}
+
+              {activeStep === 2 && (
+                <Box sx={{ minHeight: loading ? '55vh' : 'auto' }}>
+                  {loading ? (
+                    <Box sx={{
+                      minHeight: '55vh', display: 'flex',
+                      alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <ScanningLoader
+                        message={loadingText}
+                        expectedDurationMs={analysisMode === 'classification' ? 38000 : 16000}
+                      />
+                    </Box>
+                  ) : (
+                    <>
+                      {analysisMode === 'classification' && (
+                        <>
+
+                          <Container maxWidth="xl">
+                            <Box sx={{
+                              borderRadius: 2.5, p: { xs: 1.25, sm: 2, md: 3 },
+                              background: rp.frame,
+                              border: `1px solid ${rp.frameBorder}`,
+                              boxShadow: rp.frameShadow,
+                            }}>
+                              <Box sx={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.25,
+                                mb: 1.5, px: { xs: 1.5, sm: 3 }, py: 1.75, borderRadius: 1.5,
+                                border: `1px solid ${bannerColor}66`,
+                                background: `${bannerColor}14`,
+                              }}>
+                                <Box sx={{ width: 8, height: 8, borderRadius: '50%', background: bannerColor, flexShrink: 0 }} />
+                                <Typography sx={{
+                                  fontFamily: 'monospace', fontSize: '0.95rem', fontWeight: 800, letterSpacing: '0.04em',
+                                  color: bannerColor, textAlign: 'center',
+                                }}>
+                                  {bannerText}
+                                </Typography>
+                              </Box>
+
+                              <Box sx={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5,
+                                mb: 1.5, px: 2, py: 1.25, borderRadius: 1,
+                                background: rp.bar,
+                              }}>
+                                <Typography sx={{ fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.06em', color: theme.palette.text.primary, overflowWrap: 'anywhere' }}>
+                                  SESSION ID: {sessionId}
+                                </Typography>
+
+                                {/* Clickable rather than disabled so an unverified click can
+                                    still explain itself via the toast below. */}
+                                {canVerify && (
+                                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                  {[
+                                    { key: 'clinician', label: 'Clinician Copy' },
+                                    { key: 'patient', label: 'Patient Copy' },
+                                  ].map(({ key, label }) => (
+                                    <Button
+                                      key={key}
+                                      size="small" variant="outlined" startIcon={<DownloadIcon sx={{ fontSize: 16 }} />}
+                                      onClick={() => handleDownloadPdfClick(key)}
+                                      sx={{
+                                        fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5,
+                                        color: reportVerified ? (theme.palette.text.primary) : (rp.buttonDisabledText),
+                                        borderColor: reportVerified ? (rp.buttonBorder) : (rp.buttonDisabledBorder),
+                                        cursor: reportVerified ? 'pointer' : 'not-allowed',
+                                        '&:hover': {
+                                          borderColor: reportVerified ? (rp.buttonHoverBorder) : (rp.buttonDisabledBorder),
+                                          backgroundColor: reportVerified ? (rp.buttonHoverBg) : 'transparent',
+                                        },
+                                      }}
+                                    >
+                                      {label}
+                                    </Button>
+                                  ))}
+
+                                  {sessionFinalized ? (
+                                    <Button
+                                      size="small" variant="outlined" disabled
+                                      sx={{ fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5, color: reportStatus.verified, borderColor: alpha(reportStatus.verified, 0.5) }}
+                                    >
+                                      Published to Patient
+                                    </Button>
+                                  ) : (
+                                    <Button
+                                      size="small" variant="outlined"
+                                      disabled={!reportVerified || !dbSessionId || finalizing}
+                                      onClick={handleFinalizeSession}
+                                      sx={{
+                                        fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5,
+                                        color: reportVerified ? (theme.palette.text.primary) : (rp.buttonDisabledText),
+                                        borderColor: reportVerified ? (rp.buttonBorder) : (rp.buttonDisabledBorder),
+                                        cursor: reportVerified ? 'pointer' : 'not-allowed',
+                                        '&:hover': {
+                                          borderColor: reportVerified ? (rp.buttonHoverBorder) : (rp.buttonDisabledBorder),
+                                          backgroundColor: reportVerified ? (rp.buttonHoverBg) : 'transparent',
+                                        },
+                                      }}
+                                    >
+                                      {finalizing ? 'Publishing…' : 'Finalize & Publish to Patient'}
+                                    </Button>
+                                  )}
+                                </Box>
+                                )}
+                              </Box>
+
+                              {/* Patient link — only ever shown after the clinician deliberately publishes. */}
+                              {sessionFinalized && accessToken && (
+                                <Box sx={{
+                                  display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap',
+                                  mb: 1.5, px: 2, py: 1.25, borderRadius: 1,
+                                  border: `1px solid ${alpha(tint.low, 0.35)}`,
+                                  background: alpha(tint.low, 0.08),
+                                }}>
+                                  <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: reportStatus.verified, whiteSpace: 'nowrap' }}>
+                                    Patient link:
+                                  </Typography>
+                                  <Typography sx={{
+                                    fontFamily: 'monospace', fontSize: '0.78rem', color: rp.barText,
+                                    wordBreak: 'break-all', flex: 1, minWidth: 0,
+                                  }}>
+                                    {`${window.location.origin}/report/${accessToken}`}
+                                  </Typography>
+                                  <Button
+                                    size="small" variant="outlined"
+                                    onClick={() => navigator.clipboard?.writeText(`${window.location.origin}/report/${accessToken}`)}
+                                    sx={{ fontSize: '0.7rem', fontWeight: 700, borderRadius: 1.5, color: reportStatus.verified, borderColor: alpha(reportStatus.verified, 0.5) }}
+                                  >
+                                    Copy
+                                  </Button>
+                                </Box>
+                              )}
+
+                              {/* Toast fires when a download is attempted before verification is complete. */}
+                              <Snackbar
+                                open={pdfGateToast} autoHideDuration={3500} onClose={() => setPdfGateToast(false)}
+                                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+                              >
+                                <Alert
+                                  severity="warning" variant="filled" onClose={() => setPdfGateToast(false)}
+                                  sx={{ fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 600, borderRadius: 1.5 }}
+                                >
+                                  Verify all 4 views before exporting — {verifiedViewCount}/4 reviewed so far
+                                </Alert>
+                              </Snackbar>
+                              <Box ref={classificationRef}>
+                                <ClassificationResults
+                                  analyisedImage={preview} reset={handleReset} sessionId={sessionId}
+                                  currentModel={modelMode} results={result} onModelSelect={setModelMode}
+                                  viewData={viewData} LLMloading={VLMloading === selectedView} audience={audience}
+                                  setAudience={setAudience} onGenerateExplanation={handleExplainView}
+                                  onOpenFullExplanation={() => setCollapsed(false)}
+                                  verifications={verifications} onVerifyView={canVerify ? handleVerifyView : undefined} setSelectedView={setSelectedView}
+                                />
+                              </Box>
+                              <Box ref={mammoRiskRef}>
+                                <MammoRiskResults results={result} sessionId={sessionId}
+                                  reset={handleReset} currentModel={modelMode} />
+                              </Box>
+
+                              <Box sx={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5,
+                                mt: 1.5, px: 2, py: 1.25, borderRadius: 1,
+                                background: rp.bar,
+                              }}>
+                                <Typography sx={{ fontSize: '0.85rem', color: rp.barText }}>
+                                  Done reviewing? Start a new session to analyse another set of scans.
+                                </Typography>
+                                <Button
+                                  size="small" variant="outlined" onClick={handleReset}
+                                  sx={{ fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5, color: theme.palette.text.primary, borderColor: rp.buttonBorder, '&:hover': { borderColor: rp.buttonHoverBorder, backgroundColor: rp.buttonHoverBg } }}
+                                >
+                                  New Session
+                                </Button>
+                              </Box>
+                            </Box>
+                          </Container>
+                        </>
+                      )}
+
+
+
+                      {analysisMode === 'future-risk' && (
+                        <>
+
+                          <Container maxWidth="xl">
+                            <Box sx={{
+                              borderRadius: 2.5, p: { xs: 1.25, sm: 2, md: 3 },
+                              background: rp.frame,
+                              border: `1px solid ${rp.frameBorder}`,
+                              boxShadow: rp.frameShadow,
+                            }}>
+                              <Box sx={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.25,
+                                mb: 1.5, px: { xs: 1.5, sm: 3 }, py: 1.75, borderRadius: 1.5,
+                                border: `1px solid ${alpha(tint.mid, 0.4)}`,
+                                background: alpha(tint.mid, 0.08),
+                              }}>
+                                <Box sx={{ width: 8, height: 8, borderRadius: '50%', background: reportStatus.pending, flexShrink: 0 }} />
+                                <Typography sx={{
+                                  fontFamily: 'monospace', fontSize: '0.95rem', fontWeight: 800, letterSpacing: '0.04em',
+                                  color: reportStatus.pending, textAlign: 'center',
+                                }}>
+                                  AI-GENERATED — AWAITING CLINICAL VERIFICATION
+                                </Typography>
+                              </Box>
+
+                              <Box sx={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5,
+                                mb: 1.5, px: 2, py: 1.25, borderRadius: 1,
+                                background: rp.bar,
+                              }}>
+                                <Typography sx={{ fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.06em', color: theme.palette.text.primary, overflowWrap: 'anywhere' }}>
+                                  SESSION ID: {sessionId}
+                                </Typography>
+                                <Button
+                                  size="small" variant="outlined" startIcon={<DownloadIcon sx={{ fontSize: 16 }} />}
+                                  onClick={handleDownloadPdfClick}
+                                  sx={{ fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5, color: theme.palette.text.primary, borderColor: rp.buttonBorder, '&:hover': { borderColor: rp.buttonHoverBorder, backgroundColor: rp.buttonHoverBg } }}
+                                >
+                                  Download PDF
+                                </Button>
+                              </Box>
+                              <Box ref={futureRiskRef}>
+                                <FutureRiskResults
+                                  analyisedImage={preview} reset={handleReset} sessionId={sessionId}
+                                  currentModel={modelMode} results={result}
+                                  uploadedFiles={examFiles}
+                                  onModelSelect={setModelMode}
+                                  onOpenFullExplanation={() => setCollapsed(false)}
+                                />
+                              </Box>
+
+                              <Box sx={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5,
+                                mt: 1.5, px: 2, py: 1.25, borderRadius: 1,
+                                background: rp.bar,
+                              }}>
+                                <Typography sx={{ fontSize: '0.85rem', color: rp.barText }}>
+                                  Done reviewing? Start a new session to analyse another set of scans.
+                                </Typography>
+                                <Button
+                                  size="small" variant="outlined" onClick={handleReset}
+                                  sx={{ fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5, color: theme.palette.text.primary, borderColor: rp.buttonBorder, '&:hover': { borderColor: rp.buttonHoverBorder, backgroundColor: rp.buttonHoverBg } }}
+                                >
+                                  New Session
+                                </Button>
+                              </Box>
+                            </Box>
+                          </Container>
+                        </>
+                      )}
+                    </>
+                  )}
+                </Box>
+              )}
+
+            </motion.div>
+          </AnimatePresence>
+        </Box>
+      </Box>
+      {activeStep === 2 && !loading && result &&
+        (analysisMode === 'classification' || analysisMode === 'future-risk') && (
+          <>
+            {/* Result focus navigator — left edge, mirroring the homepage navigator's
+                right-edge offsets, so it stays clear of the AI toggle and sidebar. */}
+            <ResultFocusNavigator
+              targets={focusTargets}
+              sx={{ right: 'auto', left: { xs: 10, md: 20 }, zIndex: 30 }}
+            />
+
+            {/* Floating Toggle — "AI" by default, expands on hover to reveal full label */}
+            <Box
+              sx={{
+                position: 'fixed',
+                right: collapsed ? 16 : sidebarWidth + 16,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                zIndex: 30,
+                transition: dragging ? 'none' : 'right 0.25s ease',
+              }}
+            >
+              <Button
+                onClick={() => setCollapsed(!collapsed)}
+                sx={{
+                  minWidth: 0,
+                  width: 44,
+                  height: 44,
+                  borderRadius: '14px',
+                  backdropFilter: 'blur(14px)',
+                  background: '#2f7fb8',
+                  border: '1px solid rgba(95,168,211,0.5)',
+                  color: '#FFFFFF',
+                  boxShadow: '0 8px 30px rgba(0,0,0,0.25)',
+                  '@keyframes aiBreathe': {
+                    '0%, 100%': { boxShadow: '0 8px 30px rgba(0,0,0,0.25), 0 0 0 0 rgba(92,200,245,0.45)' },
+                    '50%': { boxShadow: '0 8px 30px rgba(0,0,0,0.25), 0 0 0 8px rgba(92,200,245,0)' },
+                  },
+                  animation: collapsed ? 'aiBreathe 6s ease-in-out infinite' : 'none',
+                  '&:hover': {
+                    background: '#3a8fca',
+                    color: '#FFFFFF',
+                    transform: 'scale(1.05)',
+                  },
+                }}
+              >
+                {collapsed ? <AssistantIcon /> : <ChevronRightIcon />}
+              </Button>
+            </Box>
+
+            {/* Sidebar — draggable via the grip handle on its left edge */}
+            <Box
+              sx={{
+                width: sidebarWidth,
+
+                position: 'fixed',
+                right: 0,
+                top: 0,
+                height: '100vh',
+
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+
+                backdropFilter: 'blur(18px)',
+                background: (theme) => theme.palette.mode === 'dark' ? 'rgba(10,15,25,0.72)' : 'rgba(232,246,250,0.92)',
+                borderLeft: (theme) => theme.palette.mode === 'dark' ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(8,145,178,0.18)',
+
+                transform: collapsed ? 'translateX(100%)' : 'translateX(0)',
+                transition: dragging ? 'none' : 'transform 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
+
+                overflow: 'hidden',
+                zIndex: 20,
+                px: 2,
+              }}
+            >
+              {!collapsed && (
+                <Box
+                  onMouseDown={startSidebarDrag}
+                  title="Drag to resize"
+                  sx={{
+                    position: 'absolute', left: 0, top: 0, bottom: 0, width: 10,
+                    cursor: 'col-resize', zIndex: 25,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    '&:hover': { background: (theme) => `${theme.palette.primary.main}26` },
+                    ...(dragging && { background: (theme) => `${theme.palette.primary.main}33` }),
+                  }}
+                >
+                  <Box sx={{
+                    display: 'flex', flexDirection: 'column', gap: '3px',
+                  }}>
+                    {[0, 1, 2].map((i) => (
+                      <Box key={i} sx={{
+                        width: 3, height: 3, borderRadius: '50%',
+                        background: (theme) => dragging ? theme.palette.grip.active : theme.palette.grip.idle,
+                      }} />
+                    ))}
+                  </Box>
+                </Box>
+              )}
+              {!collapsed && (
+                <Box
+                  sx={{
+                    p: 2.5,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 2,
+                  }}
+                >
+
+                  <Box>
+                    <Typography sx={{
+                      fontSize: '0.72rem',
+                      letterSpacing: '0.12em',
+                      textTransform: 'uppercase',
+                      color: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.45)' : 'rgba(8,145,178,0.7)',
+                      fontWeight: 700,
+                    }}>
+                      AI Explanation
+                    </Typography>
+
+                    <Typography sx={{
+                      color: (theme) => theme.palette.mode === 'dark' ? '#FFFFFF' : theme.palette.text.primary,
+                      fontWeight: 700,
+                      fontSize: '1.1rem',
+                      mt: 0.5,
+                    }}>
+                      Clinical Summary
+                    </Typography>
+                  </Box>
+
+
+                  <Box
+                    sx={{
+                      p: 2.2,
+                      borderRadius: '22px',
+                      background: (theme) => theme.palette.mode === 'dark'
+                        ? 'linear-gradient(180deg, rgba(34,211,238,0.08), rgba(34,211,238,0.03))'
+                        : 'linear-gradient(180deg, rgba(8,145,178,0.06), rgba(8,145,178,0.02))',
+                      border: (theme) => theme.palette.mode === 'dark'
+                        ? '1px solid rgba(34,211,238,0.12)'
+                        : '1px solid rgba(8,145,178,0.20)',
+                    }}
+                  >
+
+                    {summary && (
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1,
+                          mb: 1.5,
+                        }}
+                      >
+                        <AutoAwesomeIcon sx={{ color: 'primary.main', fontSize: 18 }} />
+                        <Typography sx={{
+                          color: 'primary.main',
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          letterSpacing: '0.08em',
+                          textTransform: 'uppercase',
+                        }}>
+                          Generated Interpretation
+                        </Typography>
+                      </Box>
+                    )}
+
+                    {LLMloading ? (
+                      <Container sx={{ display: 'flex', justifyContent: 'center' }}>
+                        <ThreeDot color='#22D3EE' size="small" text="" textColor="" />
+                      </Container>
+                    ) : summary ? (
+                      <Box
+                        sx={{
+                          maxHeight: 500,
+                          overflowY: 'auto',
+                          pr: 1,
+
+                          '&::-webkit-scrollbar': { width: '6px' },
+                          '&::-webkit-scrollbar-track': { background: 'transparent' },
+                          '&::-webkit-scrollbar-thumb': {
+                            background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.14)' : 'rgba(8,145,178,0.25)',
+                            borderRadius: '999px',
+                          },
+                          '&::-webkit-scrollbar-thumb:hover': {
+                            background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.28)' : 'rgba(8,145,178,0.45)',
+                          },
+                        }}
+                      >
+                        <Typography sx={{
+                          color: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.78)' : theme.palette.text.secondary,
+                          fontSize: '0.92rem', lineHeight: 1.85,
+                        }}>
+                          {summary.explanation}
+                        </Typography>
+                      </Box>
+                    ) : (
+                      <Typography sx={{
+                        color: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.78)' : theme.palette.text.secondary,
+                        fontSize: '0.92rem', lineHeight: 1.85,
+                      }}>
+                        Generate a structured explanation of the mammogram analysis results using AI analysis.
+                      </Typography>
+                    )}
+                  </Box>
+
+
+                  <Button
+                    variant="contained"
+                    fullWidth
+                    onClick={analysisMode === 'future-risk' ? handleExplainFutureRisk : handleExplain}
+                    sx={{
+                      height: 50,
+                      borderRadius: '16px',
+                      textTransform: 'none',
+                      fontWeight: 700,
+                      fontSize: '0.95rem',
+                      background: (theme) => theme.palette.mode === 'dark'
+                        ? 'linear-gradient(135deg, #0891B2 0%, #22D3EE 100%)'
+                        : 'linear-gradient(135deg, #0E7490 0%, #0891B2 100%)',
+                      color: '#FFFFFF',
+                      boxShadow: '0 10px 30px rgba(8,145,178,0.30)',
+                    }}
+                  >
+                    Generate Explanation
+                  </Button>
+                  {/* Audience toggle */}
+                  <Box>
+                    <Typography sx={{
+                      fontSize: '0.65rem', letterSpacing: '0.12em', textTransform: 'uppercase',
+                      fontWeight: 700, mb: 0.75,
+                      color: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.4)' : 'rgba(8,145,178,0.7)',
+                    }}>
+                      Audience
+                    </Typography>
+
+                    <Box sx={{
+                      display: 'flex', gap: 0.5, p: 0.5, borderRadius: '14px',
+                      background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(8,145,178,0.06)',
+                      border: (theme) => theme.palette.mode === 'dark' ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(8,145,178,0.15)',
+                    }}>
+                      {[
+                        { value: 'clinician', label: 'Clinician' },
+                        { value: 'patient', label: 'Patient' },
+                      ].map(({ value, label }) => {
+                        const active = audience === value;
+                        return (
+                          <Box
+                            key={value}
+                            onClick={() => { setAudience(value); }}
+                            sx={{
+                              flex: 1, textAlign: 'center', cursor: 'pointer',
+                              py: 0.9, borderRadius: '11px',
+                              fontSize: '0.8rem', fontWeight: 700,
+                              transition: 'all 0.18s',
+                              color: active
+                                ? '#FFFFFF'
+                                : (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.5)' : 'rgba(8,145,178,0.7)',
+                              background: active
+                                ? (theme) => theme.palette.mode === 'dark'
+                                  ? 'linear-gradient(135deg, #0891B2 0%, #22D3EE 100%)'
+                                  : 'linear-gradient(135deg, #0E7490 0%, #0891B2 100%)'
+                                : 'transparent',
+                              boxShadow: active ? '0 4px 14px rgba(8,145,178,0.30)' : 'none',
+                              '&:hover': active ? {} : {
+                                background: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(34,211,238,0.08)',
+                              },
+                            }}
+                          >
+                            {label}
+                          </Box>
+                        );
+                      })}
+                    </Box>
+                  </Box>
+                </Box>
+              )}
+            </Box>
+          </>
+        )}
+
+      <Dialog open={pdfConfirmOpen} onClose={() => setPdfConfirmOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.05rem', px: 3, pt: 3, pb: 1 }}>
+          Export without an AI explanation?
+        </DialogTitle>
+        <DialogContent sx={{ px: 3, pt: 0.5 }}>
+          <Typography sx={{ fontSize: '0.9rem', color: 'text.secondary', lineHeight: 1.6 }}>
+            This session doesn't have a generated AI explanation. The PDF will export without one — generate an explanation first if you'd like it included.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3, pt: 1.5 }}>
+          <Button onClick={() => setPdfConfirmOpen(false)} sx={{ textTransform: 'none', fontWeight: 600 }}>
+            Cancel
+          </Button>
+          <Button onClick={confirmDownloadWithoutExplanation} variant="contained" sx={{ textTransform: 'none', fontWeight: 700 }}>
+            Download anyway
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  );
+}

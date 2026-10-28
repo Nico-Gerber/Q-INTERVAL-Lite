@@ -1,1 +1,0 @@
-python predict_qml_images.py --images "../Future Risk QML/mammo-bench models/testImages/cdd-cesm_2.jpg" "../Future Risk QML/mammo-bench models/testImages/cdd-cesm_50.jpg" "../Future Risk QML/mammo-bench models/testImages/cdd-cesm_100.jpg"

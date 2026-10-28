@@ -124,7 +124,7 @@ router = create_future_risk_router(
 Add the import next to the other routers, then include it **with the `inference` dependencies**:
 
 ```python
-from routers.my_future_risk.router import router as my_router
+from routers.future_risk_myengine.router import router as my_router
 
 app.include_router(my_router, dependencies=inference)
 ```

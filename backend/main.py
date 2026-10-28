@@ -9,18 +9,18 @@ import model_store
 from guards import limit_analysis, require_approved_user
 
 # Session Analysis
-from routers.classical_session_analysis.router import router as classical_session_router
-from routers.quantum_session_analysis.router import router as quantum_session_router
+from routers.session_analysis_classical.router import router as session_classical_router
+from routers.session_analysis_quantum.router import router as session_quantum_router
 
 # Future Risk Analysis
 from routers.future_risk_classical.router import router as classical_future_risk_router
-from routers.future_risk_qml.router import router as quantum_future_risk_router
+from routers.future_risk_quantum.router import router as quantum_future_risk_router
 
 # Admin user management
 from routers.admin.router import router as admin_router
 
 # Shared LLM explanation endpoints
-from routers.shared.Explain import (
+from routers.shared.explain import (
     router as explain_router,
     future_risk_router as explain_future_risk_router,
 )
@@ -98,8 +98,8 @@ app.add_middleware(
 
 # Model inference: approved users only, and one analysis at a time (memory).
 inference = [Depends(require_approved_user), Depends(model_store.require_models_ready), Depends(limit_analysis)]
-app.include_router(classical_session_router, dependencies=inference)
-app.include_router(quantum_session_router, dependencies=inference)
+app.include_router(session_classical_router, dependencies=inference)
+app.include_router(session_quantum_router, dependencies=inference)
 app.include_router(classical_future_risk_router, dependencies=inference)
 app.include_router(quantum_future_risk_router, dependencies=inference)
 
