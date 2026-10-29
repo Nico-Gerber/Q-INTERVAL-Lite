@@ -14,6 +14,7 @@ import {
   SpaceDashboardRounded as DashboardIcon,
   AdminPanelSettingsRounded as AdminIcon,
   GroupsRounded as PatientsIcon,
+  ArrowForwardRounded as ArrowIcon,
 } from '@mui/icons-material';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ColorModeContext } from '../../App';
@@ -65,12 +66,32 @@ const LogoMark = ({ size = 44 }) => (
   />
 );
 
+// Every row in the mobile drawer shares one height, radius and left alignment so the list reads as one system.
+const DRAWER_ROW_SX = {
+  position: 'relative', minHeight: 48, borderRadius: '10px', px: 1.5,
+  '&:hover': { backgroundColor: 'rgba(255,255,255,0.06)', color: '#F0F9FF' },
+  '&.Mui-focusVisible': { outline: '2px solid #22D3EE', outlineOffset: -2 },
+};
+
+const DrawerLink = ({ to, icon, label, active, onNavigate }) => (
+  <ListItem disablePadding sx={{ mb: 0.5 }}>
+    <ListItemButton
+      component={Link} to={to} onClick={onNavigate} aria-current={active ? 'page' : undefined}
+      sx={{ ...DRAWER_ROW_SX, gap: 1.5, color: active ? '#22D3EE' : 'rgba(255,255,255,0.8)', backgroundColor: active ? 'rgba(34,211,238,0.1)' : 'transparent' }}
+    >
+      {React.cloneElement(icon, { sx: { fontSize: 20 } })}
+      <ListItemText primary={label} primaryTypographyProps={{ fontWeight: active ? 700 : 600, fontSize: '0.95rem' }} />
+    </ListItemButton>
+  </ListItem>
+);
+
 const Navigation = () => {
   const location  = useLocation();
   const navigate  = useNavigate();
   const theme     = useTheme();
   const isMobile  = useMediaQuery(theme.breakpoints.down('md'));
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const closeDrawer = () => setDrawerOpen(false);
   const { mode, toggleColorMode } = React.useContext(ColorModeContext);
   const { user, profile, signOut } = useAuth();
   const isAdmin = profile?.role === 'admin' && profile?.status === 'approved';
@@ -226,86 +247,90 @@ const Navigation = () => {
       <Drawer
         anchor="right"
         open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        PaperProps={{ sx: { width: 270, backgroundColor: '#071020', borderLeft: '1px solid rgba(255,255,255,0.07)' } }}
+        onClose={closeDrawer}
+        PaperProps={{
+          sx: {
+            width: 'min(86vw, 320px)', backgroundColor: '#071020', borderLeft: '1px solid rgba(255,255,255,0.07)',
+            display: 'flex', flexDirection: 'column', height: '100dvh',
+          },
+        }}
       >
-        <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Box sx={{ px: 2.5, height: 64, flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
             <LogoMark size={30} />
-            <Typography sx={{ color: '#F0F9FF', fontWeight: 800, fontSize: '0.95rem', letterSpacing: '0.02em', fontFamily: '"Plus Jakarta Sans", sans-serif' }}>
+            <Typography sx={{ color: '#F0F9FF', fontWeight: 800, fontSize: '0.95rem', letterSpacing: '0.02em', fontFamily: '"Plus Jakarta Sans", sans-serif', whiteSpace: 'nowrap' }}>
               Q-INTERVAL-<span style={{ color: '#22D3EE' }}>LITE+</span>
             </Typography>
           </Box>
-          <IconButton onClick={() => setDrawerOpen(false)} sx={{ color: 'rgba(255,255,255,0.5)' }}>
+          <IconButton onClick={closeDrawer} aria-label="Close menu" sx={{ color: 'rgba(255,255,255,0.6)', mr: -1 }}>
             <CloseIcon fontSize="small" />
           </IconButton>
         </Box>
         <Divider sx={{ borderColor: 'rgba(255,255,255,0.07)' }} />
-        <List sx={{ pt: 1 }}>
-          {NAV_ITEMS.map((item) => {
-            const active = location.pathname === item.path;
-            return (
-              <ListItem key={item.path} disablePadding>
-                <ListItemButton
-                  component={Link}
-                  to={item.path}
-                  onClick={() => { handleNavClick(item.path); setDrawerOpen(false); }}
-                  sx={{ mx: 1, borderRadius: '8px', mb: 0.5, color: active ? '#22D3EE' : 'rgba(255,255,255,0.75)', backgroundColor: active ? 'rgba(34,211,238,0.08)' : 'transparent', '&:hover': { backgroundColor: 'rgba(255,255,255,0.05)', color: '#F0F9FF' } }}
-                >
-                  <ListItemText primary={item.label} primaryTypographyProps={{ fontWeight: active ? 700 : 600, fontSize: '0.95rem' }} />
-                </ListItemButton>
-              </ListItem>
-            );
-          })}
-        </List>
-        <Divider sx={{ borderColor: 'rgba(255,255,255,0.07)', mx: 2 }} />
-        <Box sx={{ px: 2, pt: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography sx={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.78rem' }}>
-            {isDark ? 'Dark mode' : 'Light mode'}
-          </Typography>
-          <IconButton onClick={toggleColorMode} size="small" sx={{ color: 'rgba(255,255,255,0.75)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '999px', p: 0.75, '&:hover': { color: '#FFFFFF', backgroundColor: 'rgba(255,255,255,0.08)' } }}>
-            {isDark ? <SunIcon sx={{ fontSize: 16 }} /> : <MoonIcon sx={{ fontSize: 16 }} />}
-          </IconButton>
-        </Box>
-        <Box sx={{ p: 2, mt: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
-          <Button component={Link} to="/Analysis" variant="contained" fullWidth onClick={() => setDrawerOpen(false)} sx={{ py: 1.2, fontSize: '0.9rem', fontWeight: 700, color: '#FFFFFF' }}>
-            Launch Analysis Dashboard →
+
+        <Box sx={{ flex: 1, overflowY: 'auto', px: 1.5, py: 2 }}>
+          <List disablePadding component="nav" aria-label="Main">
+            {NAV_ITEMS.map((item) => {
+              const active = location.pathname === item.path;
+              return (
+                <ListItem key={item.path} disablePadding sx={{ mb: 0.5 }}>
+                  <ListItemButton
+                    component={Link}
+                    to={item.path}
+                    onClick={() => { handleNavClick(item.path); closeDrawer(); }}
+                    aria-current={active ? 'page' : undefined}
+                    sx={{
+                      ...DRAWER_ROW_SX,
+                      color: active ? '#22D3EE' : 'rgba(255,255,255,0.8)',
+                      backgroundColor: active ? 'rgba(34,211,238,0.1)' : 'transparent',
+                      '&::before': { content: '""', position: 'absolute', left: 0, top: 12, bottom: 12, width: 3, borderRadius: 3, backgroundColor: active ? '#22D3EE' : 'transparent' },
+                    }}
+                  >
+                    <ListItemText primary={item.label} primaryTypographyProps={{ fontWeight: active ? 700 : 600, fontSize: '1rem' }} />
+                  </ListItemButton>
+                </ListItem>
+              );
+            })}
+          </List>
+
+          <Button
+            component={Link} to="/Analysis" variant="contained" fullWidth onClick={closeDrawer}
+            endIcon={<ArrowIcon sx={{ fontSize: 18 }} />}
+            sx={{ mt: 2, minHeight: 52, borderRadius: '10px', fontSize: '0.95rem', fontWeight: 700, color: '#FFFFFF', justifyContent: 'space-between', px: 2.25, whiteSpace: 'nowrap', textTransform: 'none' }}
+          >
+            Launch Analysis Dashboard
           </Button>
-          {isAdmin && (
-            <Button
-              component={Link} to="/Admin" fullWidth onClick={() => setDrawerOpen(false)}
-              startIcon={<AdminIcon sx={{ fontSize: 16 }} />}
-              sx={{ fontSize: '0.85rem', fontWeight: 600, color: 'rgba(255,255,255,0.75)', '&:hover': { color: '#FFFFFF' } }}
-            >
-              User Management
-            </Button>
+
+          {(isAdmin || isClinician || user) && (
+            <>
+              <Typography sx={{ mt: 3, mb: 1, px: 1.5, color: 'rgba(255,255,255,0.45)', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                Your account
+              </Typography>
+              <List disablePadding>
+                {isAdmin && (
+                  <DrawerLink to="/Admin" icon={<AdminIcon />} label="User Management" active={location.pathname === '/Admin'} onNavigate={closeDrawer} />
+                )}
+                {isClinician && (
+                  <DrawerLink to="/Patients" icon={<PatientsIcon />} label="My Patients" active={location.pathname === '/Patients'} onNavigate={closeDrawer} />
+                )}
+                {user && !isClinician && (
+                  <DrawerLink to="/Sessions" icon={<HistoryIcon />} label="My Sessions" active={location.pathname === '/Sessions'} onNavigate={closeDrawer} />
+                )}
+              </List>
+            </>
           )}
-          {isClinician && (
-            <Button
-              component={Link} to="/Patients" fullWidth onClick={() => setDrawerOpen(false)}
-              startIcon={<PatientsIcon sx={{ fontSize: 16 }} />}
-              sx={{ fontSize: '0.85rem', fontWeight: 600, color: 'rgba(255,255,255,0.75)', '&:hover': { color: '#FFFFFF' } }}
-            >
-              My Patients
-            </Button>
-          )}
-          {user && !isClinician && (
-            <Button
-              component={Link} to="/Sessions" fullWidth onClick={() => setDrawerOpen(false)}
-              startIcon={<HistoryIcon sx={{ fontSize: 16 }} />}
-              sx={{ fontSize: '0.85rem', fontWeight: 600, color: 'rgba(255,255,255,0.75)', '&:hover': { color: '#FFFFFF' } }}
-            >
-              My Sessions
-            </Button>
-          )}
+        </Box>
+
+        <Box sx={{ flexShrink: 0, borderTop: '1px solid rgba(255,255,255,0.07)', px: 1.5, pt: 1.5, pb: 'max(12px, env(safe-area-inset-bottom))' }}>
+          <ListItemButton onClick={toggleColorMode} sx={{ ...DRAWER_ROW_SX, color: 'rgba(255,255,255,0.8)', gap: 1.5 }}>
+            {isDark ? <SunIcon sx={{ fontSize: 20 }} /> : <MoonIcon sx={{ fontSize: 20 }} />}
+            <ListItemText primary={isDark ? 'Switch to light mode' : 'Switch to dark mode'} primaryTypographyProps={{ fontWeight: 600, fontSize: '0.95rem' }} />
+          </ListItemButton>
           {user && (
-            <Button
-              fullWidth
-              onClick={() => { setDrawerOpen(false); handleSignOut(); }}
-              sx={{ fontSize: '0.85rem', fontWeight: 600, color: 'rgba(255,255,255,0.6)', '&:hover': { color: '#FFFFFF' } }}
-            >
-              Sign Out
-            </Button>
+            <ListItemButton onClick={() => { closeDrawer(); handleSignOut(); }} sx={{ ...DRAWER_ROW_SX, color: 'rgba(255,255,255,0.8)', gap: 1.5, mt: 0.5 }}>
+              <LogoutIcon sx={{ fontSize: 20 }} />
+              <ListItemText primary="Sign Out" primaryTypographyProps={{ fontWeight: 600, fontSize: '0.95rem' }} />
+            </ListItemButton>
           )}
         </Box>
       </Drawer>
