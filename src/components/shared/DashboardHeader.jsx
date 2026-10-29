@@ -38,7 +38,7 @@ export function GreetingBlock({ name, stats = [], note }) {
       </Typography>
 
       {stats.length > 0 && (
-        <Box component="dl" sx={{ m: 0, mb: 1.5, display: 'flex', flexWrap: 'wrap', gap: 1.25 }}>
+        <Box component="dl" sx={{ m: 0, mb: 1.5, display: { xs: 'grid', md: 'flex' }, gridTemplateColumns: `repeat(${stats.length}, minmax(0, 1fr))`, flexWrap: 'wrap', gap: { xs: 1, md: 1.25 } }}>
           {stats.map((stat) => (
             <Box
               key={stat.label}
@@ -46,17 +46,17 @@ export function GreetingBlock({ name, stats = [], note }) {
                 const { reportStatus, results } = theme.palette;
                 const live = stat.warn && stat.value > 0;
                 return {
-                  minWidth: 120, px: 2, py: 1.25, borderRadius: 2, display: 'flex', flexDirection: 'column-reverse',
+                  minWidth: { xs: 0, md: 120 }, px: { xs: 1.25, md: 2 }, py: 1.25, borderRadius: 2, display: 'flex', flexDirection: 'column-reverse',
                   border: '1px solid', borderColor: live ? reportStatus.pending : results.lineStrong,
                   backgroundColor: live ? `${reportStatus.pending}1A` : results.inputBg,
                   '& .stat-value': { color: live ? reportStatus.pending : 'primary.main' },
                 };
               }}
             >
-              <Typography component="dt" sx={{ mt: 0.5, fontSize: '0.78rem', fontWeight: 600, color: 'text.secondary' }}>
+              <Typography component="dt" sx={{ mt: 0.5, fontSize: { xs: '0.72rem', md: '0.78rem' }, lineHeight: 1.25, fontWeight: 600, color: 'text.secondary' }}>
                 {stat.label}
               </Typography>
-              <Typography component="dd" className="stat-value" sx={{ m: 0, fontSize: '1.9rem', fontWeight: 800, lineHeight: 1, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>
+              <Typography component="dd" className="stat-value" sx={{ m: 0, fontSize: { xs: '1.6rem', md: '1.9rem' }, fontWeight: 800, lineHeight: 1, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>
                 {stat.value}
               </Typography>
             </Box>

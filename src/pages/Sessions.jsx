@@ -21,12 +21,20 @@ import { deleteSessionImages } from '../supabase/sessionArtifacts';
 import { TRAINING_TERMS_VERSION } from '../components/imageUpload/TrainingConsent';
 import NeuralCanvas from '../components/shared/NeuralCanvas';
 import ResultShell from '../components/shared/ResultShell';
+import SessionCard from '../components/shared/SessionCard';
 import { GreetingBlock, PrototypeNotice } from '../components/shared/DashboardHeader';
 
 const VIEWS = ['L-CC', 'L-MLO', 'R-CC', 'R-MLO'];
 const RESULTS = ['Malignant', 'Benign', 'Normal'];
 // Colours come from the theme (App.js: verdict, results, review, reportStatus).
 const getColor = (r, verdict) => (r === 'Malignant' ? verdict.malignant : r === 'Benign' ? verdict.benign : verdict.normal);
+
+const SectionTitle = ({ title, sub }) => (
+  <Box sx={{ mb: 2 }}>
+    <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.3 }}>{title}</Typography>
+    <Typography sx={{ color: 'text.secondary', fontSize: '0.85rem' }}>{sub}</Typography>
+  </Box>
+);
 
 export default function Sessions() {
   const { user, profile } = useAuth();
@@ -57,6 +65,7 @@ export default function Sessions() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all'); // all | published | in-progress | not-reviewed
   const [sortNewestFirst, setSortNewestFirst] = useState(true);
+  const [futureNewestFirst, setFutureNewestFirst] = useState(true);
 
   const statusOf = (s) => (s.verified ? 'published' : s.reviewedCount === 0 ? 'not-reviewed' : 'in-progress');
 
@@ -71,6 +80,10 @@ export default function Sessions() {
       : new Date(a.created_at) - new Date(b.created_at));
     return list;
   }, [sessions, search, statusFilter, sortNewestFirst]);
+
+  const futureSorted = useMemo(() => [...(futureSessions ?? [])].sort((a, b) => (futureNewestFirst
+    ? new Date(b.created_at) - new Date(a.created_at)
+    : new Date(a.created_at) - new Date(b.created_at))), [futureSessions, futureNewestFirst]);
 
   useEffect(() => {
     if (!supabase) { setSessions([]); return; }
@@ -117,6 +130,17 @@ export default function Sessions() {
         setFutureSessions(data ?? []);
       });
   }, []);
+
+  const sessionStatusChip = (s) => (s.verified ? (
+    <Chip size="small" label="Published" variant="outlined"
+      sx={{ fontSize: '0.7rem', fontWeight: 700, color: reportStatus.verified, borderColor: alpha(tint.low, 0.5), background: alpha(tint.low, 0.1) }} />
+  ) : s.reviewedCount === 0 ? (
+    <Chip size="small" label="Not reviewed" variant="outlined"
+      sx={{ fontSize: '0.7rem', fontWeight: 700, color: t.caption, borderColor: t.line, background: 'transparent' }} />
+  ) : (
+    <Chip size="small" label={`${s.reviewedCount}/4 reviewed`} variant="outlined"
+      sx={{ fontSize: '0.7rem', fontWeight: 700, color: OVERRIDE_GLOW, borderColor: `${OVERRIDE_GLOW}80`, background: `${OVERRIDE_GLOW}14` }} />
+  ));
 
   const openDetail = async (session) => {
     if (!supabase) return;
@@ -251,7 +275,9 @@ export default function Sessions() {
         ) : sessions.length === 0 ? (
           <Typography sx={{ color: 'text.secondary' }}>No sessions yet — run an analysis to see it here.</Typography>
         ) : (
+          <>
           <ResultShell sx={{ p: { xs: 2, md: 2.5 }, pb: { xs: 3, md: 3.5 } }}>
+            <SectionTitle title="Session Analysis" sub="Four-view classification results." />
             <Box sx={{
               display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'center',
               pb: 2, mb: 2, borderBottom: `1px solid ${t.line}`,
@@ -262,7 +288,7 @@ export default function Sessions() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 sx={{
-                  flex: 1, minWidth: 220,
+                  flex: 1, minWidth: { xs: '100%', sm: 220 },
                   '& .MuiOutlinedInput-root': { color: t.text, background: t.inputBg, fontSize: '0.82rem' },
                   '& fieldset': { borderColor: t.lineStrong },
                   '&:hover fieldset': { borderColor: `${t.lineHover} !important` },
@@ -273,7 +299,7 @@ export default function Sessions() {
                 size="small"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                sx={{ minWidth: 150, fontSize: '0.82rem', color: t.text, background: t.inputBg, '.MuiOutlinedInput-notchedOutline': { borderColor: t.lineStrong } }}
+                sx={{ flex: { xs: 1, sm: '0 0 auto' }, minWidth: { xs: 0, sm: 150 }, fontSize: '0.82rem', color: t.text, background: t.inputBg, '.MuiOutlinedInput-notchedOutline': { borderColor: t.lineStrong } }}
                 MenuProps={{ PaperProps: { sx: { fontSize: '0.82rem' } } }}
               >
                 <MenuItem value="all" sx={{ fontSize: '0.82rem' }}>All statuses</MenuItem>
@@ -285,7 +311,7 @@ export default function Sessions() {
                 size="small"
                 startIcon={sortNewestFirst ? <ArrowDownwardIcon sx={{ fontSize: 14 }} /> : <ArrowUpwardIcon sx={{ fontSize: 14 }} />}
                 onClick={() => setSortNewestFirst((v) => !v)}
-                sx={{ color: t.label, border: `1px solid ${t.lineStrong}`, px: 1.5, fontSize: '0.8rem', background: t.inputBg }}
+                sx={{ flex: { xs: 1, sm: '0 0 auto' }, color: t.label, border: `1px solid ${t.lineStrong}`, px: 1.5, fontSize: '0.8rem', background: t.inputBg }}
               >
                 {sortNewestFirst ? 'Newest first' : 'Oldest first'}
               </Button>
@@ -296,7 +322,29 @@ export default function Sessions() {
                 No sessions match your search or filter.
               </Typography>
             ) : (
-            <TableContainer sx={{ overflowX: 'auto' }}>
+            <>
+            <Box sx={{ display: { xs: 'flex', md: 'none' }, flexDirection: 'column', gap: 1.5 }}>
+              {visibleSessions.map((s) => (
+                <SessionCard
+                  key={s.id}
+                  code={s.session_code}
+                  date={new Date(s.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                  status={sessionStatusChip(s)}
+                  actions={(
+                    <>
+                      <Button size="small" startIcon={<VisibilityIcon sx={{ fontSize: 15 }} />} onClick={() => openDetail(s)} sx={{ color: modelAccent.classical }}>View</Button>
+                      <Button size="small" startIcon={<OpenInNewIcon sx={{ fontSize: 15 }} />} onClick={() => navigate(`/Analysis?session=${s.id}`)} sx={{ color: modelAccent.quantum }}>Open</Button>
+                      {s.verified ? (
+                        <Button size="small" startIcon={<IosShareIcon sx={{ fontSize: 14 }} />} onClick={() => { setShareSession(s); setCopied(false); }} sx={{ color: reportStatus.verified }}>Share</Button>
+                      ) : canVerify ? (
+                        <Button size="small" startIcon={<DeleteOutlineIcon sx={{ fontSize: 15 }} />} onClick={() => setPendingDelete(s)} sx={{ color: t.label }}>Delete</Button>
+                      ) : null}
+                    </>
+                  )}
+                />
+              ))}
+            </Box>
+            <TableContainer sx={{ overflowX: 'auto', display: { xs: 'none', md: 'block' } }}>
             <Table size="small" sx={{ minWidth: 600, '& .MuiTableCell-root': { px: 1.5 } }}>
               <TableHead>
                 <TableRow>
@@ -367,15 +415,44 @@ export default function Sessions() {
               </TableBody>
             </Table>
             </TableContainer>
+            </>
             )}
           </ResultShell>
+          </>
         )}
 
         {futureSessions?.length > 0 && (
           <Box sx={{ mt: 5 }}>
-            <Typography variant="h6" sx={{ mb: 1.5 }}>Future Risk analyses</Typography>
             <ResultShell sx={{ p: { xs: 2, md: 2.5 } }}>
-              <TableContainer sx={{ overflowX: 'auto' }}>
+              <SectionTitle title="Sequential Future Risk" sub="Risk predicted across two or more exams." />
+              <Box sx={{ display: 'flex', pb: 2, mb: 2, borderBottom: `1px solid ${t.line}` }}>
+                <Button
+                  size="small"
+                  startIcon={futureNewestFirst ? <ArrowDownwardIcon sx={{ fontSize: 14 }} /> : <ArrowUpwardIcon sx={{ fontSize: 14 }} />}
+                  onClick={() => setFutureNewestFirst((v) => !v)}
+                  sx={{ flex: { xs: 1, sm: '0 0 auto' }, color: t.label, border: `1px solid ${t.lineStrong}`, px: 1.5, fontSize: '0.8rem', background: t.inputBg }}
+                >
+                  {futureNewestFirst ? 'Newest first' : 'Oldest first'}
+                </Button>
+              </Box>
+              <Box sx={{ display: { xs: 'flex', md: 'none' }, flexDirection: 'column', gap: 1.5 }}>
+                {futureSorted.map((s) => (
+                  <SessionCard
+                    key={s.id}
+                    code={s.session_code}
+                    date={new Date(s.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                    actions={(
+                      <>
+                        <Button size="small" startIcon={<OpenInNewIcon sx={{ fontSize: 15 }} />} onClick={() => navigate(`/Analysis?session=${s.id}`)} sx={{ color: modelAccent.quantum }}>Open</Button>
+                        {canVerify && (
+                          <Button size="small" startIcon={<DeleteOutlineIcon sx={{ fontSize: 15 }} />} onClick={() => setPendingDelete({ ...s, verified: false })} sx={{ color: t.label }}>Delete</Button>
+                        )}
+                      </>
+                    )}
+                  />
+                ))}
+              </Box>
+              <TableContainer sx={{ overflowX: 'auto', display: { xs: 'none', md: 'block' } }}>
                 <Table size="small" sx={{ minWidth: 480, '& .MuiTableCell-root': { px: 1.5 } }}>
                   <TableHead>
                     <TableRow>
@@ -385,7 +462,7 @@ export default function Sessions() {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {futureSessions.map((s) => (
+                    {futureSorted.map((s) => (
                       <TableRow key={s.id} hover>
                         <TableCell sx={{ py: 2, fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 700, color: t.text, borderColor: t.lineStrong, whiteSpace: 'nowrap' }}>{s.session_code}</TableCell>
                         <TableCell sx={{ py: 2, fontSize: '0.85rem', color: t.body, borderColor: t.lineStrong, whiteSpace: 'nowrap' }}>{new Date(s.created_at).toLocaleString()}</TableCell>

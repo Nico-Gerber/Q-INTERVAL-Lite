@@ -10,6 +10,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { deleteSessionImages } from '../supabase/sessionArtifacts';
 import NeuralCanvas from '../components/shared/NeuralCanvas';
 import ResultShell from '../components/shared/ResultShell';
+import SessionCard from '../components/shared/SessionCard';
 import { supabase } from '../supabase/supabase';
 import { useAssignedPatients } from '../supabase/useAssignedPatients';
 import { useAuth } from '../supabase/AuthContext';
@@ -166,10 +167,11 @@ export default function Patients() {
                     >
                       {initialsOf(p.full_name)}
                     </Box>
-                    <Typography sx={{ flex: 1, minWidth: 0, fontWeight: 800, fontSize: { xs: '1.05rem', md: '1.2rem' }, color: t.text, letterSpacing: '-0.01em', lineHeight: 1.2 }}>
+                    <Typography sx={{ flex: 1, minWidth: 0, fontWeight: 800, fontSize: { xs: '1.05rem', md: '1.2rem' }, color: t.text, letterSpacing: '-0.01em', lineHeight: 1.2, overflowWrap: 'anywhere' }}>
                       {p.full_name || 'Unnamed patient'}
                     </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                    {/* The summary tiles above already carry the totals, so phones skip the per-row chips. */}
+                    <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 1, flexShrink: 0 }}>
                       {pending > 0 && <Chip size="small" label={`${pending} awaiting review`} sx={{ bgcolor: `${reportStatus.pending}22`, color: reportStatus.pending, fontWeight: 700 }} />}
                       <Chip size="small" variant="outlined" label={`${list.length} session${list.length === 1 ? '' : 's'}`} />
                     </Box>
@@ -177,7 +179,29 @@ export default function Patients() {
                 </AccordionSummary>
                 <AccordionDetails>
                   {list.length ? (
-                    <TableContainer sx={{ overflowX: 'auto' }}>
+                    <>
+                    <Box sx={{ display: { xs: 'flex', md: 'none' }, flexDirection: 'column', gap: 1.5 }}>
+                      {list.map((s) => {
+                        const st = statusOf(s);
+                        return (
+                          <SessionCard
+                            key={s.id}
+                            code={s.session_code}
+                            date={fmt(s.created_at)}
+                            status={<Chip size="small" label={st.label} sx={{ bgcolor: `${st.color}22`, color: st.color, fontWeight: 700 }} />}
+                            actions={(
+                              <>
+                                <Button size="small" startIcon={<OpenInNewIcon sx={{ fontSize: 15 }} />} onClick={() => navigate(`/Analysis?session=${s.id}`)}>Open</Button>
+                                {!s.verified && (
+                                  <Button size="small" color="error" startIcon={<DeleteOutlineIcon sx={{ fontSize: 15 }} />} onClick={() => { setDeleteError(null); setPendingDelete(s); }}>Delete</Button>
+                                )}
+                              </>
+                            )}
+                          />
+                        );
+                      })}
+                    </Box>
+                    <TableContainer sx={{ overflowX: 'auto', display: { xs: 'none', md: 'block' } }}>
                       <Table size="small" sx={{ '& .MuiTableCell-root': { px: 1.5 } }}>
                         <TableHead>
                           <TableRow>
@@ -212,6 +236,7 @@ export default function Patients() {
                         </TableBody>
                       </Table>
                     </TableContainer>
+                    </>
                   ) : (
                     <Typography color="text.secondary">No sessions yet.</Typography>
                   )}
