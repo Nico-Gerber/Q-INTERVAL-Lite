@@ -26,7 +26,7 @@ You run two things locally: the **backend** (port 8000) and the **frontend** (po
 ### 0. You need
 
 - **Node.js 20+** and npm
-- **Python 3.13** (3.11+ should work)
+- **Python 3.13**. Do not use 3.14: PennyLane 0.42 breaks on it and the quantum future-risk view fails with `TypeError: prod() got multiple values for argument 'axis'`. Check with `python3.13 --version`; if the command is not found, install it (macOS: `brew install python@3.13`, or the installer from python.org)
 - **Git and Git LFS** (the model weights are stored with LFS)
 - **About 8 GB of RAM** (the backend holds several large models; on Railway it used about 5 to 7 GB while analysing)
 - A free **Supabase** project, an **OpenRouter** API key, and access to the **Hugging Face** model repo (step 2)
@@ -73,11 +73,14 @@ After that, approve other accounts from the **Admin** page.
 
 ```bash
 cd backend
-python3 -m venv venv
+python3.13 -m venv venv           # Windows: py -3.13 -m venv venv
 source venv/bin/activate          # Windows: venv\Scripts\activate
+python --version                  # must say 3.13.x
 pip install -r requirements.txt
 python -m uvicorn main:app --reload --port 8000
 ```
+
+Create the venv with `python3.13` explicitly, not plain `python3`, which may be a newer version. A venv keeps the Python it was created with, so if `python --version` shows anything other than 3.13, deactivate, delete `backend/venv` and create it again.
 
 The prompt should show `(venv)` and `which python` should point into `backend/venv`. Use `python -m uvicorn` rather than plain `uvicorn`, which can pick up a different Python installed elsewhere on the machine and then fail with missing modules.
 
@@ -127,6 +130,7 @@ npm install                               # if package.json changed
 | "Cannot read properties of null (reading 'auth')" / login does nothing | `.env.local` is missing or in the wrong place. It must be in the repo root. Restart `npm start` |
 | AI explanations say the service is busy | The free AI model is rate-limited. Wait a minute and try again |
 | `ModuleNotFoundError` in the backend (e.g. `timm`) | The requirements aren't installed in the venv you're running. Activate it, run `pip install -r requirements.txt`, and start with `python -m uvicorn` (check `which uvicorn` points into `backend/venv`) |
+| `TypeError: prod() got multiple values for argument 'axis'` on the quantum future-risk view | The venv was built with Python 3.14. Delete `backend/venv`, recreate it with `python3.13 -m venv venv`, and reinstall the requirements (step 3) |
 | Port already in use | Another copy is running. Stop it, or use a different port |
 
 ---
