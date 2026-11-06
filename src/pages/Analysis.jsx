@@ -908,7 +908,11 @@ export default function Analysis() {
   // exportSessionPDF (components/results/shared/ExportSession) still needs to
   // branch on `copyType`/`verifications` to actually produce the two variants.
   const handleDownloadPdfClick = (copyType) => {
-    if (!reportVerified) { setPdfGateToast(true); return; }
+    // Per-view verification only applies to Session Analysis; Future Risk has
+    // nothing to verify, so it must not be gated on it.
+    const isFutureRisk = analysisMode === 'future-risk';
+    if (!isFutureRisk && !reportVerified) { setPdfGateToast(true); return; }
+    if (typeof copyType !== 'string') copyType = 'clinician';
     setPendingCopyType(copyType);
     if (summary?.explanation) {
       exportSessionPDF({ sessionId, analysisMode, currentModel: modelMode, result, summary, patientAge, sessions, verifications, copyType });
@@ -1343,7 +1347,7 @@ export default function Analysis() {
                                   fontFamily: 'monospace', fontSize: '0.95rem', fontWeight: 800, letterSpacing: '0.04em',
                                   color: reportStatus.pending, textAlign: 'center',
                                 }}>
-                                  AI-GENERATED — AWAITING CLINICAL VERIFICATION
+                                  AI-GENERATED RISK ESTIMATE — RESEARCH PROTOTYPE
                                 </Typography>
                               </Box>
 
@@ -1357,7 +1361,7 @@ export default function Analysis() {
                                 </Typography>
                                 <Button
                                   size="small" variant="outlined" startIcon={<DownloadIcon sx={{ fontSize: 16 }} />}
-                                  onClick={handleDownloadPdfClick}
+                                  onClick={() => handleDownloadPdfClick('clinician')}
                                   sx={{ fontSize: '0.75rem', fontWeight: 700, borderRadius: 1.5, color: theme.palette.text.primary, borderColor: rp.buttonBorder, '&:hover': { borderColor: rp.buttonHoverBorder, backgroundColor: rp.buttonHoverBg } }}
                                 >
                                   Download PDF

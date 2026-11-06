@@ -94,7 +94,7 @@ export default function MammoRiskResults({ currentModel, results, sessionId }) {
         setMounted(false);
         const id = setTimeout(() => setMounted(true), 60);
         return () => clearTimeout(id);
-    }, [currentModel, results]);
+    }, [results]);
 
     if (!cnn && !qml) return null;
 
@@ -235,7 +235,7 @@ export default function MammoRiskResults({ currentModel, results, sessionId }) {
 
         return (
             <Box sx={cardSx}>
-                <TopBar />
+                {TopBar()}
                 <Box sx={{ display: 'flex', flexWrap: 'wrap' }}>
                     <Box sx={{ flex: 1, minWidth: { xs: 0, sm: 380 }, p: { xs: 2, md: '28px' }, display: 'flex', flexDirection: 'column', gap: 1.75 }}>
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: 2, px: 0.5 }}>
@@ -304,7 +304,7 @@ export default function MammoRiskResults({ currentModel, results, sessionId }) {
 
     return (
         <Box sx={cardSx}>
-            <TopBar />
+            {TopBar()}
 
             <Box sx={{ display: 'flex', flexWrap: 'wrap' }}>
                 {/* inputs */}

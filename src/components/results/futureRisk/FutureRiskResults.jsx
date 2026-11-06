@@ -214,7 +214,7 @@ export default function FutureRiskResults({
         setMounted(false);
         const id = setTimeout(() => setMounted(true), 50);
         return () => clearTimeout(id);
-    }, [currentModel]);
+    }, [results]);
 
     if (!qmlData && !cnnData) {
         return (
@@ -323,7 +323,7 @@ export default function FutureRiskResults({
                             <Label sx={{ color: t.muted }}>Exam history</Label>
                             <Typography sx={{ ...MONO, fontSize: 11, color: t.dim, mt: 0.4 }}>{span}</Typography>
                         </Box>
-                        <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', gap: 1, overflowY: 'auto' }}>
+                        <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', gap: 1, overflowY: 'auto', scrollbarGutter: 'stable' }}>
                             {examHistory.map((e, i) => {
                                 const q = qmlExamHistory.find((x) => x.filename === e.filename);
                                 const isMaxWeight = !isBoth && examHistory.length > 1 && e.weight === maxWeight
@@ -431,7 +431,7 @@ export default function FutureRiskResults({
                     <Box sx={{
                         width: { xs: '100%', md: 352 }, flex: 'none', p: { xs: 2, sm: 2.5, md: 3 },
                         borderLeft: { xs: 'none', md: `1px solid ${t.line}` }, borderTop: { xs: `1px solid ${t.line}`, md: 'none' },
-                        background: t.panel, display: 'flex', flexDirection: 'column', gap: 2, overflowY: { xs: 'visible', md: 'auto' },
+                        background: t.panel, display: 'flex', flexDirection: 'column', gap: 2, overflowY: { xs: 'visible', md: 'auto' }, scrollbarGutter: 'stable',
                     }}>
                         {isBoth ? (
                             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1.5, rowGap: 0.4 }}>

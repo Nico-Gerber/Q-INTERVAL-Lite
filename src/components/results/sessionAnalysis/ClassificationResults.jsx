@@ -260,7 +260,7 @@ export default function ClassificationResults({
         );
 
         return () => clearTimeout(id);
-    }, [activeResult]);
+    }, [results]);
 
     const perView = useMemo(
         () =>
@@ -445,29 +445,32 @@ export default function ClassificationResults({
                         }}
                     />
 
-                    {heatSrc(model, currentView) && (
-                        <Box
-                            component="img"
-                            src={heatSrc(
-                                model,
-                                currentView
-                            )}
-                            alt=""
-                            aria-hidden
-                            sx={{
-                                position: 'absolute',
-                                inset: 0,
-                                width: '100%',
-                                height: '100%',
-                                objectFit: 'contain',
-                                pointerEvents: 'none',
-                                mixBlendMode: 'multiply',
-                                opacity: opacity / 100,
-                                transition:
-                                    'opacity 0.2s ease',
-                            }}
-                        />
-                    )}
+                    {['Classical', 'Quantum'].map((m) => {
+                        const src = heatSrc(m, currentView);
+                        if (!src) return null;
+
+                        return (
+                            <Box
+                                key={m}
+                                component="img"
+                                src={src}
+                                alt=""
+                                aria-hidden
+                                decoding="sync"
+                                sx={{
+                                    position: 'absolute',
+                                    inset: 0,
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'contain',
+                                    pointerEvents: 'none',
+                                    mixBlendMode: 'multiply',
+                                    opacity: m === model ? opacity / 100 : 0,
+                                    transition: 'opacity 0.2s ease',
+                                }}
+                            />
+                        );
+                    })}
                 </Box>
 
                 {!title && (
@@ -895,18 +898,18 @@ export default function ClassificationResults({
                                     px: { xs: 0, md: 2 }
                                 }}
                             >
-                                <ImagePane
-                                    model="Classical"
-                                    title="Classical · Occlusion"
-                                    titleColor={CNN_C}
-                                    borderColor={modelAccent.classicalEdge}
-                                    resultLine={{
+                                {ImagePane({
+                                    model: 'Classical',
+                                    title: 'Classical · Occlusion',
+                                    titleColor: CNN_C,
+                                    borderColor: modelAccent.classicalEdge,
+                                    resultLine: {
                                         text:
                                             `${cnnView?.result ?? '—'} ${pct(cnnView?.score).toFixed(2)}%`,
                                         color:
                                             getColor(cnnView?.result, verdict),
-                                    }}
-                                />
+                                    },
+                                })}
 
                                 <Box
                                     sx={{
@@ -918,23 +921,21 @@ export default function ClassificationResults({
                                     }}
                                 />
 
-                                <ImagePane
-                                    model="Quantum"
-                                    title="Quantum · Occlusion"
-                                    titleColor={QML_C}
-                                    borderColor={modelAccent.quantumEdge}
-                                    resultLine={{
+                                {ImagePane({
+                                    model: 'Quantum',
+                                    title: 'Quantum · Occlusion',
+                                    titleColor: QML_C,
+                                    borderColor: modelAccent.quantumEdge,
+                                    resultLine: {
                                         text:
                                             `${qmlView?.result ?? '—'} ${pct(qmlView?.score).toFixed(2)}%`,
                                         color:
                                             getColor(qmlView?.result, verdict),
-                                    }}
-                                />
+                                    },
+                                })}
                             </Box>
                         ) : (
-                            <ImagePane
-                                model={currentModel}
-                            />
+                            ImagePane({ model: currentModel })
                         )}
 
                         {/* verification + opacity */}
@@ -1653,7 +1654,7 @@ export default function ClassificationResults({
                             display: 'flex',
                             flexDirection: 'column',
                             gap: 2,
-                            overflowY: { xs: 'visible', md: 'auto' },
+                            overflowY: { xs: 'visible', md: 'auto' }, scrollbarGutter: 'stable',
                         }}
                     >
                         {/* headline metrics */}
@@ -2299,7 +2300,7 @@ export default function ClassificationResults({
                                                 borderRadius: 1,
                                                 background: t.card,
                                                 border: `1px solid ${t.line}`,
-                                                overflowY: 'auto',
+                                                overflowY: 'auto', scrollbarGutter: 'stable',
                                             }}
                                         >
                                             <Typography
